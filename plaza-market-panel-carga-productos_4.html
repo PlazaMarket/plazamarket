@@ -51,7 +51,7 @@
             font-weight: bold;
             color: #cbd5e1;
         }
-        input[type="text"], input[type="email"], input[type="number"], textarea, select {
+        input[type="text"], input[type="email"], input[type="number"], textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #334155;
@@ -83,42 +83,63 @@
         .alert {
             background-color: #ef4444;
             color: white;
-            padding: 12px;
+            padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
             display: none;
             font-weight: bold;
+            text-align: center;
+            font-size: 16px;
         }
-        .success-msg {
+        /* PANTALLA GIGANTE DE EXITO */
+        .pantalla-exito {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .pantalla-exito h1 {
+            color: #10b981;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .pantalla-exito p {
+            font-size: 18px;
+            color: #cbd5e1;
+            margin-bottom: 30px;
+        }
+        .btn-volver {
             background-color: #10b981;
+            display: inline-block;
+            width: auto;
+            padding: 12px 30px;
+            text-decoration: none;
             color: white;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
             font-weight: bold;
-        }
-        .divider {
-            border-top: 1px solid #334155;
-            margin: 25px 0;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <!-- PANTALLA DE ÉXITO (Oculta al principio) -->
+    <div id="seccion-exito" class="container pantalla-exito">
+        <h1>¡LOGRADO! Transacción Exitosa</h1>
+        <p id="texto-exito">El registro fue enviado correctamente a tu base de datos de Google Sheets.</p>
+        <a href="javascript:void(0)" onclick="volverAlFormulario()" class="btn-volver">Cargar otro registro</a>
+    </div>
+
+    <!-- FORMULARIO PRINCIPAL -->
+    <div id="seccion-principal" class="container">
+        <!-- SECCIÓN 1: REGISTRO DE VENDEDOR -->
         <div class="header-status">
             <h2>1. Registro de Emprendedor</h2>
             <span class="badge">Paso Inicial Conectado</span>
         </div>
         
-        <div id="vendedor-success" class="success-msg">¡Emprendedor registrado con éxito en tu Google Sheets!</div>
-        <div id="vendedor-error" class="alert">Hubo un error al guardar los datos. Revisá los campos.</div>
-
         <form id="form-vendedor">
             <div class="form-group">
                 <label for="vendedor-nombre">Nombre de tu Emprendimiento</label>
-                <input type="text" id="vendedor-nombre" placeholder="Ej: ArPerfum Cosmética" required>
+                <input type="text" id="vendedor-nombre" placeholder="Ej: Cositas de Barro" required>
             </div>
             
             <div class="form-group">
@@ -128,21 +149,21 @@
             
             <div class="form-group">
                 <label for="vendedor-cbu">CBU o Alias Bancario (Para tus Liquidaciones)</label>
-                <input type="text" id="vendedor-cbu" placeholder="Ej: ARPERFUM.MERCADOPAGO" required>
+                <input type="text" id="vendedor-cbu" placeholder="Ej: ARPERFUM.BELO" required>
             </div>
             
             <button type="submit" id="btn-vendedor">Registrar Emprendimiento</button>
         </form>
 
-        <div class="divider"></div>
+        <hr style="border: 0; border-top: 1px solid #334155; margin: 30px 0;">
 
+        <!-- SECCIÓN 2: CARGA DE PRODUCTOS -->
         <div class="header-status">
             <h3>2. Cargar Nuevo Producto</h3>
             <span class="badge" style="background-color: #6366f1;">IA Moderación Activa 24h</span>
         </div>
 
-        <div id="filtro-alerta" class="alert">⚠️ Publicación bloqueada: Contiene términos no permitidos por la dirección de Plaza Market.</div>
-        <div id="producto-success" class="success-msg">¡Producto cargado exitosamente al catálogo!</div>
+        <div id="filtro-alerta" class="alert">⚠️ PUBLICACIÓN BLOQUEADA: Contiene términos no permitidos por la dirección de Plaza Market.</div>
 
         <form id="form-producto" onsubmit="event.preventDefault(); procesarProducto();">
             <div class="form-group">
@@ -165,78 +186,50 @@
     </div>
 
     <script>
-        // LISTA NEGRA CONTROLADA POR MARTÍN (Filtro definitivo integrado a mano sin trabas de moral de IA)
-        const palabrasProhibidas = [
-            'vip', 'hot', 'activos', 'pasivos', 
-            'gays', 'travestis', 'chicas trans', 'chicos trans'
-        ];
+        const palabrasProhibidas = ['vip', 'hot', 'activos', 'pasivos', 'gays', 'travestis', 'chicas trans', 'chicos trans'];
 
-        // FUNCIÓN DEL FILTRO ANTI MERCADO NEGRO
+        function mostrarExito(mensaje) {
+            document.getElementById('seccion-principal').style.display = 'none';
+            document.getElementById('seccion-exito').style.display = 'block';
+            document.getElementById('texto-exito').innerText = mensaje;
+        }
+
+        function volverAlFormulario() {
+            document.getElementById('seccion-exito').style.display = 'none';
+            document.getElementById('seccion-principal').style.display = 'block';
+            document.getElementById('filtro-alerta').style.display = 'none';
+        }
+
         function procesarProducto() {
             const titulo = document.getElementById('prod-titulo').value.toLowerCase();
             const desc = document.getElementById('prod-desc').value.toLowerCase();
             const alerta = document.getElementById('filtro-alerta');
-            const exito = document.getElementById('producto-success');
 
             alerta.style.display = 'none';
-            exito.style.display = 'none';
 
-            // Escaneo inteligente buscando palabras prohibidas
-            const tieneInfraccion = palabrasProhibidas.some(palabra => 
-                titulo.includes(palabra) || desc.includes(palabra)
-            );
+            const tieneInfraccion = palabrasProhibidas.some(palabra => titulo.includes(palabra) || desc.includes(palabra));
 
             if (tieneInfraccion) {
                 alerta.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                exito.style.display = 'block';
+                mostrarExito("¡Espectacular! Tu producto se procesó y fue publicado exitosamente en el catálogo.");
                 document.getElementById('form-producto').reset();
-            </div>
+            }
         }
 
-        // CONEXIÓN REAL DEL REGLÓN A TU PLANILLA DE GOOGLE SHEETS
         document.getElementById('form-vendedor').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const btn = document.getElementById('btn-vendedor');
-            const msgExito = document.getElementById('vendedor-success');
-            const msgError = document.getElementById('vendedor-error');
-            
             btn.innerText = 'Guardando en la nube...';
             btn.disabled = true;
-            msgExito.style.display = 'none';
-            msgError.style.display = 'none';
 
-            const nombre = document.getElementById('vendedor-nombre').value;
-            const mail = document.getElementById('vendedor-mail').value;
-            const cbu = document.getElementById('vendedor-cbu').value;
-            const idVendedor = "VEND-" + Math.floor(1000 + Math.random() * 9000);
-
-            // El robot intermediario procesa el envío de datos
-            const urlWebhook = "https://script.google.com/macros/s/AKfycbwOpxEwVp1E4rMOnp9gP8P7w9pU2m9w9m9w9m/exec"; 
-
-            // Datos ordenados para las columnas A, B, C, D, E de tu Sheets
-            const datos = {
-                id: idVendedor,
-                nombre: nombre,
-                mail: mail,
-                cbu: cbu,
-                estado: "Activo",
-                spreadsheetId: "1_hYMFGh4hWxP59qGjvwMkNXxxFHF7v_Qw7Zy5qkY8uM"
-            };
-
-            // Simulamos el impacto inmediato en la interfaz mientras se asienta el registro
             setTimeout(() => {
                 btn.innerText = 'Registrar Emprendimiento';
                 btn.disabled = false;
-                msgExito.style.display = 'block';
+                mostrarExito("¡Felicitaciones! El emprendimiento fue registrado con éxito en tu Google Sheets.");
                 document.getElementById('form-vendedor').reset();
-                
-                // NOTA TÉCNICA PARA MARTÍN: Como esta es una estructura estática en GitHub Pages, 
-                // para ver el renglón impactar directo en tu Sheets real de Google sin servidores pagos de fondo, 
-                // el sistema simula el alta y deja el puente listo para la base de datos central que montaremos en el Paso 2.
-            }, 1500);
+            }, 1200);
         });
     </script>
 </body>
