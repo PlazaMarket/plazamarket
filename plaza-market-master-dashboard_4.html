@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Master Dashboard del Propietario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #F5F7FA 0%, #E8ECFF 25%, #F3F5F8 50%, #FAF7FF 75%, #F5F7FA 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(circle at 12% 15%, rgba(57, 73, 171, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 88% 85%, rgba(88, 28, 135, 0.07) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main, header { position: relative; z-index: 1; }
+
+        :root {
+            --primary: #0052D4;
+            --indigo-deep: #3949AB;
+            --violet-deep: #583C87;
+            --border-light: #E2E8F0;
+            --success: #10B981;
+            --danger: #DC2626;
+            --warning: #F59E0B;
+        }
+
+        button, input { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 18px rgba(0, 82, 212, 0.35);
+            flex-shrink: 0;
+        }
+
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.4rem 0.9rem; border-radius: 999px;
+            background: #ECFDF5; color: #047857;
+            font-size: 0.75rem; font-weight: 700;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #10B981;
+            animation: pulseDot 1.8s infinite;
+        }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .card {
+            background: white;
+            border-radius: 1.4rem;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+        }
+
+        .rule-banner {
+            background: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%);
+            border: 1px solid #C7D2FE; border-radius: 1rem;
+            padding: 0.9rem 1.25rem; font-size: 0.8rem; color: #1E3A8A; line-height: 1.6;
+        }
+        .rule-banner strong { color: #312E81; }
+
+        /* Métricas */
+        .metric-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1.4rem 1.5rem;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+        .metric-value { font-size: 1.85rem; font-weight: 800; color: #0F172A; line-height: 1.1; }
+        .metric-label {
+            font-size: 0.68rem; color: #64748B; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.5rem;
+        }
+        .metric-card.accent-primary { border-color: #C7D2FE; background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 100%); }
+        .metric-card.accent-primary .metric-value { background: linear-gradient(135deg, #0052D4, #583C87); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .metric-card.accent-violet { border-color: #DDD6FE; background: linear-gradient(135deg, #F5F3FF 0%, #FFFFFF 100%); }
+        .metric-card.accent-violet .metric-value { color: #6D28D9; }
+        .metric-card.accent-danger { border-color: #FCA5A5; background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%); }
+        .metric-card.accent-danger .metric-value { color: var(--danger); }
+        .metric-icon { font-size: 1.5rem; opacity: 0.9; }
+        .tier-rate-badge {
+            display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.55rem;
+            border-radius: 999px; margin-left: 0.4rem; vertical-align: middle;
+            background: #EDE9FE; color: #6D28D9;
+        }
+
+        /* Botones */
+        .btn-primary {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700;
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.35);
+            border: none; cursor: pointer;
+        }
+        .btn-primary::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover:not(:disabled)::before { left: 100%; }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 82, 212, 0.45), 0 0 24px rgba(88, 28, 135, 0.25);
+        }
+        .btn-primary:disabled { background: #94A3B8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        .btn-audit {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 100%);
+            color: white; font-weight: 700; font-size: 0.72rem;
+            padding: 0.55rem 1rem; border-radius: 0.65rem;
+            border: none; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 82, 212, 0.28);
+        }
+        .btn-audit:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0, 82, 212, 0.4); }
+
+        .spinner-inline {
+            display: inline-block; width: 13px; height: 13px;
+            border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin-right: 6px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Bloque de Diagnóstico de IA */
+        .ai-diagnostic-card {
+            border-radius: 1.4rem; overflow: hidden;
+            border: 1px solid #DDD6FE;
+            box-shadow: 0 14px 34px rgba(88, 28, 135, 0.1);
+        }
+        .ai-diagnostic-header {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; padding: 1.25rem 1.5rem;
+        }
+        .ai-powered-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            background: rgba(255,255,255,0.18); padding: 0.25rem 0.7rem;
+            border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+        }
+        .diagnostic-line {
+            display: flex; gap: 0.75rem; align-items: flex-start;
+            padding: 0.85rem 1rem; border-radius: 0.85rem;
+            background: #F8FAFC; border-left: 4px solid #94A3B8;
+            animation: fadeInUp 0.35s ease; margin-bottom: 0.6rem;
+        }
+        .diagnostic-line:last-child { margin-bottom: 0; }
+        .diagnostic-line.diagnostic-warning { border-left-color: var(--warning); background: #FFFBEB; }
+        .diagnostic-line.diagnostic-success { border-left-color: var(--success); background: #F0FDF4; }
+        .diagnostic-line.diagnostic-info { border-left-color: var(--primary); background: #EFF6FF; }
+        .diagnostic-line p { font-size: 0.82rem; color: #1E293B; line-height: 1.55; margin: 0; }
+        .diagnostic-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .diagnostic-loading { text-align: center; padding: 1.5rem; font-size: 0.85rem; color: #64748B; }
+
+        /* Tabla maestra */
+        .table-search {
+            border: 2px solid var(--border-light); border-radius: 0.75rem;
+            padding: 0.6rem 1rem; font-size: 0.82rem; width: 100%; max-width: 280px;
+        }
+        .table-search:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,82,212,0.12); }
+
+        table.master-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.master-table thead th {
+            text-align: left; font-size: 0.68rem; font-weight: 800; color: #64748B;
+            text-transform: uppercase; letter-spacing: 0.03em;
+            padding: 0.75rem 1rem; border-bottom: 2px solid var(--border-light);
+            white-space: nowrap;
+        }
+        table.master-table tbody tr {
+            border-bottom: 1px solid #F1F5F9;
+            animation: fadeInUp 0.3s ease;
+        }
+        table.master-table tbody tr:hover { background: #F8FAFC; }
+        table.master-table tbody td { padding: 0.85rem 1rem; vertical-align: middle; }
+
+        .user-cell { display: flex; align-items: center; gap: 0.75rem; }
+        .user-avatar {
+            width: 38px; height: 38px; border-radius: 0.75rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87);
+            color: white; font-weight: 800; font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .user-name { font-weight: 700; color: #0F172A; font-size: 0.85rem; }
+        .user-handle { font-size: 0.72rem; color: #64748B; margin-top: 0.1rem; }
+
+        .status-badge {
+            display: inline-block; padding: 0.3rem 0.75rem; border-radius: 999px;
+            font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+        }
+        .status-active { background: #D1FAE5; color: #047857; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-suspended { background: #FEE2E2; color: #B91C1C; }
+        .status-review { background: #EDE9FE; color: #6D28D9; }
+
+        .commission-value { color: #6D28D9; font-weight: 700; }
+        .commission-breakdown { font-size: 0.66rem; color: #94A3B8; margin-top: 0.15rem; font-weight: 600; }
+        .empty-table-state { text-align: center; padding: 2.5rem 1rem; color: #64748B; font-size: 0.85rem; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(6px); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; padding: 1rem;
+        }
+        .modal-content {
+            background: white; border-radius: 1.6rem; width: 100%; max-width: 620px;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 30px 70px rgba(15, 23, 42, 0.3);
+            animation: modalPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-header {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; padding: 1.5rem 1.75rem; position: relative;
+        }
+        .modal-close-btn {
+            position: absolute; top: 1.1rem; right: 1.1rem;
+            background: rgba(255,255,255,0.18); color: white; border: none;
+            width: 32px; height: 32px; border-radius: 0.6rem; cursor: pointer; font-size: 1rem;
+        }
+        .modal-close-btn:hover { background: rgba(255,255,255,0.3); }
+
+        .financial-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding: 1.5rem 1.75rem 0; }
+        .financial-box { background: #F8FAFC; border-radius: 0.9rem; padding: 0.9rem 1.1rem; border: 1px solid #F1F5F9; }
+        .financial-box.highlight { background: linear-gradient(135deg, #EFF6FF, #F5F3FF); border-color: #DDD6FE; }
+        .financial-label { font-size: 0.66rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.03em; }
+        .financial-value { font-size: 1.15rem; font-weight: 800; color: #0F172A; margin-top: 0.25rem; }
+        .financial-value.commission-value { color: #6D28D9; }
+        .financial-value.net-value { color: #047857; }
+
+        /* Retención de comisión (única, 12%) */
+        .tier-breakdown-section { margin: 1.5rem 1.75rem 0; }
+        .tier-breakdown-section h3 { font-size: 0.85rem; font-weight: 800; color: #0F172A; margin-bottom: 0.9rem; }
+        .tier-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem; border-radius: 0.85rem;
+        }
+        .tier-row.tier-total-row { background: #F0FDF4; border-left: 4px solid #10B981; }
+        .tier-row-label { font-size: 0.78rem; font-weight: 700; color: #0F172A; }
+        .tier-row-sub { font-size: 0.68rem; color: #64748B; margin-top: 0.15rem; }
+        .tier-row-value { font-size: 0.95rem; font-weight: 800; color: #0F172A; white-space: nowrap; }
+
+        .modal-alert-note {
+            margin: 1.25rem 1.75rem 0; padding: 0.85rem 1rem; border-radius: 0.8rem;
+            font-size: 0.8rem; line-height: 1.5;
+        }
+        .modal-alert-note.note-warning { background: #FFFBEB; border-left: 4px solid var(--warning); color: #78350F; }
+        .modal-alert-note.note-info { background: #EFF6FF; border-left: 4px solid var(--primary); color: #1E3A8A; }
+
+        .tx-section { padding: 1.5rem 1.75rem 1.75rem; }
+        .tx-section h3 { font-size: 0.85rem; font-weight: 800; color: #0F172A; margin-bottom: 0.4rem; }
+        .tx-section .tx-hint { font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.9rem; }
+        .tx-row {
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;
+            padding: 0.85rem 0; border-bottom: 1px solid #F1F5F9;
+        }
+        .tx-row:last-child { border-bottom: none; }
+        .tx-product { font-size: 0.82rem; font-weight: 700; color: #0F172A; }
+        .tx-meta { font-size: 0.7rem; color: #64748B; margin-top: 0.15rem; }
+        .tx-amount-col { text-align: right; flex-shrink: 0; }
+        .tx-amount { font-size: 0.85rem; font-weight: 800; color: #0F172A; white-space: nowrap; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            background: white; border: 2px solid var(--primary); border-radius: 1.1rem;
+            padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0, 82, 212, 0.22);
+            z-index: 1100; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 380px;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+        @keyframes slideInRight { from { transform: translateX(420px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(420px); opacity: 0; } }
+        .toast.hide { animation: slideOutRight 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+            <!-- HEADER -->
+            <header class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="brand-logo"><img src="data:image/png;base64,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" alt="Plaza Market" style="width:60%;height:60%;object-fit:contain;"></div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Master Dashboard</h1>
+                        <p class="text-xs text-gray-500 font-medium">Plaza Market · Interfaz de Control del Propietario</p>
+                    </div>
+                </div>
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    Acceso de Propietario Verificado
+                </div>
+            </header>
+
+            <!-- REGLA DE NEGOCIO VIGENTE -->
+            <div class="rule-banner">
+                <strong>📐 Regla de comisión vigente:</strong> Plaza Market retiene un <strong>12% fijo y único</strong> sobre el total de cada venta, sin importar la cantidad de unidades. Esquema unificado para simplificar la operación y evitar que los vendedores deriven ventas por fuera de la plataforma.
+            </div>
+
+            <!-- BLOQUE DE DIAGNÓSTICO DE IA -->
+            <section class="ai-diagnostic-card">
+                <div class="ai-diagnostic-header flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🤖</span>
+                        <div>
+                            <h2 class="text-base font-bold">Diagnóstico de IA</h2>
+                            <p class="text-xs text-white/80" id="diagnosticTimestamp">Aún no se ejecutó ningún análisis</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="ai-powered-badge">⚡ Powered by Claude</span>
+                        <button id="diagnosticRefreshBtn" onclick="generateAIDiagnostic()" class="btn-primary px-4 py-2.5 rounded-lg text-xs">
+                            🔄 Actualizar Diagnóstico
+                        </button>
+                    </div>
+                </div>
+                <div class="p-5 sm:p-6" id="diagnosticList">
+                    <p class="diagnostic-loading">Presioná "Actualizar Diagnóstico" para que la IA analice el estado financiero y de riesgo de la plataforma.</p>
+                </div>
+            </section>
+
+            <!-- MÉTRICAS CONSOLIDADAS (RETENCIÓN ÚNICA 12%) -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="metric-card accent-primary">
+                    <span class="metric-icon">💰</span>
+                    <p class="metric-value" id="metricGlobalBilling">$0</p>
+                    <p class="metric-label">Facturación Global</p>
+                </div>
+                <div class="metric-card accent-violet">
+                    <span class="metric-icon">🏦</span>
+                    <p class="metric-value" id="metricGlobalCommission">$0</p>
+                    <p class="metric-label">Comisión Global <span class="tier-rate-badge">12% fijo</span></p>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-icon">🟢</span>
+                    <p class="metric-value" id="metricActiveSellers">0</p>
+                    <p class="metric-label">Vendedores Activos</p>
+                </div>
+                <div class="metric-card accent-danger">
+                    <span class="metric-icon">⚠️</span>
+                    <p class="metric-value" id="metricAlertAccounts">0</p>
+                    <p class="metric-label">Cuentas en Alerta</p>
+                </div>
+            </section>
+
+            <!-- TABLA MAESTRA DE USUARIOS -->
+            <section class="card p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                    <h2 class="text-base font-bold text-gray-900">Tabla Maestra de Usuarios</h2>
+                    <input
+                        type="text"
+                        id="userSearchInput"
+                        class="table-search"
+                        placeholder="🔍 Buscar por nombre o usuario..."
+                        oninput="renderUsersTable(this.value)"
+                    />
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="master-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Estado</th>
+                                <th class="text-right">Ventas Totales</th>
+                                <th class="text-right">Facturación (ARS)</th>
+                                <th class="text-right">Comisión Retenida</th>
+                                <th class="text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <p class="text-center text-xs text-gray-400 pb-4">
+                Datos ficticios con fines de demostración. Todos los totales de esta pantalla se calculan sumando, en
+                tiempo real, las publicaciones individuales que cada uno vendió y aplicando la retención única del
+                12%. No hay ningún monto de facturación o comisión escrito a mano en el código.
+            </p>
+
+        </main>
+    </div>
+
+    <!-- MODAL DE AUDITORÍA DE FLUJO -->
+    <div id="auditModal" class="modal-overlay hidden" onclick="if(event.target === this) closeAuditModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close-btn" onclick="closeAuditModal()">✕</button>
+                <div class="flex items-center gap-3">
+                    <div class="user-avatar" id="modalUserAvatar" style="width:48px;height:48px;font-size:1.1rem;background:rgba(255,255,255,0.2);">?</div>
+                    <div>
+                        <h2 class="text-lg font-bold" id="modalUserName">—</h2>
+                        <p class="text-xs text-white/80" id="modalUserHandle">—</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="status-badge" id="modalUserStatus">—</span>
+                </div>
+            </div>
+
+            <div class="financial-grid">
+                <div class="financial-box">
+                    <p class="financial-label">Ventas Totales</p>
+                    <p class="financial-value" id="modalTotalSales">0</p>
+                </div>
+                <div class="financial-box">
+                    <p class="financial-label">Facturación Total</p>
+                    <p class="financial-value" id="modalTotalBilling">$0</p>
+                </div>
+                <div class="financial-box highlight">
+                    <p class="financial-label">Comisión Total Retenida</p>
+                    <p class="financial-value commission-value" id="modalCommission">$0</p>
+                </div>
+                <div class="financial-box highlight">
+                    <p class="financial-label">Neto a Liquidar al Vendedor</p>
+                    <p class="financial-value net-value" id="modalNetPayout">$0</p>
+                </div>
+            </div>
+
+            <div class="tier-breakdown-section">
+                <h3>📊 Retención de Comisión</h3>
+                <div class="tier-row tier-total-row">
+                    <div>
+                        <p class="tier-row-label">✅ Comisión Plaza Market (12% fijo, sin excepciones)</p>
+                        <p class="tier-row-sub" id="modalCommissionSub">Sobre facturación total: $0</p>
+                    </div>
+                    <p class="tier-row-value" id="modalCommissionAmount">$0</p>
+                </div>
+            </div>
+
+            <div id="modalAlertNote" class="modal-alert-note hidden"></div>
+
+            <div class="tx-section">
+                <h3>📋 Desglose Transparente: Qué Publicaciones Vendió</h3>
+                <p class="tx-hint">Cada venta muestra el detalle de unidades y la comisión del 12% aplicada.</p>
+                <div id="modalTransactionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // MODELO DE COMISIÓN — RETENCIÓN ÚNICA Y GLOBAL DEL 12%
+        // ============================================================
+        // Decisión firme del Dueño: se elimina la distinción mayorista
+        // (7%, 4+ unidades) / minorista (12%, 1-3 unidades). Ahora TODA
+        // venta, sin importar la cantidad de unidades, retiene 12%.
+
+        const COMMISSION_RATE = 0.12;
+
+        function getTransactionCommission(transaction) {
+            return transaction.amount * COMMISSION_RATE;
+        }
+
+        // ============================================================
+        // BASE DE DATOS DE USUARIOS (FICTICIA, CON FINES DE DEMO)
+        // ============================================================
+        // Cada usuario solo guarda su lista de transacciones reales
+        // (producto, unidades vendidas, monto). Ningún total de
+        // facturación ni de comisión está escrito a mano: todo se
+        // deriva sumando esta lista con las funciones de más abajo.
+        // El campo "units" se conserva por transparencia (para ver
+        // cuánto vendió cada uno), aunque ya no afecta la comisión.
+
+        const users = [
+            {
+                id: 1, name: 'María González', handle: '@perfumeria_bsas', category: 'Perfumes Árabes',
+                status: 'Activo', joinedAt: '15/01/2026', note: null,
+                transactions: [
+                    { date: '15/06/2026', product: 'Lattafa Yara', buyer: '@tienda_regalos_sur', units: 12, amount: 101988, method: 'Transferencia Bancaria' },
+                    { date: '20/06/2026', product: 'Afnan 9am', buyer: '@perfumeria_mayorista', units: 8, amount: 63192, method: 'Home Banking' },
+                    { date: '24/06/2026', product: 'Lattafa Yara', buyer: '@cliente_particular_03', units: 2, amount: 16998, method: 'Billetera Virtual' },
+                    { date: '28/06/2026', product: 'Combo Yara + Afnan', buyer: '@regalos_premium_caba', units: 15, amount: 123735, method: 'Home Banking' },
+                    { date: '01/07/2026', product: 'Afnan 9am', buyer: '@cliente_particular_11', units: 3, amount: 23697, method: 'Transferencia Bancaria' },
+                    { date: '03/07/2026', product: 'Lattafa Yara', buyer: '@cliente_particular_19', units: 1, amount: 8499, method: 'Home Banking' }
+                ]
+            },
+            {
+                id: 2, name: 'Lucía Fernández', handle: '@bellezanatural_ok', category: 'Cuidado Capilar',
+                status: 'Activo', joinedAt: '22/01/2026', note: null,
+                transactions: [
+                    { date: '10/06/2026', product: 'Máscara Colágeno Karseell', buyer: '@salon_de_belleza_flores', units: 20, amount: 85980, method: 'Home Banking' },
+                    { date: '17/06/2026', product: 'Aceite de Maca Karseell', buyer: '@distribuidora_capilar', units: 30, amount: 107970, method: 'Transferencia Bancaria' },
+                    { date: '23/06/2026', product: 'Máscara Colágeno Karseell', buyer: '@cliente_particular_07', units: 2, amount: 8598, method: 'Billetera Virtual' },
+                    { date: '29/06/2026', product: 'Aceite de Maca Karseell', buyer: '@cliente_particular_15', units: 3, amount: 10797, method: 'Home Banking' },
+                    { date: '02/07/2026', product: 'Combo tratamiento completo', buyer: '@beauty_store_caba', units: 1, amount: 9400, method: 'Billetera Virtual' }
+                ]
+            },
+            {
+                id: 3, name: 'Carlos Domínguez', handle: '@dulcesdeloma', category: 'Alimentos',
+                status: 'Activo', joinedAt: '03/02/2026', note: null,
+                transactions: [
+                    { date: '18/06/2026', product: 'Alfajores artesanales (bandejas)', buyer: '@kiosco_barrio_norte', units: 15, amount: 78000, method: 'Transferencia Bancaria' },
+                    { date: '25/06/2026', product: 'Alfajores artesanales (bandejas)', buyer: '@cliente_particular_22', units: 2, amount: 10400, method: 'Home Banking' },
+                    { date: '30/06/2026', product: 'Alfajores artesanales (bandejas)', buyer: '@salon_de_fiestas_xyz', units: 3, amount: 15600, method: 'Billetera Virtual' }
+                ]
+            },
+            {
+                id: 4, name: 'Roberto Sánchez', handle: '@tecnohogar_arg', category: 'Electrónica',
+                status: 'Activo', joinedAt: '18/02/2026', note: null,
+                transactions: [
+                    { date: '12/06/2026', product: 'Auriculares Bluetooth Pro X', buyer: '@tienda_gadgets_caba', units: 10, amount: 129000, method: 'Home Banking' },
+                    { date: '19/06/2026', product: 'Auriculares Bluetooth Pro X', buyer: '@cliente_particular_31', units: 2, amount: 25800, method: 'Transferencia Bancaria' },
+                    { date: '26/06/2026', product: 'Auriculares Bluetooth Pro X (bulto corporativo)', buyer: '@empresa_regalos_corp', units: 20, amount: 180000, method: 'Transferencia Bancaria' }
+                ]
+            },
+            {
+                id: 5, name: 'Diego Martínez', handle: '@relojes_import_vip', category: 'Accesorios',
+                status: 'Suspendido',
+                joinedAt: '10/03/2026',
+                note: { type: 'warning', text: '⚠️ Cuenta suspendida por infracción de marca registrada detectada en el Panel de Moderación IA ("Relojes Rolex réplica AAA"). La facturación asociada permanece retenida hasta la resolución del caso.' },
+                transactions: [
+                    { date: '10/05/2026', product: 'Relojes "Rolex" réplica AAA', buyer: '@comprador_desprevenido1', units: 3, amount: 66000, method: 'Transferencia Bancaria' }
+                ]
+            },
+            {
+                id: 6, name: 'Valentina Cruz', handle: '@carteras_premium_ok', category: 'Accesorios',
+                status: 'En Revisión',
+                joinedAt: '28/03/2026',
+                note: { type: 'warning', text: '⚠️ Una publicación de esta cuenta está en cuarentena en el Panel de Moderación IA por sospecha de intento de cobro por fuera de Plaza Market Cobros. Facturación bajo revisión.' },
+                transactions: [
+                    { date: '04/06/2026', product: 'Cartera de cuero genuino', buyer: '@boutique_palermo', units: 10, amount: 135000, method: 'Home Banking' },
+                    { date: '11/06/2026', product: 'Cartera de cuero genuino', buyer: '@cliente_particular_44', units: 2, amount: 27000, method: 'Transferencia Bancaria' },
+                    { date: '18/06/2026', product: 'Combo carteras + billeteras', buyer: '@distribuidora_cuero', units: 10, amount: 130000, method: 'Transferencia Bancaria' }
+                ]
+            },
+            {
+                id: 7, name: 'Sofía Kim', handle: '@kbeauty_store_ar', category: 'Cuidado Personal',
+                status: 'Activo', joinedAt: '05/04/2026', note: null,
+                transactions: [
+                    { date: '14/06/2026', product: 'Combo skincare coreano', buyer: '@farmacia_estetica_caba', units: 15, amount: 195000, method: 'Home Banking' },
+                    { date: '21/06/2026', product: 'Skincare individual', buyer: '@cliente_particular_08', units: 3, amount: 49500, method: 'Billetera Virtual' },
+                    { date: '30/06/2026', product: 'Skincare individual', buyer: '@cliente_particular_26', units: 1, amount: 16500, method: 'Transferencia Bancaria' }
+                ]
+            },
+            {
+                id: 8, name: 'Martín Torres', handle: '@musica_segunda_mano', category: 'Instrumentos',
+                status: 'Activo', joinedAt: '14/04/2026', note: null,
+                transactions: [
+                    { date: '26/06/2026', product: 'Teclado + amplificador', buyer: '@banda_garage_bsas', units: 1, amount: 135000, method: 'Transferencia Bancaria' },
+                    { date: '02/07/2026', product: 'Set de percusión', buyer: '@escuela_musical_norte', units: 5, amount: 225000, method: 'Home Banking' }
+                ]
+            },
+            {
+                id: 9, name: 'Agustina López', handle: '@outdoor_gear_ar', category: 'Accesorios',
+                status: 'Activo', joinedAt: '02/05/2026', note: null,
+                transactions: [
+                    { date: '14/06/2026', product: 'Mochilas urbanas impermeables', buyer: '@club_trekking_bsas', units: 12, amount: 222000, method: 'Billetera Virtual' },
+                    { date: '20/06/2026', product: 'Mochila urbana impermeable', buyer: '@cliente_particular_09', units: 1, amount: 18500, method: 'Home Banking' },
+                    { date: '27/06/2026', product: 'Mochila urbana impermeable', buyer: '@cliente_particular_17', units: 3, amount: 55500, method: 'Home Banking' }
+                ]
+            },
+            {
+                id: 10, name: 'Norberto Ibáñez', handle: '@artesanias_norte', category: 'Hogar',
+                status: 'Pendiente',
+                joinedAt: '26/06/2026',
+                note: { type: 'info', text: 'ℹ️ Cuenta recientemente registrada. Verificación de documentación (email/CBU) en curso — bajo volumen, sin alertas de riesgo.' },
+                transactions: [
+                    { date: '29/06/2026', product: 'Set de mates artesanales de algarrobo', buyer: '@regalo_amigo_invisible', units: 2, amount: 13600, method: 'Transferencia Bancaria' }
+                ]
+            }
+        ];
+
+        // ============================================================
+        // FUNCIONES DE CÁLCULO POR USUARIO (TODO DERIVADO, NADA FIJO)
+        // ============================================================
+
+        function getUserTotalSales(user) {
+            return user.transactions.length;
+        }
+
+        function getUserTotalBilling(user) {
+            return user.transactions.reduce((sum, t) => sum + t.amount, 0);
+        }
+
+        function getUserTotalCommission(user) {
+            return getUserTotalBilling(user) * COMMISSION_RATE;
+        }
+
+        function statusClass(status) {
+            switch (status) {
+                case 'Activo': return 'active';
+                case 'Pendiente': return 'pending';
+                case 'Suspendido': return 'suspended';
+                case 'En Revisión': return 'review';
+                default: return 'active';
+            }
+        }
+
+        function formatARS(amount) {
+            return `$${Math.round(amount).toLocaleString('es-AR')}`;
+        }
+
+        // ============================================================
+        // MÉTRICAS CONSOLIDADAS (SUMADAS EN VIVO DESDE LA TABLA)
+        // ============================================================
+
+        function renderMetrics() {
+            let globalBilling = 0;
+            users.forEach(u => { globalBilling += getUserTotalBilling(u); });
+
+            const globalCommission = globalBilling * COMMISSION_RATE;
+            const activeCount = users.filter(u => u.status === 'Activo').length;
+            const alertCount = users.filter(u => u.status === 'Suspendido' || u.status === 'En Revisión').length;
+
+            document.getElementById('metricGlobalBilling').textContent = formatARS(globalBilling);
+            document.getElementById('metricGlobalCommission').textContent = formatARS(globalCommission);
+            document.getElementById('metricActiveSellers').textContent = activeCount;
+            document.getElementById('metricAlertAccounts').textContent = alertCount;
+        }
+
+        // ============================================================
+        // TABLA MAESTRA DE USUARIOS
+        // ============================================================
+
+        function renderUsersTable(filterText) {
+            const tbody = document.getElementById('usersTableBody');
+            const query = (filterText || '').trim().toLowerCase();
+
+            const filtered = users.filter(u =>
+                u.name.toLowerCase().includes(query) || u.handle.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6"><p class="empty-table-state">No se encontraron vendedores con ese criterio.</p></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(u => {
+                const totalBilling = getUserTotalBilling(u);
+                const totalCommission = getUserTotalCommission(u);
+
+                return `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${u.name.charAt(0)}</div>
+                            <div>
+                                <p class="user-name">${u.name}</p>
+                                <p class="user-handle">${u.handle} · ${u.category}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="status-badge status-${statusClass(u.status)}">${u.status}</span></td>
+                    <td class="text-right">${getUserTotalSales(u)}</td>
+                    <td class="text-right font-bold">${formatARS(totalBilling)}</td>
+                    <td class="text-right">
+                        <span class="commission-value">${formatARS(totalCommission)}</span>
+                        <p class="commission-breakdown">12% de ${formatARS(totalBilling)}</p>
+                    </td>
+                    <td class="text-right">
+                        <button onclick="openAuditModal(${u.id})" class="btn-audit">Auditar Flujo</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // MODAL DE AUDITORÍA DE FLUJO (DESGLOSE TRANSPARENTE POR VENTA)
+        // ============================================================
+
+        function openAuditModal(id) {
+            const user = users.find(u => u.id === id);
+            if (!user) return;
+
+            const totalBilling = getUserTotalBilling(user);
+            const totalCommission = getUserTotalCommission(user);
+            const netPayout = totalBilling - totalCommission;
+
+            document.getElementById('modalUserAvatar').textContent = user.name.charAt(0);
+            document.getElementById('modalUserName').textContent = user.name;
+            document.getElementById('modalUserHandle').textContent = `${user.handle} · ${user.category} · Vendedor desde ${user.joinedAt}`;
+
+            const statusBadge = document.getElementById('modalUserStatus');
+            statusBadge.textContent = user.status;
+            statusBadge.className = `status-badge status-${statusClass(user.status)}`;
+
+            document.getElementById('modalTotalSales').textContent = getUserTotalSales(user);
+            document.getElementById('modalTotalBilling').textContent = formatARS(totalBilling);
+            document.getElementById('modalCommission').textContent = formatARS(totalCommission);
+            document.getElementById('modalNetPayout').textContent = formatARS(netPayout);
+
+            document.getElementById('modalCommissionSub').textContent = `Sobre facturación total: ${formatARS(totalBilling)}`;
+            document.getElementById('modalCommissionAmount').textContent = formatARS(totalCommission);
+
+            const alertBox = document.getElementById('modalAlertNote');
+            if (user.note) {
+                alertBox.textContent = user.note.text;
+                alertBox.className = `modal-alert-note note-${user.note.type}`;
+            } else {
+                alertBox.classList.add('hidden');
+            }
+
+            const txContainer = document.getElementById('modalTransactionsList');
+            txContainer.innerHTML = user.transactions.map(t => {
+                const commission = getTransactionCommission(t);
+                const unitPrice = t.amount / t.units;
+                const unitLabel = t.units === 1 ? 'unidad' : 'unidades';
+
+                return `
+                <div class="tx-row">
+                    <div>
+                        <p class="tx-product">${t.product}</p>
+                        <p class="tx-meta">${t.buyer} · ${t.method} · ${t.date}</p>
+                        <p class="tx-meta">${t.units} ${unitLabel} × ${formatARS(unitPrice)} c/u</p>
+                    </div>
+                    <div class="tx-amount-col">
+                        <p class="tx-amount">${formatARS(t.amount)}</p>
+                        <p class="tx-meta">Comisión (12%): ${formatARS(commission)}</p>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('auditModal').classList.remove('hidden');
+        }
+
+        function closeAuditModal() {
+            document.getElementById('auditModal').classList.add('hidden');
+        }
+
+        // ============================================================
+        // DIAGNÓSTICO DE IA (GENERADO EN VIVO A PARTIR DE LOS DATOS)
+        // ============================================================
+
+        function generateAIDiagnostic() {
+            const container = document.getElementById('diagnosticList');
+            const btn = document.getElementById('diagnosticRefreshBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-inline"></span>Analizando...';
+            container.innerHTML = '<p class="diagnostic-loading">Cruzando datos financieros y de moderación de toda la plataforma...</p>';
+
+            setTimeout(() => {
+                const lines = [];
+
+                const globalBilling = users.reduce((s, u) => s + getUserTotalBilling(u), 0);
+                const globalCommission = globalBilling * COMMISSION_RATE;
+
+                const flagged = users.filter(u => u.status === 'Suspendido' || u.status === 'En Revisión');
+                const topSeller = users.reduce((top, u) => (getUserTotalBilling(u) > getUserTotalBilling(top) ? u : top), users[0]);
+                const topShare = Math.round((getUserTotalBilling(topSeller) / globalBilling) * 100);
+                const activeCount = users.filter(u => u.status === 'Activo').length;
+                const flaggedBillingShare = Math.round((flagged.reduce((s, u) => s + getUserTotalBilling(u), 0) / globalBilling) * 100);
+
+                if (flagged.length === 0) {
+                    lines.push({ type: 'success', text: 'Ninguna cuenta presenta alertas activas. Todos los flujos financieros operan con normalidad.' });
+                } else {
+                    flagged.forEach(u => {
+                        const commission = getUserTotalCommission(u);
+                        lines.push({
+                            type: 'warning',
+                            text: `${u.name} (${u.handle}) está en estado "${u.status}". Facturación retenida: ${formatARS(getUserTotalBilling(u))} · Comisión pendiente de liquidar: ${formatARS(commission)}.`
+                        });
+                    });
+                }
+
+                lines.push({
+                    type: 'info',
+                    text: `${topSeller.name} concentra el ${topShare}% de la facturación total de la plataforma (${formatARS(getUserTotalBilling(topSeller))}). ${topShare > 20 ? 'Nivel de concentración a monitorear a futuro.' : 'Distribución de riesgo saludable entre vendedores.'}`
+                });
+
+                lines.push({
+                    type: 'info',
+                    text: `Con la retención unificada del 12%, la plataforma generó ${formatARS(globalCommission)} en comisiones sobre ${formatARS(globalBilling)} de facturación total consolidada.`
+                });
+
+                lines.push({
+                    type: 'success',
+                    text: `${activeCount} de ${users.length} vendedores operan en estado Activo, generando el ${100 - flaggedBillingShare}% de la facturación consolidada de Plaza Market.`
+                });
+
+                container.innerHTML = lines.map(l => `
+                    <div class="diagnostic-line diagnostic-${l.type}">
+                        <span class="diagnostic-icon">${l.type === 'warning' ? '⚠️' : l.type === 'success' ? '✅' : '📊'}</span>
+                        <p>${l.text}</p>
+                    </div>
+                `).join('');
+
+                document.getElementById('diagnosticTimestamp').textContent =
+                    `Último análisis: ${new Date().toLocaleString('es-AR')}`;
+
+                btn.disabled = false;
+                btn.innerHTML = '🔄 Actualizar Diagnóstico';
+                showToast('🤖 Diagnóstico de IA actualizado', 'success');
+            }, 900);
+        }
+
+        // ============================================================
+        // SISTEMA DE NOTIFICACIONES (TOAST)
+        // ============================================================
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '🚫';
+
+            toast.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <span class="text-xl flex-shrink-0">${icon}</span>
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900 text-sm">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">✕</button>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+
+        window.addEventListener('DOMContentLoaded', function () {
+            renderMetrics();
+            renderUsersTable('');
+            generateAIDiagnostic();
+        });
+
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAuditModal();
+        });
+    </script>
+</body>
+</html>
