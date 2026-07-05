@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Panel de Súper Administrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #E2E8F0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(0, 82, 212, 0.2) 0%, transparent 42%),
+                radial-gradient(circle at 88% 20%, rgba(88, 28, 135, 0.22) 0%, transparent 42%),
+                radial-gradient(circle at 50% 95%, rgba(57, 73, 171, 0.16) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main, header { position: relative; z-index: 1; }
+
+        :root {
+            --primary: #0052D4;
+            --indigo-deep: #3949AB;
+            --violet-deep: #583C87;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        button, input, select { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 82, 212, 0.4);
+            flex-shrink: 0;
+        }
+
+        .owner-pill {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.5rem 1.1rem; border-radius: 999px;
+            background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #FCD34D; font-size: 0.75rem; font-weight: 700;
+        }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; animation: pulseDot 1.8s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .glass-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .rule-banner {
+            background: linear-gradient(135deg, rgba(0,82,212,0.1), rgba(88,28,135,0.12));
+            border: 1px solid rgba(59,130,246,0.3); border-radius: 1rem;
+            padding: 0.9rem 1.25rem; font-size: 0.8rem; color: #BFDBFE; line-height: 1.6;
+        }
+        .rule-banner strong { color: white; }
+
+        /* Métricas */
+        .metric-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(16px);
+            border-radius: 1.2rem;
+            padding: 1.35rem 1.5rem;
+            border: 1px solid rgba(255,255,255,0.09);
+        }
+        .metric-value { font-size: 1.7rem; font-weight: 800; color: white; line-height: 1.1; }
+        .metric-label {
+            font-size: 0.66rem; color: rgba(226,232,240,0.5); font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.5rem;
+        }
+        .metric-card.accent-violet { border-color: rgba(139,92,246,0.35); }
+        .metric-card.accent-violet .metric-value { color: #C4B5FD; }
+        .metric-card.accent-primary .metric-value { background: linear-gradient(135deg, #60A5FA, #C4B5FD); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .metric-icon { font-size: 1.4rem; opacity: 0.9; }
+        .tier-rate-badge {
+            display: inline-block; font-size: 0.62rem; font-weight: 800; padding: 0.15rem 0.55rem;
+            border-radius: 999px; margin-left: 0.4rem; vertical-align: middle;
+            background: rgba(139,92,246,0.2); color: #C4B5FD;
+        }
+
+        /* Botones */
+        .btn-primary {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700;
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.4);
+            border: none; cursor: pointer;
+        }
+        .btn-primary::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover:not(:disabled)::before { left: 100%; }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 82, 212, 0.5), 0 0 24px rgba(88, 28, 135, 0.3);
+        }
+        .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; transform: none; opacity: 0.6; }
+
+        .btn-link-card {
+            background: linear-gradient(135deg, rgba(0,82,212,0.15), rgba(88,28,135,0.18));
+            border: 1px solid rgba(59,130,246,0.3); border-radius: 1.2rem;
+            padding: 1.1rem 1.4rem; display: flex; align-items: center; justify-content: space-between;
+            gap: 1rem; text-decoration: none; color: white; cursor: pointer;
+        }
+        .btn-link-card:hover { border-color: rgba(59,130,246,0.55); transform: translateY(-2px); }
+
+        label { color: rgba(226,232,240,0.75); font-size: 0.8rem; font-weight: 700; }
+
+        input, select {
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9;
+            border-radius: 0.75rem;
+            width: 100%;
+            padding: 0.7rem 0.9rem;
+            font-size: 0.85rem;
+        }
+        input::placeholder { color: rgba(226,232,240,0.32); }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.2);
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* Checkboxes para el alta de nuevo colaborador */
+        .permission-checkbox-label { display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.65rem; padding: 0.65rem 0.8rem; font-size: 0.76rem; color: #E2E8F0; cursor: pointer; }
+        .permission-checkbox-label input { width: 16px; height: 16px; accent-color: #3B82F6; cursor: pointer; flex-shrink: 0; }
+        .permission-checkbox-label:hover { border-color: rgba(59,130,246,0.4); }
+
+        /* Leyenda de permisos */
+        .permission-legend { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; padding: 1.1rem 1.3rem; margin-bottom: 1.5rem; }
+        .permission-legend h3 { font-size: 0.85rem; font-weight: 800; color: white; margin-bottom: 0.75rem; }
+        .legend-grid { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 0.85rem; }
+        .legend-item { font-size: 0.78rem; color: rgba(226,232,240,0.75); line-height: 1.5; }
+        .legend-item strong { color: #93C5FD; }
+        .legend-note { font-size: 0.72rem; color: rgba(226,232,240,0.5); line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; }
+
+        /* Tabla de staff */
+        .staff-table-wrap { overflow-x: auto; }
+        table.staff-table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 0.84rem; }
+        table.staff-table thead th {
+            text-align: center; font-size: 0.64rem; font-weight: 800; color: rgba(226,232,240,0.5);
+            text-transform: uppercase; letter-spacing: 0.02em;
+            padding: 0.75rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap;
+        }
+        table.staff-table thead th:first-child { text-align: left; }
+        table.staff-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); animation: fadeInUp 0.3s ease; }
+        table.staff-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        table.staff-table tbody td { padding: 0.85rem 0.6rem; vertical-align: middle; color: #E2E8F0; text-align: center; }
+        table.staff-table tbody td:first-child { text-align: left; }
+        .owner-row { background: rgba(245,158,11,0.04); }
+
+        .user-cell { display: flex; align-items: center; gap: 0.7rem; }
+        .user-avatar {
+            width: 34px; height: 34px; border-radius: 0.65rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87);
+            color: white; font-weight: 800; font-size: 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .user-avatar.owner-avatar { background: linear-gradient(135deg, #F59E0B, #B45309); }
+        .user-name { font-weight: 700; color: white; font-size: 0.83rem; }
+        .user-handle { font-size: 0.68rem; color: rgba(226,232,240,0.5); margin-top: 0.1rem; }
+
+        .you-badge {
+            background: rgba(16,185,129,0.2); color: #6EE7B7; font-size: 0.6rem; font-weight: 800;
+            padding: 0.1rem 0.4rem; border-radius: 999px; margin-left: 0.4rem; vertical-align: middle;
+        }
+
+        .permission-checkbox-table { width: 17px; height: 17px; accent-color: #3B82F6; cursor: pointer; }
+        .permission-checkbox-table:disabled { opacity: 0.3; cursor: not-allowed; }
+        .permission-checkbox-dirty { outline: 2px solid #F59E0B; outline-offset: 2px; border-radius: 3px; }
+        .perm-locked { color: #FCD34D; font-size: 0.85rem; font-weight: 800; }
+
+        .status-badge { display: inline-block; padding: 0.3rem 0.65rem; border-radius: 999px; font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
+        .status-active { background: rgba(16,185,129,0.15); color: #6EE7B7; }
+        .status-paused { background: rgba(148,163,184,0.18); color: #CBD5E1; }
+        .status-suspended { background: rgba(239,68,68,0.15); color: #FCA5A5; }
+
+        .btn-staff-action { font-size: 0.62rem; font-weight: 700; padding: 0.4rem 0.6rem; border-radius: 0.5rem; cursor: pointer; border: 1.5px solid transparent; white-space: nowrap; }
+        .btn-pause { background: rgba(245,158,11,0.12); color: #FCD34D; border-color: rgba(245,158,11,0.3); }
+        .btn-pause:hover { background: rgba(245,158,11,0.22); }
+        .btn-suspend { background: rgba(239,68,68,0.12); color: #FCA5A5; border-color: rgba(239,68,68,0.3); }
+        .btn-suspend:hover { background: rgba(239,68,68,0.22); }
+        .btn-delete { background: rgba(239,68,68,0.22); color: white; border-color: rgba(239,68,68,0.5); }
+        .btn-delete:hover { background: rgba(239,68,68,0.35); }
+        .btn-reactivate { background: rgba(16,185,129,0.15); color: #6EE7B7; border-color: rgba(16,185,129,0.35); }
+        .btn-reactivate:hover { background: rgba(16,185,129,0.25); }
+
+        /* Barra de guardado de permisos */
+        .save-permissions-bar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem;
+            margin-top: 1.1rem; padding-top: 1.1rem; border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .unsaved-indicator {
+            font-size: 0.78rem; font-weight: 700; color: #FCD34D;
+            display: flex; align-items: center; gap: 0.4rem;
+            animation: pulseSoft 1.6s ease-in-out infinite;
+        }
+        @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+        .btn-discard { background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14); font-weight: 600; cursor: pointer; }
+        .btn-discard:hover { background: rgba(255,255,255,0.08); }
+
+        /* Auditoría de actividad */
+        .log-row { padding: 0.75rem 0.95rem; border-radius: 0.75rem; background: rgba(255,255,255,0.025); border-left: 3px solid rgba(59,130,246,0.4); margin-bottom: 0.5rem; animation: fadeInUp 0.3s ease; }
+        .log-row:last-child { margin-bottom: 0; }
+        .log-action { font-size: 0.8rem; font-weight: 700; color: white; }
+        .log-meta { font-size: 0.7rem; color: rgba(226,232,240,0.5); margin-top: 0.15rem; }
+
+        .empty-state { text-align: center; padding: 2rem 1rem; font-size: 0.82rem; color: rgba(226,232,240,0.4); }
+        .empty-state-table { text-align: center; padding: 1.5rem 1rem; font-size: 0.82rem; color: rgba(226,232,240,0.45); }
+
+        .staff-filter-hint { font-size: 0.78rem; font-weight: 600; padding: 0.65rem 0.9rem; border-radius: 0.7rem; margin-bottom: 0.75rem; }
+        .filter-hint-locked { background: rgba(148,163,184,0.08); color: rgba(226,232,240,0.55); border: 1px solid rgba(148,163,184,0.18); }
+        .filter-hint-active { background: rgba(59,130,246,0.1); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .toast {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
+            padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 1000; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 380px; color: #E2E8F0;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+        @keyframes slideInRight { from { transform: translateX(420px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(420px); opacity: 0; } }
+        .toast.hide { animation: slideOutRight 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+            <!-- HEADER -->
+            <header class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="brand-logo"><span class="text-white text-xl font-bold">◆</span></div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Panel de Súper Administrador</h1>
+                        <p class="text-xs text-slate-400 font-medium">Plaza Market · Control Central para la Expansión Nacional</p>
+                    </div>
+                </div>
+                <div class="owner-pill">
+                    <span class="pulse-dot"></span>
+                    👑 Bienvenido, <span id="ownerNameDisplay">Tincho</span> · Acceso Total e Irrestricto
+                </div>
+            </header>
+
+            <!-- REGLA DE NEGOCIO VIGENTE -->
+            <div class="rule-banner">
+                <strong>📐 Regla de comisión vigente:</strong> retención única y global del <strong>12%</strong> sobre toda venta, sin distinción por cantidad de unidades. Esquema unificado para simplificar la operación en todo el país.
+            </div>
+
+            <!-- MÉTRICAS DE CONTROL DE OPERACIONES -->
+            <section>
+                <h2 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wide">📊 Métricas de Control de Operaciones</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="metric-card accent-primary">
+                        <span class="metric-icon">💰</span>
+                        <p class="metric-value" id="metricGlobalBilling">$0</p>
+                        <p class="metric-label">Facturación Global</p>
+                    </div>
+                    <div class="metric-card accent-violet">
+                        <span class="metric-icon">🏦</span>
+                        <p class="metric-value" id="metricGlobalCommission">$0</p>
+                        <p class="metric-label">Comisión Global <span class="tier-rate-badge">12% fijo</span></p>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">🌎</span>
+                        <p class="metric-value" id="metricActiveSellers">0</p>
+                        <p class="metric-label">Vendedores Activos en la Red</p>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">🛡️</span>
+                        <p class="metric-value" id="metricStaffCount">1</p>
+                        <p class="metric-label">Colaboradores Activos</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ACCESO RÁPIDO AL DASHBOARD FINANCIERO DETALLADO -->
+            <a href="plaza-market-master-dashboard.html" class="btn-link-card">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📈</span>
+                    <div>
+                        <p class="font-bold text-sm">Ver Master Dashboard Financiero Completo</p>
+                        <p class="text-xs text-slate-400">Detalle vendedor por vendedor, historial de ventas y auditoría de flujo</p>
+                    </div>
+                </div>
+                <span class="text-xl">→</span>
+            </a>
+
+            <!-- CONTROL DE PERSONAL Y DELEGACIÓN -->
+            <section class="glass-card p-6 sm:p-7">
+                <div class="mb-5">
+                    <h2 class="text-lg font-bold text-white">🛡️ Control de Personal y Delegación</h2>
+                    <p class="text-sm text-slate-400 mt-1">
+                        Asigná permisos uno por uno — sin roles predefinidos. Los cambios en la tabla quedan en borrador hasta que los confirmes.
+                    </p>
+                </div>
+
+                <!-- Leyenda de permisos -->
+                <div class="permission-legend">
+                    <h3>📋 Qué habilita cada permiso</h3>
+                    <div class="legend-grid">
+                        <p class="legend-item"><strong>Finanzas</strong> — Ver la facturación global y las comisiones retenidas de toda la plataforma.</p>
+                        <p class="legend-item"><strong>Liquidación</strong> — Aprobar que se transfiera el pago neto a un vendedor, sin necesidad de ver ni exportar su número de CBU/CVU.</p>
+                        <p class="legend-item"><strong>Moderación General</strong> — Cambiar el estado de una cuenta (activar, suspender, poner en revisión).</p>
+                        <p class="legend-item"><strong>Auditoría de Flujos</strong> — Ver el desglose transparente de qué vendió cada usuario, venta por venta.</p>
+                        <p class="legend-item"><strong>Soporte Técnico</strong> — Atender consultas y reclamos de los emprendedores.</p>
+                    </div>
+                    <p class="legend-note">🔒 Ningún permiso, ni combinado, otorga acceso al número de CBU/CVU de un vendedor ni a la gestión del equipo — esas dos capacidades son exclusivas e irrenunciables del Dueño.</p>
+                </div>
+
+                <!-- Alta de nuevo colaborador -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label>Nombre del Colaborador</label>
+                        <input type="text" id="staffName" placeholder="Ej: Carla Rodríguez" class="mt-2">
+                    </div>
+                    <div>
+                        <label>Email</label>
+                        <input type="email" id="staffEmail" placeholder="carla@email.com" class="mt-2">
+                    </div>
+                </div>
+                <label class="block mb-2">Permisos a otorgar</label>
+                <div id="newStaffPermissions" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"></div>
+                <button onclick="addStaffMember()" class="btn-primary px-5 py-3 rounded-xl text-sm mt-4">
+                    ＋ Agregar al Equipo
+                </button>
+
+                <!-- Tabla de staff con permisos y controles -->
+                <p id="staffFilterHint" class="staff-filter-hint filter-hint-locked">
+                    🔒 Por defecto, los colaboradores permanecen en segundo plano. Tildá uno o más permisos arriba para revelar quién los tiene asignado.
+                </p>
+                <div class="staff-table-wrap">
+                    <table class="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Colaborador</th>
+                                <th>Finanzas</th>
+                                <th>Liquidación</th>
+                                <th>Moderación</th>
+                                <th>Auditoría</th>
+                                <th>Soporte</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Barra de guardado de cambios de permisos -->
+                <div class="save-permissions-bar">
+                    <button id="savePermissionsBtn" onclick="savePermissionChanges()" class="btn-primary px-5 py-3 rounded-xl text-sm" disabled>
+                        💾 Guardar Cambios de Permisos
+                    </button>
+                    <button id="discardPermissionsBtn" onclick="discardPermissionChanges()" class="btn-discard px-4 py-3 rounded-xl text-sm hidden">
+                        Descartar Cambios
+                    </button>
+                    <p id="unsavedChangesIndicator" class="unsaved-indicator hidden">⚠️ Tenés cambios de permisos sin guardar</p>
+                </div>
+            </section>
+
+            <!-- AUDITORÍA DE ACTIVIDAD DE STAFF -->
+            <section class="glass-card p-6 sm:p-7">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-lg font-bold text-white">🕵️ Auditoría de Actividad de Staff</h2>
+                </div>
+                <p class="text-sm text-slate-400 mb-5">
+                    Registro de conexiones y acciones de cada colaborador. Los cambios de permisos solo aparecen acá una vez que los confirmás con "Guardar Cambios de Permisos".
+                </p>
+                <div id="auditLogList" class="space-y-0"></div>
+            </section>
+
+            <p class="text-center text-xs text-slate-600 pb-4">
+                Simulación de interfaz con fines de demostración. Los datos financieros se calculan en tiempo real a
+                partir de las mismas transacciones que ves en el Master Dashboard.
+            </p>
+
+        </main>
+    </div>
+
+    <script>
+        // ============================================================
+        // MODELO DE COMISIÓN — RETENCIÓN ÚNICA Y GLOBAL DEL 12%
+        // ============================================================
+        // Misma lógica que el Master Dashboard, para que los números
+        // coincidan siempre entre ambos paneles.
+
+        const COMMISSION_RATE = 0.12;
+        const OWNER_NAME = 'Tincho';
+
+        function getUserTotalBilling(user) {
+            return user.transactions.reduce((s, t) => s + t.amount, 0);
+        }
+        function formatARS(amount) {
+            return `$${Math.round(amount).toLocaleString('es-AR')}`;
+        }
+
+        const users = [
+            { id: 1, name: 'María González', status: 'Activo', transactions: [
+                { amount: 101988 }, { amount: 63192 }, { amount: 16998 },
+                { amount: 123735 }, { amount: 23697 }, { amount: 8499 }
+            ]},
+            { id: 2, name: 'Lucía Fernández', status: 'Activo', transactions: [
+                { amount: 85980 }, { amount: 107970 }, { amount: 8598 },
+                { amount: 10797 }, { amount: 9400 }
+            ]},
+            { id: 3, name: 'Carlos Domínguez', status: 'Activo', transactions: [
+                { amount: 78000 }, { amount: 10400 }, { amount: 15600 }
+            ]},
+            { id: 4, name: 'Roberto Sánchez', status: 'Activo', transactions: [
+                { amount: 129000 }, { amount: 25800 }, { amount: 180000 }
+            ]},
+            { id: 5, name: 'Diego Martínez', status: 'Suspendido', transactions: [
+                { amount: 66000 }
+            ]},
+            { id: 6, name: 'Valentina Cruz', status: 'En Revisión', transactions: [
+                { amount: 135000 }, { amount: 27000 }, { amount: 130000 }
+            ]},
+            { id: 7, name: 'Sofía Kim', status: 'Activo', transactions: [
+                { amount: 195000 }, { amount: 49500 }, { amount: 16500 }
+            ]},
+            { id: 8, name: 'Martín Torres', status: 'Activo', transactions: [
+                { amount: 135000 }, { amount: 225000 }
+            ]},
+            { id: 9, name: 'Agustina López', status: 'Activo', transactions: [
+                { amount: 222000 }, { amount: 18500 }, { amount: 55500 }
+            ]},
+            { id: 10, name: 'Norberto Ibáñez', status: 'Pendiente', transactions: [
+                { amount: 13600 }
+            ]}
+        ];
+
+        function renderMetrics() {
+            let globalBilling = 0;
+            users.forEach(u => { globalBilling += getUserTotalBilling(u); });
+
+            const globalCommission = globalBilling * COMMISSION_RATE;
+            const activeCount = users.filter(u => u.status === 'Activo').length;
+
+            document.getElementById('metricGlobalBilling').textContent = formatARS(globalBilling);
+            document.getElementById('metricGlobalCommission').textContent = formatARS(globalCommission);
+            document.getElementById('metricActiveSellers').textContent = activeCount;
+        }
+
+        // ============================================================
+        // MÓDULO DE GESTIÓN DE CO-EQUIPERS — PERMISOS UNITARIOS
+        // ============================================================
+        // Sin roles predefinidos: cada colaborador tiene un objeto de
+        // permisos independientes (true/false). Los cambios se editan
+        // en "pendingPermissions" (borrador) y solo pasan a
+        // "permissions" (firme) al presionar Guardar Cambios.
+
+        const PERMISSION_DEFS = [
+            { key: 'finanzas', label: 'Finanzas' },
+            { key: 'liquidacion', label: 'Liquidación' },
+            { key: 'moderacion', label: 'Moderación General' },
+            { key: 'auditoria', label: 'Auditoría de Flujos' },
+            { key: 'soporte', label: 'Soporte Técnico' }
+        ];
+
+        let nextStaffId = 1;
+
+        let staffMembers = [
+            {
+                id: nextStaffId++,
+                name: 'Carla Rodríguez',
+                email: 'carla.rodriguez@email.com',
+                permissions: { finanzas: false, liquidacion: true, moderacion: true, auditoria: false, soporte: true },
+                pendingPermissions: { finanzas: false, liquidacion: true, moderacion: true, auditoria: false, soporte: true },
+                status: 'Activo',
+                addedAt: '10/06/2026',
+                activityLog: [
+                    { atMs: Date.now() - 50 * 60000, date: new Date(Date.now() - 50 * 60000).toLocaleString('es-AR'), action: 'Aprobó publicación de @dulcesdeloma' },
+                    { atMs: Date.now() - 60 * 60000, date: new Date(Date.now() - 60 * 60000).toLocaleString('es-AR'), action: 'Inicio de sesión' },
+                    { atMs: Date.now() - 19.5 * 3600000, date: new Date(Date.now() - 19.5 * 3600000).toLocaleString('es-AR'), action: 'Atendió consulta de soporte de @artesanias_norte' },
+                    { atMs: Date.now() - 20 * 3600000, date: new Date(Date.now() - 20 * 3600000).toLocaleString('es-AR'), action: 'Inicio de sesión' }
+                ]
+            },
+            {
+                id: nextStaffId++,
+                name: 'Franco Medina',
+                email: 'franco.medina@email.com',
+                permissions: { finanzas: true, liquidacion: false, moderacion: false, auditoria: true, soporte: false },
+                pendingPermissions: { finanzas: true, liquidacion: false, moderacion: false, auditoria: true, soporte: false },
+                status: 'Activo',
+                addedAt: '02/06/2026',
+                activityLog: [
+                    { atMs: Date.now() - 75 * 60000, date: new Date(Date.now() - 75 * 60000).toLocaleString('es-AR'), action: 'Consultó desglose de facturación de @perfumeria_bsas' },
+                    { atMs: Date.now() - 2 * 3600000, date: new Date(Date.now() - 2 * 3600000).toLocaleString('es-AR'), action: 'Inicio de sesión' },
+                    { atMs: Date.now() - 30 * 3600000, date: new Date(Date.now() - 30 * 3600000).toLocaleString('es-AR'), action: 'Inicio de sesión' }
+                ]
+            }
+        ];
+
+        function isValidEmailFormat(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function renderNewStaffPermissionCheckboxes() {
+            const container = document.getElementById('newStaffPermissions');
+            container.innerHTML = PERMISSION_DEFS.map(p => `
+                <label class="permission-checkbox-label">
+                    <input type="checkbox" id="newPerm_${p.key}" onchange="renderStaffTable()">
+                    <span>${p.label}</span>
+                </label>
+            `).join('');
+        }
+
+        function addStaffMember() {
+            const name = document.getElementById('staffName').value.trim();
+            const email = document.getElementById('staffEmail').value.trim();
+
+            if (!name) { showToast('❌ Ingresá el nombre del colaborador', 'error'); return; }
+            if (!isValidEmailFormat(email)) { showToast('❌ Ingresá un email válido', 'error'); return; }
+            if (staffMembers.some(s => s.email.toLowerCase() === email.toLowerCase())) {
+                showToast('❌ Ya existe un colaborador con ese email', 'error');
+                return;
+            }
+
+            const permissions = {};
+            let anyPermission = false;
+            PERMISSION_DEFS.forEach(p => {
+                const checked = document.getElementById(`newPerm_${p.key}`).checked;
+                permissions[p.key] = checked;
+                if (checked) anyPermission = true;
+            });
+
+            if (!anyPermission) {
+                showToast('❌ Asigná al menos un permiso al colaborador', 'error');
+                return;
+            }
+
+            const newId = nextStaffId++;
+            const now = Date.now();
+            staffMembers.push({
+                id: newId,
+                name: name,
+                email: email.toLowerCase(),
+                permissions: permissions,
+                pendingPermissions: { ...permissions },
+                status: 'Activo',
+                addedAt: new Date().toLocaleDateString('es-AR'),
+                activityLog: [{ atMs: now, date: new Date(now).toLocaleString('es-AR'), action: 'Cuenta de colaborador creada por el Dueño' }]
+            });
+
+            renderStaffTable();
+            renderAuditLog();
+            updateSaveButtonState();
+
+            document.getElementById('staffName').value = '';
+            document.getElementById('staffEmail').value = '';
+            // Los checkboxes de permisos NO se limpian a propósito: al quedar
+            // tildados con los mismos permisos recién otorgados, la tabla
+            // filtra y muestra de inmediato al colaborador que se acaba de crear.
+
+            showToast(`✅ ${name} fue agregado al equipo y ya es visible con el filtro actual`, 'success');
+        }
+
+        // ============================================================
+        // CAMBIOS DE PERMISOS EN BORRADOR (SOLO SE FIRMAN AL GUARDAR)
+        // ============================================================
+
+        function togglePendingPermission(id, permKey) {
+            const s = staffMembers.find(m => m.id === id);
+            if (!s) return;
+            s.pendingPermissions[permKey] = !s.pendingPermissions[permKey];
+            renderStaffTable();
+            updateSaveButtonState();
+        }
+
+        function hasPendingChanges() {
+            return staffMembers.some(s =>
+                PERMISSION_DEFS.some(p => s.permissions[p.key] !== s.pendingPermissions[p.key])
+            );
+        }
+
+        function updateSaveButtonState() {
+            const hasChanges = hasPendingChanges();
+            document.getElementById('savePermissionsBtn').disabled = !hasChanges;
+            document.getElementById('unsavedChangesIndicator').classList.toggle('hidden', !hasChanges);
+            document.getElementById('discardPermissionsBtn').classList.toggle('hidden', !hasChanges);
+        }
+
+        function savePermissionChanges() {
+            let changesCount = 0;
+
+            staffMembers.forEach(s => {
+                PERMISSION_DEFS.forEach(p => {
+                    if (s.permissions[p.key] !== s.pendingPermissions[p.key]) {
+                        const newValue = s.pendingPermissions[p.key];
+                        s.permissions[p.key] = newValue;
+                        addLogEntry(s.id, `El Dueño ${newValue ? 'otorgó' : 'revocó'} el permiso "${p.label}"`);
+                        changesCount++;
+                    }
+                });
+            });
+
+            if (changesCount === 0) {
+                showToast('No hay cambios de permisos pendientes para guardar', 'info');
+                return;
+            }
+
+            renderStaffTable();
+            renderAuditLog();
+            updateSaveButtonState();
+            showToast(`✅ Se guardaron ${changesCount} cambio${changesCount === 1 ? '' : 's'} de permisos y quedaron registrados en la auditoría`, 'success');
+        }
+
+        function discardPermissionChanges() {
+            staffMembers.forEach(s => {
+                s.pendingPermissions = { ...s.permissions };
+            });
+            renderStaffTable();
+            updateSaveButtonState();
+            showToast('Cambios sin guardar descartados', 'info');
+        }
+
+        // ============================================================
+        // ESTADO DEL COLABORADOR (ACCIONES INMEDIATAS, SIN BORRADOR)
+        // ============================================================
+
+        function pauseStaff(id) {
+            const s = staffMembers.find(m => m.id === id);
+            if (!s) return;
+            s.status = 'Pausado';
+            addLogEntry(id, 'El Dueño pausó temporalmente el acceso');
+            renderStaffTable();
+            showToast(`⏸️ Acceso de ${s.name} pausado`, 'info');
+        }
+
+        function suspendStaff(id) {
+            const s = staffMembers.find(m => m.id === id);
+            if (!s) return;
+            s.status = 'Suspendido';
+            addLogEntry(id, 'El Dueño suspendió el acceso por revisión de conducta');
+            renderStaffTable();
+            showToast(`🚫 Acceso de ${s.name} suspendido`, 'error');
+        }
+
+        function reactivateStaff(id) {
+            const s = staffMembers.find(m => m.id === id);
+            if (!s) return;
+            s.status = 'Activo';
+            addLogEntry(id, 'El Dueño reactivó el acceso');
+            renderStaffTable();
+            showToast(`✅ Acceso de ${s.name} reactivado`, 'success');
+        }
+
+        function deleteStaffPermanently(id) {
+            const s = staffMembers.find(m => m.id === id);
+            if (!s) return;
+            const confirmed = confirm(`¿Eliminar definitivamente a ${s.name}? Esta acción no se puede deshacer.`);
+            if (!confirmed) return;
+            staffMembers = staffMembers.filter(m => m.id !== id);
+            renderStaffTable();
+            renderAuditLog();
+            updateSaveButtonState();
+            showToast(`🗑️ ${s.name} fue eliminado definitivamente del equipo`, 'error');
+        }
+
+        function addLogEntry(staffId, action) {
+            const s = staffMembers.find(m => m.id === staffId);
+            if (!s) return;
+            const now = Date.now();
+            s.activityLog.unshift({ atMs: now, date: new Date(now).toLocaleString('es-AR'), action: action });
+            renderAuditLog();
+        }
+
+        // ============================================================
+        // RENDERIZADO
+        // ============================================================
+
+        function getCheckedFilterPermissionKeys() {
+            return PERMISSION_DEFS
+                .filter(p => {
+                    const el = document.getElementById(`newPerm_${p.key}`);
+                    return el && el.checked;
+                })
+                .map(p => p.key);
+        }
+
+        function updateStaffFilterHint(checkedKeys) {
+            const hint = document.getElementById('staffFilterHint');
+            if (!hint) return;
+
+            if (checkedKeys.length === 0) {
+                hint.textContent = '🔒 Por defecto, los colaboradores permanecen en segundo plano. Tildá uno o más permisos arriba para revelar quién los tiene asignado.';
+                hint.className = 'staff-filter-hint filter-hint-locked';
+            } else {
+                const labels = checkedKeys.map(k => PERMISSION_DEFS.find(p => p.key === k).label);
+                hint.textContent = `👁️ Mostrando colaboradores con: ${labels.join(' · ')}`;
+                hint.className = 'staff-filter-hint filter-hint-active';
+            }
+        }
+
+        function renderStaffTable() {
+            const tbody = document.getElementById('staffTableBody');
+            const checkedKeys = getCheckedFilterPermissionKeys();
+
+            let rows = `
+                <tr class="owner-row">
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar owner-avatar">${OWNER_NAME.charAt(0)}</div>
+                            <div>
+                                <p class="user-name">${OWNER_NAME} <span class="you-badge">Vos</span></p>
+                                <p class="user-handle">Dueño Fundador</p>
+                            </div>
+                        </div>
+                    </td>
+                    ${PERMISSION_DEFS.map(() => '<td><span class="perm-locked">🔒✓</span></td>').join('')}
+                    <td><span class="status-badge status-active">Activo</span></td>
+                    <td><span class="text-xs text-slate-600">Cuenta raíz — irrevocable</span></td>
+                </tr>
+            `;
+
+            const visibleStaff = checkedKeys.length === 0
+                ? []
+                : staffMembers.filter(s => checkedKeys.some(key => s.permissions[key]));
+
+            if (checkedKeys.length === 0) {
+                rows += `<tr><td colspan="8"><p class="empty-state-table">🔒 Los colaboradores permanecen ocultos en segundo plano. Tildá un permiso en "Permisos a otorgar" para revelarlos.</p></td></tr>`;
+            } else if (visibleStaff.length === 0) {
+                rows += `<tr><td colspan="8"><p class="empty-state-table">Ningún colaborador tiene ese permiso asignado todavía.</p></td></tr>`;
+            } else {
+                visibleStaff.forEach(s => {
+                    const permCells = PERMISSION_DEFS.map(p => {
+                        const isDirty = s.permissions[p.key] !== s.pendingPermissions[p.key];
+                        return `
+                        <td>
+                            <input type="checkbox" class="permission-checkbox-table ${isDirty ? 'permission-checkbox-dirty' : ''}"
+                                ${s.pendingPermissions[p.key] ? 'checked' : ''}
+                                onchange="togglePendingPermission(${s.id}, '${p.key}')"
+                                ${s.status !== 'Activo' ? 'disabled' : ''}>
+                        </td>
+                        `;
+                    }).join('');
+
+                    const statusClass = s.status === 'Activo' ? 'status-active' : s.status === 'Pausado' ? 'status-paused' : 'status-suspended';
+
+                    let actionButtons = '';
+                    if (s.status === 'Activo') {
+                        actionButtons = `
+                            <button onclick="pauseStaff(${s.id})" class="btn-staff-action btn-pause">Pausar</button>
+                            <button onclick="suspendStaff(${s.id})" class="btn-staff-action btn-suspend">Suspender</button>
+                            <button onclick="deleteStaffPermanently(${s.id})" class="btn-staff-action btn-delete">Eliminar</button>
+                        `;
+                    } else {
+                        actionButtons = `
+                            <button onclick="reactivateStaff(${s.id})" class="btn-staff-action btn-reactivate">Reactivar</button>
+                            ${s.status === 'Pausado' ? `<button onclick="suspendStaff(${s.id})" class="btn-staff-action btn-suspend">Suspender</button>` : ''}
+                            <button onclick="deleteStaffPermanently(${s.id})" class="btn-staff-action btn-delete">Eliminar</button>
+                        `;
+                    }
+
+                    rows += `
+                        <tr>
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">${s.name.charAt(0)}</div>
+                                    <div>
+                                        <p class="user-name">${s.name}</p>
+                                        <p class="user-handle">${s.email}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            ${permCells}
+                            <td><span class="status-badge ${statusClass}">${s.status}</span></td>
+                            <td><div class="flex gap-1.5 justify-center flex-wrap">${actionButtons}</div></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            tbody.innerHTML = rows;
+            updateStaffFilterHint(checkedKeys);
+            document.getElementById('metricStaffCount').textContent = staffMembers.filter(s => s.status === 'Activo').length + 1;
+        }
+
+        function renderAuditLog() {
+            const container = document.getElementById('auditLogList');
+            let allEntries = [];
+
+            staffMembers.forEach(s => {
+                s.activityLog.forEach(entry => {
+                    allEntries.push({ name: s.name, atMs: entry.atMs, date: entry.date, action: entry.action });
+                });
+            });
+
+            allEntries.sort((a, b) => b.atMs - a.atMs);
+            allEntries = allEntries.slice(0, 15);
+
+            if (allEntries.length === 0) {
+                container.innerHTML = '<p class="empty-state">Todavía no hay actividad registrada de colaboradores.</p>';
+                return;
+            }
+
+            container.innerHTML = allEntries.map(e => `
+                <div class="log-row">
+                    <p class="log-action">${e.action}</p>
+                    <p class="log-meta">${e.name} · ${e.date}</p>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================
+        // NOTIFICACIONES (TOAST)
+        // ============================================================
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '🚫';
+
+            toast.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <span class="text-xl flex-shrink-0">${icon}</span>
+                    <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+
+        window.addEventListener('DOMContentLoaded', function () {
+            renderMetrics();
+            renderNewStaffPermissionCheckboxes();
+            renderStaffTable();
+            renderAuditLog();
+            updateSaveButtonState();
+        });
+    </script>
+</body>
+</html>
