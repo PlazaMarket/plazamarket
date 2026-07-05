@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Panel de Carga de Productos</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #E2E8F0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(0, 82, 212, 0.22) 0%, transparent 45%),
+                radial-gradient(circle at 85% 12%, rgba(88, 28, 135, 0.24) 0%, transparent 45%),
+                radial-gradient(circle at 50% 95%, rgba(57, 73, 171, 0.18) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main, header { position: relative; z-index: 1; }
+
+        :root {
+            --primary: #0052D4;
+            --indigo-deep: #3949AB;
+            --violet-deep: #583C87;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        button, input, select, textarea { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 82, 212, 0.4);
+            flex-shrink: 0;
+        }
+
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.45rem 1rem; border-radius: 999px;
+            background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+            color: #6EE7B7; font-size: 0.72rem; font-weight: 700;
+        }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; animation: pulseDot 1.8s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .glass-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        label { color: rgba(226,232,240,0.75); font-size: 0.8rem; font-weight: 700; }
+
+        input, select, textarea {
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9;
+            border-radius: 0.85rem;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+        }
+        input::placeholder, textarea::placeholder { color: rgba(226,232,240,0.32); }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.2);
+            background: rgba(255,255,255,0.06);
+        }
+        select option { background: #131B2E; color: #F1F5F9; }
+        textarea { resize: vertical; min-height: 90px; }
+
+        .info-note {
+            background: rgba(0, 82, 212, 0.08); border: 1px solid rgba(0, 82, 212, 0.25);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.78rem; color: #BFDBFE; line-height: 1.55;
+        }
+
+        .category-block-warning {
+            background: rgba(239,68,68,0.12); border: 1.5px solid rgba(239,68,68,0.4);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.82rem; color: #FCA5A5;
+            font-weight: 600; margin-top: 0.75rem; line-height: 1.5;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700;
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.4);
+            border: none; cursor: pointer;
+        }
+        .btn-primary::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover:not(:disabled)::before { left: 100%; }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 82, 212, 0.5), 0 0 24px rgba(88, 28, 135, 0.3);
+        }
+        .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        .btn-ghost-dark {
+            background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.24); }
+
+        /* Fotos */
+        .photo-slot {
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 1rem; padding: 1rem; position: relative; text-align: center;
+            animation: fadeInUp 0.3s ease;
+        }
+        .photo-slot.photo-slot-rejected { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
+        .photo-slot-preview {
+            width: 100%; height: 80px; border-radius: 0.75rem;
+            background: linear-gradient(135deg, rgba(0,82,212,0.15), rgba(88,28,135,0.2));
+            display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 0.6rem;
+        }
+        .photo-slot-real-img { width: 100%; height: 90px; object-fit: cover; border-radius: 0.75rem; margin-bottom: 0.6rem; display: block; }
+        .photo-slot-label { font-size: 0.7rem; color: rgba(226,232,240,0.7); margin-bottom: 0.5rem; line-height: 1.3; min-height: 2rem; }
+        .photo-scanning { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.68rem; color: #93C5FD; font-weight: 700; }
+        .photo-approved-badge { font-size: 0.68rem; font-weight: 800; color: #34D399; }
+        .photo-rejected-badge { font-size: 0.68rem; font-weight: 800; color: #F87171; }
+        .photo-reject-reason { font-size: 0.63rem; color: #FCA5A5; margin-top: 0.4rem; line-height: 1.4; }
+        .photo-remove-btn { font-size: 0.65rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.5rem; }
+        .photo-remove-btn:hover { color: #FCA5A5; }
+        .spinner-mini {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state, .empty-state-inline {
+            text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4);
+        }
+        .empty-state-inline { grid-column: 1 / -1; }
+
+        /* Mis publicaciones */
+        .product-card-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem; border-radius: 0.85rem; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.6rem; animation: fadeInUp 0.3s ease;
+        }
+        .product-card-row:last-child { margin-bottom: 0; }
+        .product-title { font-weight: 700; color: white; font-size: 0.85rem; }
+        .product-meta { font-size: 0.72rem; color: rgba(226,232,240,0.5); margin-top: 0.15rem; }
+        .photo-approved-badge-small { font-size: 0.65rem; font-weight: 700; color: #34D399; background: rgba(16,185,129,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; margin-left: 0.3rem; white-space: nowrap; }
+        .photo-rejected-badge-small { font-size: 0.65rem; font-weight: 700; color: #F87171; background: rgba(239,68,68,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; margin-left: 0.3rem; white-space: nowrap; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .toast {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
+            padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 1000; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 380px; color: #E2E8F0;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+        @keyframes slideInRight { from { transform: translateX(420px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(420px); opacity: 0; } }
+        .toast.hide { animation: slideOutRight 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+            <!-- HEADER -->
+            <header class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="brand-logo"><img src="data:image/png;base64,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" alt="Plaza Market" style="width:60%;height:60%;object-fit:contain;"></div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Panel de Carga de Productos</h1>
+                        <p class="text-xs text-slate-400 font-medium">Plaza Market · Publicá de forma simple y segura</p>
+                    </div>
+                </div>
+                <div class="status-pill">
+                    <span class="pulse-dot"></span>
+                    IA de Moderación Activa 24hs
+                </div>
+            </header>
+
+            <!-- FORMULARIO DE CARGA -->
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">Cargar Nuevo Producto</h2>
+                <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro y cada foto en el momento — no hace falta esperar una aprobación manual.</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label>Título del Producto</label>
+                        <input type="text" id="productTitle" placeholder="Ej: Perfume Lattafa Yara 100ml" class="mt-2" oninput="checkTitleAndDescription()">
+                    </div>
+                    <div>
+                        <label>Descripción</label>
+                        <textarea id="productDescription" placeholder="Contale a los compradores sobre tu producto..." class="mt-2" oninput="checkTitleAndDescription()"></textarea>
+                        <div id="categoryBlockWarning" class="category-block-warning hidden"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label>Categoría</label>
+                            <select id="productCategory" class="mt-2">
+                                <option value="">Seleccioná una categoría</option>
+                                <option value="cosmetica">Cosmética / Estética</option>
+                                <option value="perfumeria">Perfumería</option>
+                                <option value="indumentaria">Indumentaria</option>
+                                <option value="construccion">Construcción</option>
+                                <option value="pintura">Pintura</option>
+                                <option value="reformas">Reformas</option>
+                                <option value="servicios">Servicios Profesionales</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Precio Unitario (ARS)</label>
+                            <input type="number" id="productPrice" placeholder="8499" min="0" step="1" class="mt-2">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label>📸 Fotos del Producto</label>
+                            <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
+                            <button onclick="document.getElementById('photoFileInput').click()" class="btn-ghost-dark px-3 py-2 rounded-lg text-xs">📷 Subir Foto</button>
+                        </div>
+                        <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                        <p class="text-xs text-slate-500 mt-2">
+                            La IA lee de verdad el texto que pueda encontrar dentro de tu foto (teléfonos, menciones a Instagram o WhatsApp, o documentos con mucho texto como recetas o carnets) y rechaza la foto si encuentra algo — no es una simulación. Lo que todavía no puede hacer es "entender" si la imagen es realmente del producto que estás vendiendo — eso necesita una IA de visión con servidor propio, un proyecto a futuro. Por ahora, una foto irrelevante sin texto (por ejemplo, una foto de otra cosa) podría pasar sin ser detectada.
+                        </p>
+                    </div>
+
+                    <button id="publishBtn" onclick="publishProduct()" class="btn-primary w-full py-3.5 rounded-xl text-sm">
+                        Publicar Producto
+                    </button>
+                </div>
+            </section>
+
+            <!-- MIS PUBLICACIONES -->
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
+                <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste en esta sesión.</p>
+                <div id="myProductsList"></div>
+            </section>
+
+            <p class="text-center text-xs text-slate-600 pb-4">
+                Simulación de interfaz con fines de demostración. La detección de rubros prohibidos usa un listado de
+                palabras clave de ejemplo; en producción se combina con revisión de imágenes y clasificación de texto
+                más robusta.
+            </p>
+
+        </main>
+    </div>
+
+    <script>
+        // ============================================================
+        // FILTRO ANTI-MERCADO NEGRO Y CONTENIDO PROHIBIDO — TOLERANCIA CERO
+        // ============================================================
+        // Automotores / Autopartes / Inmobiliaria y Alquileres / Comercio Sexual
+        // y Oferta de Personas / Alquiler de Personas / Masajes con Doble
+        // Intención / Contenido Explícito — bloqueo implacable, sin excepciones.
+        //
+        // La detección normaliza el texto (minúsculas, sin tildes, sin espacios
+        // duplicados) ANTES de comparar, así que el diccionario de abajo solo
+        // necesita la forma sin tilde de cada palabra — "prostitución" y
+        // "prostitucion" quedan cubiertas por la misma entrada.
+
+        function normalizeText(text) {
+            return text
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // quita tildes/diacríticos
+                .toLowerCase()
+                .replace(/\s+/g, ' ')             // colapsa espacios extra
+                .trim();
+        }
+
+        const BLOCKED_KEYWORDS = [
+            // Automotores y Motovehículos
+            'auto', 'autos', 'camioneta', 'camionetas', 'moto', 'motos', 'motocicleta', 'motocicletas',
+            'vehiculo', 'vehiculos', 'coche', 'coches',
+            // Autopartes y Repuestos (incluye "motor" completo, para frenar desarmaderos)
+            'repuesto', 'repuestos', 'autoparte', 'autopartes', 'carroceria',
+            'embrague', 'amortiguador', 'amortiguadores', 'desarmadero', 'caja de cambios', 'motor',
+            'bujia', 'bujias', 'tapa de cilindro', 'tapa de cilindros',
+            // Inmobiliaria y Alquileres
+            'inmueble', 'inmuebles', 'inmobiliaria', 'terreno', 'terrenos', 'lote', 'lotes',
+            'departamento en venta', 'alquiler de depto', 'venta de casa', 'alquiler de propiedad',
+            'alquiler', 'alquilo', 'casa quinta', 'vendo casa',
+            // Palabras sueltas de riesgo comercial — bloqueo por decisión explícita
+            // del Dueño, aceptando el costo de falsos positivos en contabilidad,
+            // logística y marketing genérico a cambio de blindaje total.
+            'vip', 'hot', 'activos', 'pasivos',
+            // Combinaciones identidad + comercio sexual (mismo patrón que "chicas
+            // vip" y "presencias vip": jerga de anuncio comercial, no una mención
+            // de identidad aislada — ver nota más abajo sobre por qué NO se
+            // incluyen "gay", "travesti", "trans" como palabras sueltas)
+            'trans vip', 'gay vip', 'travesti vip',
+            // Jerga de comercio sexual y oferta de personas
+            'escort', 'escorts', 'puta', 'putas', 'gato', 'gatos', 'gaturras', 'telo', 'madama',
+            'proxeneta', 'prostitucion', 'servicios sexuales', 'citas de adultos',
+            'chicas vip', 'senoritas independientes', 'independientes vip',
+            'caballeros con caballeros', 'dotado', 'dotados',
+            // Alquiler de personas y salidas camufladas
+            'alquiler de chicas', 'alquiler de mujeres', 'alquilo chica', 'alquilo mujer',
+            'chica de compania', 'acompanantes', 'acompanamiento terapeutico',
+            'trato de novios', 'salidas pagas', 'presencias vip',
+            // Eufemismos de masajes con doble intención
+            'masajes sensitivos', 'masajes descontracturantes caballeros', 'masajes con final feliz',
+            'final feliz', 'masajes relajantes varones', 'masajes intimos', 'masajistas independientes',
+            'masajes corporales hombres', 'atencion a caballeros',
+            // Contenido explícito, multimedia y redes de desvío
+            'sexo', 'sexual', 'sexualidad', 'coito', 'masturbacion', 'orgasmo', 'porno', 'pornografia',
+            'pornografico', 'pornografica', 'erotico', 'erotica', 'shemales',
+            'videos hot', 'pack hot', 'telegram hot', 'fotos hot', 'onlyfans',
+            // Productos alimenticios (prohibido: requiere RNE/RNPA de ANMAT y cadena de frío
+            // que la logística de la plataforma no puede garantizar — ver conversación).
+            // Lista ampliada tras detectar que "pan"/"pancitos" faltaban en la v1.
+            'comida', 'alimento', 'alimentos', 'alimenticio', 'alimenticios', 'gastronomico', 'gastronomia',
+            'pan', 'panes', 'pancito', 'pancitos', 'pan casero', 'pan dulce', 'pan integral', 'pan lactal',
+            'pan artesanal', 'panificado', 'panificados', 'panificacion', 'panificaciones',
+            'torta', 'tortas', 'factura', 'facturas', 'alfajor', 'alfajores', 'reposteria',
+            'budin', 'budines', 'empanada', 'empanadas', 'milanesa', 'milanesas',
+            'bizcocho', 'bizcochos', 'bizcochuelo', 'medialuna', 'medialunas', 'chipa', 'chipacito', 'chipacitos',
+            'scon', 'scones', 'galleta', 'galletas', 'galletita', 'galletitas', 'cookie', 'cookies',
+            'cupcake', 'cupcakes', 'muffin', 'muffins', 'brownie', 'brownies', 'mousse', 'flan',
+            'bombon', 'bombones', 'trufa', 'trufas', 'postre', 'postres', 'pastel casero', 'pasteles caseros',
+            'canoncito', 'canoncitos', 'crema pastelera', 'canoli', 'canolis', 'profiterol', 'profiteroles',
+            'lionesa', 'lionesas',
+            'pizza', 'pizzas', 'sandwich', 'sandwiches', 'hamburguesa', 'hamburguesas', 'choripan',
+            'bocadito', 'bocaditos', 'canape', 'canapes',
+            'vianda', 'viandas', 'comida casera', 'meal prep', 'tupper de comida',
+            'dulce de leche casero', 'mermelada casera', 'conserva casera', 'conservas caseras',
+            'queso artesanal', 'quesos artesanales', 'yogurt casero', 'fiambre casero', 'embutido casero',
+            'helado', 'helados', 'heladeria', 'keto', 'catering', 'delivery de comida'
+        ];
+
+        // Se compila UNA sola expresión regular combinada (alternancia) en vez de
+        // iterar palabra por palabra — más robusta, más rápida, y más difícil de
+        // esquivar con frases complejas donde el término prohibido queda incrustado.
+        const BLOCKED_PATTERN = (function buildBlockedPattern() {
+            const escaped = BLOCKED_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'i');
+        })();
+
+        function checkBlockedCategory(text) {
+            const normalized = normalizeText(text);
+            const match = normalized.match(BLOCKED_PATTERN);
+            return match ? match[1] : null;
+        }
+
+        function checkTitleAndDescription() {
+            const title = document.getElementById('productTitle').value;
+            const description = document.getElementById('productDescription').value;
+            const combined = `${title} ${description}`;
+            const warningBox = document.getElementById('categoryBlockWarning');
+            const publishBtn = document.getElementById('publishBtn');
+
+            const blockedMatch = checkBlockedCategory(combined);
+
+            if (blockedMatch) {
+                warningBox.classList.remove('hidden');
+                warningBox.textContent = '🚫 Este rubro no está permitido en Plaza Market para garantizar la seguridad y confianza de la comunidad.';
+                publishBtn.disabled = true;
+                return false;
+            } else {
+                warningBox.classList.add('hidden');
+                publishBtn.disabled = false;
+                return true;
+            }
+        }
+
+        const CATEGORY_LABELS = {
+            cosmetica: 'Cosmética / Estética',
+            perfumeria: 'Perfumería',
+            indumentaria: 'Indumentaria',
+            construccion: 'Construcción',
+            pintura: 'Pintura',
+            reformas: 'Reformas',
+            servicios: 'Servicios Profesionales'
+        };
+
+        // ============================================================
+        // FILTRO DE FOTOS — ANÁLISIS REAL DE LA IMAGEN SUBIDA (OCR EN EL
+        // NAVEGADOR, SIN SERVIDOR). RECHAZA SOLO LA FOTO EN CUESTIÓN.
+        // ============================================================
+
+        const NUMBER_WORDS = new Set([
+            'cero', 'uno', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
+        ]);
+        const FILLER_WORDS_PHOTO = new Set(['y', 'el', 'mi', 'numero', 'es', 'de', 'nro', 'tel']);
+
+        function hasDigitPhonePattern(text) {
+            const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of matches) {
+                const digitsOnly = m.replace(/\D/g, '');
+                if (digitsOnly.length >= 7) return true;
+            }
+            const plain = text.match(/\d{7,}/g) || [];
+            return plain.length > 0;
+        }
+
+        function hasSpelledOutPhonePattern(text) {
+            const normalized = normalizeText(text);
+            const words = normalized.match(/[a-z]+/g) || [];
+            let run = 0, maxRun = 0;
+            for (const w of words) {
+                if (NUMBER_WORDS.has(w)) {
+                    run++;
+                    maxRun = Math.max(maxRun, run);
+                } else if (FILLER_WORDS_PHOTO.has(w)) {
+                    // no rompe la racha
+                } else {
+                    run = 0;
+                }
+            }
+            return maxRun >= 5;
+        }
+
+        function hasSocialMediaPattern(text) {
+            return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text);
+        }
+
+        let uploadedPhotos = [];
+
+        async function handlePhotoFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const imageUrl = URL.createObjectURL(file);
+            const photo = {
+                id: Date.now() + Math.random(),
+                imageUrl: imageUrl,
+                scanned: false,
+                approved: null,
+                reason: null
+            };
+
+            uploadedPhotos.push(photo);
+            renderPhotoSlots();
+            await scanPhotoReal(photo, file);
+            event.target.value = '';
+        }
+
+        async function scanPhotoReal(photo, file) {
+            try {
+                const worker = await Tesseract.createWorker('spa');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                const extracted = text || '';
+                let reason = null;
+
+                if (hasDigitPhonePattern(extracted)) {
+                    reason = 'Se detectó un número de teléfono escrito en la imagen.';
+                } else if (hasSpelledOutPhonePattern(extracted)) {
+                    reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
+                } else if (hasSocialMediaPattern(extracted)) {
+                    reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+                } else if (extracted.replace(/\s/g, '').length > 120) {
+                    reason = 'La imagen contiene demasiado texto estructurado para ser una foto de producto (parece un documento) — subí una foto real de lo que estás vendiendo.';
+                }
+
+                photo.scanned = true;
+                photo.approved = !reason;
+                photo.reason = reason;
+                renderPhotoSlots();
+
+                if (reason) {
+                    showToast(`🚫 Foto rechazada: ${reason}`, 'error');
+                } else {
+                    showToast('✅ Foto aprobada — sin datos de contacto detectados', 'success');
+                }
+            } catch (err) {
+                photo.scanned = true;
+                photo.approved = false;
+                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó automáticamente.';
+                renderPhotoSlots();
+                showToast('⚠️ No se pudo analizar la foto — no se aprobó por seguridad', 'error');
+                console.error(err);
+            }
+        }
+
+        function removePhoto(photoId) {
+            uploadedPhotos = uploadedPhotos.filter(p => p.id !== photoId);
+            renderPhotoSlots();
+        }
+
+        function renderPhotoSlots() {
+            const container = document.getElementById('photoSlotsContainer');
+
+            if (uploadedPhotos.length === 0) {
+                container.innerHTML = '<p class="empty-state-inline">Todavía no agregaste ninguna foto.</p>';
+                return;
+            }
+
+            container.innerHTML = uploadedPhotos.map(p => {
+                let statusBlock;
+                if (!p.scanned) {
+                    statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
+                } else if (p.approved) {
+                    statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
+                } else {
+                    statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
+                }
+
+                return `
+                <div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
+                    <img src="${p.imageUrl}" alt="Foto del producto" class="photo-slot-real-img">
+                    ${statusBlock}
+                    <button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // PUBLICACIÓN DEL PRODUCTO
+        // ============================================================
+
+        let myProducts = [];
+        let nextProductId = 1;
+
+        function publishProduct() {
+            const title = document.getElementById('productTitle').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
+            const category = document.getElementById('productCategory').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+
+            if (!title) { showToast('❌ Ingresá un título para el producto', 'error'); return; }
+            if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
+            if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
+
+            const blockedMatch = checkBlockedCategory(`${title} ${description}`);
+            if (blockedMatch) {
+                showToast('🚫 Este rubro no está permitido en Plaza Market para garantizar la seguridad y confianza de la comunidad.', 'error');
+                return;
+            }
+
+            if (uploadedPhotos.length === 0) {
+                showToast('❌ Agregá al menos una foto del producto', 'error');
+                return;
+            }
+
+            if (uploadedPhotos.some(p => !p.scanned)) {
+                showToast('⏳ Esperá a que la IA termine de analizar tus fotos', 'info');
+                return;
+            }
+
+            const approvedCount = uploadedPhotos.filter(p => p.approved).length;
+            const rejectedCount = uploadedPhotos.filter(p => !p.approved).length;
+
+            if (approvedCount === 0) {
+                showToast('❌ Ninguna de tus fotos pasó el filtro de la IA. Subí al menos una foto limpia.', 'error');
+                return;
+            }
+
+            myProducts.unshift({
+                id: nextProductId++,
+                title: title,
+                category: category,
+                price: price,
+                approvedPhotos: approvedCount,
+                rejectedPhotos: rejectedCount,
+                publishedAt: new Date().toLocaleString('es-AR')
+            });
+
+            renderMyProducts();
+
+            showToast(
+                `✅ "${title}" publicado con éxito (${approvedCount} foto${approvedCount === 1 ? '' : 's'} aprobada${approvedCount === 1 ? '' : 's'}${rejectedCount > 0 ? `, ${rejectedCount} rechazada${rejectedCount === 1 ? '' : 's'} sin afectar el resto` : ''})`,
+                'success'
+            );
+
+            document.getElementById('productTitle').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productCategory').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('categoryBlockWarning').classList.add('hidden');
+            document.getElementById('publishBtn').disabled = false;
+            uploadedPhotos = [];
+            renderPhotoSlots();
+        }
+
+        function renderMyProducts() {
+            const container = document.getElementById('myProductsList');
+
+            if (myProducts.length === 0) {
+                container.innerHTML = '<p class="empty-state">Todavía no publicaste ningún producto.</p>';
+                return;
+            }
+
+            container.innerHTML = myProducts.map(p => `
+                <div class="product-card-row">
+                    <div>
+                        <p class="product-title">${p.title}</p>
+                        <p class="product-meta">${CATEGORY_LABELS[p.category] || p.category} · $${p.price.toLocaleString('es-AR')} · ${p.publishedAt}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <span class="photo-approved-badge-small">✓ ${p.approvedPhotos} foto${p.approvedPhotos === 1 ? '' : 's'}</span>
+                        ${p.rejectedPhotos > 0 ? `<span class="photo-rejected-badge-small">✗ ${p.rejectedPhotos}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================
+        // NOTIFICACIONES (TOAST)
+        // ============================================================
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '🚫';
+
+            toast.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <span class="text-xl flex-shrink-0">${icon}</span>
+                    <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+
+        window.addEventListener('DOMContentLoaded', function () {
+            renderPhotoSlots();
+            renderMyProducts();
+        });
+    </script>
+</body>
+</html>
