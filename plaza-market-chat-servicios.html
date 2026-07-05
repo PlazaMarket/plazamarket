@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Chat de Reserva de Servicios</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main { position: relative; z-index: 1; }
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,82,212,0.4); flex-shrink: 0;
+        }
+        .info-note {
+            background: rgba(0,82,212,0.08); border: 1px solid rgba(0,82,212,0.25);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.78rem; color: #BFDBFE; line-height: 1.55;
+        }
+        .chat-card {
+            background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09); border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, rgba(0,82,212,0.15), rgba(88,28,135,0.18));
+            padding: 1rem 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .chat-avatar {
+            width: 42px; height: 42px; border-radius: 0.75rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            font-weight: 800; display: flex; align-items: center; justify-content: center;
+        }
+        #chatMessages { padding: 1.25rem; min-height: 320px; max-height: 420px; overflow-y: auto; }
+        .msg-row { display: flex; margin-bottom: 0.85rem; }
+        .msg-row.mine { justify-content: flex-end; }
+        .msg-bubble {
+            max-width: 75%; padding: 0.65rem 0.95rem; border-radius: 1rem; font-size: 0.85rem; line-height: 1.5;
+        }
+        .msg-row:not(.mine) .msg-bubble { background: rgba(255,255,255,0.07); color: #E2E8F0; border-radius: 1rem 1rem 1rem 0.25rem; }
+        .msg-row.mine .msg-bubble {
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            border-radius: 1rem 1rem 0.25rem 1rem;
+        }
+        .msg-bubble img { max-width: 220px; border-radius: 0.6rem; margin-top: 0.3rem; display: block; }
+        .msg-blocked-note {
+            font-size: 0.72rem; color: #FCA5A5; background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.3); border-radius: 0.7rem; padding: 0.6rem 0.85rem;
+            margin-bottom: 0.85rem;
+        }
+        .chat-input-bar {
+            padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex; gap: 0.6rem; align-items: flex-end;
+        }
+        textarea#chatInput {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9; border-radius: 0.85rem; padding: 0.7rem 0.9rem; font-size: 0.85rem;
+            resize: none; min-height: 44px; max-height: 100px;
+        }
+        textarea#chatInput:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(0,82,212,0.2); }
+        .btn-icon {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            border-radius: 0.75rem; width: 44px; height: 44px; flex-shrink: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #E2E8F0;
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); }
+        .btn-send {
+            background: linear-gradient(135deg, #0052D4, #3949AB, #583C87); color: white; font-weight: 700;
+            border-radius: 0.75rem; padding: 0 1.1rem; height: 44px; flex-shrink: 0; cursor: pointer; border: none;
+            font-size: 0.8rem;
+        }
+        .btn-send:disabled { background: #475569; cursor: not-allowed; }
+        .ocr-status {
+            font-size: 0.72rem; color: #93C5FD; display: flex; align-items: center; gap: 0.4rem;
+            padding: 0 1.25rem 0.75rem;
+        }
+        .spinner-mini {
+            width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+        <header class="flex items-center gap-3">
+            <div class="brand-logo"><img src="data:image/png;base64,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" alt="Plaza Market" style="width:60%;height:60%;object-fit:contain;"></div>
+            <div>
+                <h1 class="text-xl font-bold text-white">Chat de Reserva de Servicios</h1>
+                <p class="text-xs text-slate-400 font-medium">Plaza Market · Demostración del filtro anti-contacto directo</p>
+            </div>
+        </header>
+
+        <div class="info-note">
+            💡 <strong>Cómo probar esto de verdad:</strong> escribí un mensaje con un número de teléfono (en
+            dígitos o en palabras), o subí una foto real que tenga un número escrito o una captura de contacto.
+            El análisis de la foto corre de verdad en tu navegador — no es una simulación con fotos de ejemplo.
+            Lo único que no es real todavía es la conversación en sí: como no hay servidor conectando a dos
+            personas distintas, esto es una demo de una sola sesión para mostrar el comportamiento del filtro.
+        </div>
+
+        <div class="chat-card">
+            <div class="chat-header">
+                <div class="chat-avatar">V</div>
+                <div>
+                    <p class="font-bold text-sm text-white">Vale — Lifting &amp; Perfilado de Cejas</p>
+                    <p class="text-xs text-slate-400">Zona Ramos Mejía · Turnos con seña</p>
+                </div>
+            </div>
+
+            <div id="chatMessages">
+                <div class="msg-row">
+                    <div class="msg-bubble">Hola! Quería consultar por un lifting de pestañas, ¿tenés turno para esta semana?</div>
+                </div>
+                <div class="msg-row mine">
+                    <div class="msg-bubble">¡Hola! Sí, tengo lugar el jueves a las 16hs. La seña son $3000 para reservar.</div>
+                </div>
+            </div>
+
+            <div id="ocrStatus" class="ocr-status hidden">
+                <span class="spinner-mini"></span> Analizando la imagen en tu navegador...
+            </div>
+
+            <div class="chat-input-bar">
+                <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)">
+                <button class="btn-icon" onclick="document.getElementById('imageInput').click()" title="Adjuntar foto">📎</button>
+                <textarea id="chatInput" placeholder="Escribí tu mensaje..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendTextMessage();}"></textarea>
+                <button class="btn-send" onclick="sendTextMessage()">Enviar</button>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-slate-600 pb-4">
+            El chat en sí (guardar mensajes, conectar a dos usuarios reales) todavía necesita un servidor propio —
+            está anotado junto a la billetera virtual y la integración con Andreani como proyecto futuro.
+        </p>
+
+    </main>
+
+    <script>
+        // ============================================================
+        // DETECCIÓN DE NÚMEROS DE TELÉFONO — EN DÍGITOS Y EN PALABRAS
+        // ============================================================
+
+        function normalizeText(text) {
+            return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        const NUMBER_WORDS = new Set([
+            'cero', 'uno', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
+        ]);
+        const FILLER_WORDS = new Set(['y', 'el', 'mi', 'numero', 'es', 'de', 'nro', 'tel']);
+
+        function hasDigitPhonePattern(text) {
+            const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of matches) {
+                const digitsOnly = m.replace(/\D/g, '');
+                if (digitsOnly.length >= 7) return true;
+            }
+            const plain = text.match(/\d{7,}/g) || [];
+            return plain.length > 0;
+        }
+
+        function hasSpelledOutPhonePattern(text) {
+            const normalized = normalizeText(text);
+            const words = normalized.match(/[a-z]+/g) || [];
+            let run = 0, maxRun = 0;
+            for (const w of words) {
+                if (NUMBER_WORDS.has(w)) {
+                    run++;
+                    maxRun = Math.max(maxRun, run);
+                } else if (FILLER_WORDS.has(w)) {
+                    // no rompe la racha
+                } else {
+                    run = 0;
+                }
+            }
+            return maxRun >= 5;
+        }
+
+        function hasSocialMediaPattern(text) {
+            return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text);
+        }
+
+        function checkTextForContactInfo(text) {
+            if (hasDigitPhonePattern(text)) return 'Se detectó un número de teléfono escrito en dígitos.';
+            if (hasSpelledOutPhonePattern(text)) return 'Se detectó un número de teléfono escrito con palabras.';
+            if (hasSocialMediaPattern(text)) return 'Se detectó una posible referencia a una red social externa.';
+            return null;
+        }
+
+        // ============================================================
+        // CHAT — MENSAJES DE TEXTO
+        // ============================================================
+
+        function appendMessage(html, mine) {
+            const container = document.getElementById('chatMessages');
+            const row = document.createElement('div');
+            row.className = 'msg-row' + (mine ? ' mine' : '');
+            row.innerHTML = `<div class="msg-bubble">${html}</div>`;
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendBlockedNote(reason) {
+            const container = document.getElementById('chatMessages');
+            const note = document.createElement('div');
+            note.className = 'msg-blocked-note';
+            note.textContent = `🚫 Mensaje bloqueado: ${reason} Por tu seguridad, la conversación de reserva se mantiene dentro de Plaza Market.`;
+            container.appendChild(note);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendTextMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const blockReason = checkTextForContactInfo(text);
+            if (blockReason) {
+                appendBlockedNote(blockReason);
+                input.value = '';
+                return;
+            }
+
+            appendMessage(text.replace(/</g, '&lt;'), true);
+            input.value = '';
+        }
+
+        // ============================================================
+        // CHAT — IMÁGENES CON LECTURA REAL DE TEXTO (OCR)
+        // ============================================================
+
+        async function handleImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('ocrStatus');
+            statusEl.classList.remove('hidden');
+
+            const imageUrl = URL.createObjectURL(file);
+
+            try {
+                const worker = await Tesseract.createWorker('spa');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                statusEl.classList.add('hidden');
+
+                const extracted = text || '';
+                const blockReason = checkTextForContactInfo(extracted);
+
+                if (blockReason) {
+                    appendBlockedNote(`${blockReason} (detectado dentro de la imagen)`);
+                } else {
+                    appendMessage(`<img src="${imageUrl}" alt="Imagen enviada">`, true);
+                }
+            } catch (err) {
+                statusEl.classList.add('hidden');
+                appendBlockedNote('No se pudo analizar la imagen. Por seguridad, no se envió.');
+                console.error(err);
+            }
+
+            event.target.value = '';
+        }
+    </script>
+</body>
+</html>
