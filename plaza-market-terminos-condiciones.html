@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Términos Legales y Fiscales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            background: linear-gradient(135deg, #F5F7FA 0%, #E8ECFF 25%, #F3F5F8 50%, #FAF7FF 75%, #F5F7FA 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #1E293B;
+        }
+        .brand-logo {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 82, 212, 0.35);
+            flex-shrink: 0;
+        }
+        .doc-card {
+            background: white; border-radius: 1.4rem;
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+            border: 1px solid #E2E8F0;
+        }
+        .clause-number {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 0.6rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87);
+            color: white; font-weight: 800; font-size: 0.9rem;
+        }
+        .clause-title { font-size: 1.05rem; font-weight: 800; color: #0F172A; }
+        .clause-body { font-size: 0.88rem; color: #334155; line-height: 1.7; }
+        .clause-body ul { list-style: none; padding-left: 0; margin-top: 0.5rem; }
+        .clause-body li { padding-left: 1.3rem; position: relative; margin-bottom: 0.4rem; }
+        .clause-body li::before { content: '✓'; position: absolute; left: 0; color: #3949AB; font-weight: 800; }
+        .highlight-box {
+            background: linear-gradient(135deg, #EFF6FF, #F5F3FF);
+            border: 1px solid #C7D2FE; border-radius: 0.9rem; padding: 1rem 1.25rem;
+        }
+        .prohibited-box {
+            background: #FEF2F2; border: 1px solid #FECACA; border-radius: 0.9rem;
+            padding: 1rem 1.25rem;
+        }
+        .prohibited-box strong { color: #B91C1C; }
+        .btn-back {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700; border-radius: 0.85rem;
+            padding: 0.85rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;
+            text-decoration: none; font-size: 0.85rem;
+            box-shadow: 0 4px 16px rgba(0, 82, 212, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+
+        <header class="flex items-center gap-3">
+            <div class="brand-logo"><img src="data:image/png;base64,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" alt="Plaza Market" style="width:60%;height:60%;object-fit:contain;"></div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900">Plaza Market</h1>
+                <p class="text-xs text-gray-500 font-medium">Términos Legales y Fiscales de Uso de la Plataforma</p>
+            </div>
+        </header>
+
+        <div class="highlight-box">
+            <p class="text-sm text-slate-700 leading-relaxed">
+                Este documento rige el uso de Plaza Market para compradores y vendedores. Al aceptar estos
+                términos durante el registro, declarás haberlos leído y comprendido en su totalidad.
+            </p>
+        </div>
+
+        <div class="doc-card p-6 sm:p-8 space-y-7">
+
+            <div class="flex gap-4">
+                <span class="clause-number">1</span>
+                <div>
+                    <p class="clause-title">Objeto y Condición de Intermediación</p>
+                    <div class="clause-body mt-2">
+                        <p>Plaza Market actúa exclusivamente como un intermediario tecnológico entre usuarios
+                        compradores y usuarios vendedores. La plataforma:</p>
+                        <ul>
+                            <li>No es propietaria de los productos publicados.</li>
+                            <li>No forma parte de la cadena de valor ni de la relación comercial entre las partes.</li>
+                            <li>No posee relación laboral, societaria ni de representación con los vendedores.</li>
+                            <li>La compraventa se realiza estrictamente entre particulares, bajo su entera responsabilidad.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">2</span>
+                <div>
+                    <p class="clause-title">Marco Fiscal Regulatorio (ARCA) y Control de Ingresos</p>
+                    <div class="clause-body mt-2">
+                        <p>En cumplimiento con la normativa dictada por la Agencia de Recaudación y Control
+                        Aduanero (ARCA, continuadora legal de la ex AFIP), la plataforma implementa un control
+                        de habitualidad comercial:</p>
+                        <ul>
+                            <li>Los usuarios "Consumidor Final" están sujetos a un freno automático de
+                            publicaciones y retención de cobros si su volumen de ventas roza los límites de
+                            habitualidad establecidos por ARCA.</li>
+                            <li>La reactivación requiere la carga de un CUIT válido en Monotributo o Responsable
+                            Inscripto.</li>
+                            <li>Cada vendedor es el único responsable de justificar sus ingresos ante los
+                            organismos tributarios correspondientes.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">3</span>
+                <div>
+                    <p class="clause-title">Rubros y Categorías Estrictamente Prohibidas</p>
+                    <div class="clause-body mt-2">
+                        <p>Para garantizar la seguridad de la comunidad, queda terminantemente prohibida la
+                        publicación de productos o servicios de los siguientes rubros, sin excepción:</p>
+                        <div class="prohibited-box mt-3">
+                            <ul class="space-y-1.5">
+                                <li><strong>Automotores, motovehículos y autopartes</strong> (incluye repuestos y piezas de motor).</li>
+                                <li><strong>Inmuebles, alquileres y propiedades</strong> de cualquier tipo.</li>
+                                <li><strong>Servicios de adultos, contenido sexual explícito y comercio sexual</strong> en cualquiera de sus formas, encubiertas o directas.</li>
+                                <li><strong>Productos alimenticios elaborados</strong> (panificados, repostería, comidas caseras, conservas, lácteos, helados y afines), dado que su comercialización requiere registros sanitarios (RNE/RNPA ante ANMAT/INAL) que la plataforma no verifica, y su logística de envío no garantiza cadena de frío.</li>
+                            </ul>
+                        </div>
+                        <p class="mt-3">Estas restricciones son verificadas de forma automática por un sistema de
+                        moderación por palabras clave, activo las 24 horas. La publicación reiterada de contenido
+                        prohibido puede derivar en la suspensión permanente de la cuenta.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">4</span>
+                <div>
+                    <p class="clause-title">Legitimidad de Productos y Prohibición de Fraude</p>
+                    <div class="clause-body mt-2">
+                        <p>Plaza Market no verifica ni garantiza la autenticidad, legalidad de origen, ni
+                        legitimidad de los productos publicados por los usuarios vendedores. Cada vendedor
+                        declara y garantiza, bajo su exclusiva responsabilidad civil y penal, que los productos
+                        y servicios ofrecidos son de procedencia lícita y no infringen derechos de terceros.</p>
+                        <p class="mt-2">La plataforma no será considerada partícipe, cómplice ni responsable, en
+                        ningún grado, de maniobras de estafa, venta de productos falsificados o de origen
+                        ilícito cometidas por sus usuarios, sin perjuicio de las medidas de moderación
+                        preventiva que la plataforma implementa de buena fe.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">5</span>
+                <div>
+                    <p class="clause-title">Modalidad de Envío y Prohibición de Entregas Presenciales</p>
+                    <div class="clause-body mt-2">
+                        <p>Toda entrega física de productos vendidos a través de Plaza Market debe canalizarse
+                        exclusivamente a través de operadores logísticos formales: <strong>Correo Argentino,
+                        Andreani o Vía Cargo.</strong></p>
+                        <div class="prohibited-box mt-3">
+                            <p class="text-sm">Queda <strong>expresamente prohibida</strong> la coordinación de
+                            entregas en mano o encuentros presenciales entre comprador y vendedor para el
+                            intercambio de mercadería o dinero.</p>
+                        </div>
+                        <p class="mt-3">El incumplimiento de esta disposición por parte de un usuario exime a la
+                        plataforma de toda responsabilidad derivada de dicho encuentro, incluyendo hechos
+                        ilícitos contra la propiedad o la integridad física de las personas, y puede dar lugar a
+                        la suspensión inmediata de su cuenta.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">6</span>
+                <div>
+                    <p class="clause-title">Respeto a Marcas y Propiedad Intelectual de Terceros</p>
+                    <div class="clause-body mt-2">
+                        <p>Queda prohibida la utilización de marcas comerciales, logos, o nombres registrados
+                        pertenecientes a terceros sin autorización expresa y por escrito de su titular. Cada
+                        vendedor es responsable de contar con los derechos necesarios sobre las marcas,
+                        imágenes y contenidos que publique en su tienda o catálogo.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">7</span>
+                <div>
+                    <p class="clause-title">Limitación de Responsabilidad</p>
+                    <div class="clause-body mt-2">
+                        <p>Al aceptar estos términos, el usuario exonera de responsabilidad penal, civil y
+                        fiscal a Plaza Market y sus operadores ante cualquier incumplimiento tributario, deuda
+                        fiscal, sanción impositiva, fraude, venta de productos ilegítimos, o hecho ilícito
+                        derivado de la actividad de compra o venta realizada por los usuarios de la plataforma.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <span class="clause-number">8</span>
+                <div>
+                    <p class="clause-title">Declaración de Conformidad</p>
+                    <div class="clause-body mt-2 highlight-box">
+                        <p class="font-semibold text-slate-900">Declaro bajo juramento haber leído, comprendido
+                        y aceptar íntegramente los Términos Legales y Fiscales de Plaza Market. Asumo plena
+                        responsabilidad por mi situación tributaria, por la legitimidad de los productos que
+                        publico, y por el cumplimiento de las modalidades de entrega aquí establecidas.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <p class="text-xs text-slate-500 text-center leading-relaxed">
+            Última actualización: julio de 2026. Este documento constituye una base legal preparada con
+            asistencia de IA y no reemplaza el asesoramiento de un abogado matriculado en Argentina, cuya
+            revisión se recomienda antes de la operación con usuarios reales.
+        </p>
+
+        <div class="text-center pb-6">
+            <a href="plaza-market-acceso-emprendedores.html" class="btn-back">← Volver al Acceso</a>
+        </div>
+
+    </main>
+</body>
+</html>
