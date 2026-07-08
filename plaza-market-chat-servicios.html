@@ -323,7 +323,8 @@
             container.innerHTML = '';
             if (error) {
                 console.error(error);
-                container.innerHTML = '<div class="msg-empty">No se pudieron cargar los mensajes. Revisá la conexión.</div>';
+                container.innerHTML = '<div class="msg-empty">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">' +
+                    (error.message || 'desconocido') + '</b><br>código: ' + (error.code || '—') + '</div>';
                 return;
             }
             if (!data || data.length === 0) {
@@ -369,7 +370,8 @@
             });
             if (error) {
                 console.error(error);
-                appendBlockedNote('No se pudo enviar el mensaje. Reintentá en unos segundos.');
+                appendBlockedNote('No se pudo enviar. Error: "' + (error.message || 'desconocido') +
+                    '" (código ' + (error.code || '—') + ').');
             }
         }
 
