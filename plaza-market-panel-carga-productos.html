@@ -3,146 +3,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plaza Market — Catálogo</title>
+    <title>Plaza Market — Panel de Carga de Productos</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            box-sizing: border-box;
+        }
+
         body {
             background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
-            min-height: 100vh; margin: 0; color: #E2E8F0;
+            min-height: 100vh;
+            margin: 0;
+            color: #E2E8F0;
         }
+
         body::before {
-            content: ''; position: fixed; inset: 0;
-            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
-                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
-            pointer-events: none; z-index: 0;
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(0, 82, 212, 0.22) 0%, transparent 45%),
+                radial-gradient(circle at 85% 12%, rgba(88, 28, 135, 0.24) 0%, transparent 45%),
+                radial-gradient(circle at 50% 95%, rgba(57, 73, 171, 0.18) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
+
         main, header { position: relative; z-index: 1; }
+
+        :root {
+            --primary: #0052D4;
+            --indigo-deep: #3949AB;
+            --violet-deep: #583C87;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        button, input, select, textarea { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
         .brand-logo {
             width: 48px; height: 48px;
             background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
-            border-radius: 0.9rem; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 8px 24px rgba(0,82,212,0.4); flex-shrink: 0;
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 82, 212, 0.4);
+            flex-shrink: 0;
         }
-        .btn-ghost-dark {
-            background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
-            font-weight: 600; cursor: pointer; text-decoration: none;
+
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.45rem 1rem; border-radius: 999px;
+            background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+            color: #6EE7B7; font-size: 0.72rem; font-weight: 700;
         }
-        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; animation: pulseDot 1.8s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .glass-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        label { color: rgba(226,232,240,0.75); font-size: 0.8rem; font-weight: 700; }
+
+        input, select, textarea {
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9;
+            border-radius: 0.85rem;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+        }
+        input::placeholder, textarea::placeholder { color: rgba(226,232,240,0.32); }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.2);
+            background: rgba(255,255,255,0.06);
+        }
+        select option { background: #131B2E; color: #F1F5F9; }
+        textarea { resize: vertical; min-height: 90px; }
+
+        .info-note {
+            background: rgba(0, 82, 212, 0.08); border: 1px solid rgba(0, 82, 212, 0.25);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.78rem; color: #BFDBFE; line-height: 1.55;
+        }
+
+        .category-block-warning {
+            background: rgba(239,68,68,0.12); border: 1.5px solid rgba(239,68,68,0.4);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.82rem; color: #FCA5A5;
+            font-weight: 600; margin-top: 0.75rem; line-height: 1.5;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
-            color: white; font-weight: 700; border: none; cursor: pointer; text-decoration: none;
-            box-shadow: 0 4px 20px rgba(0,82,212,0.4);
+            color: white; font-weight: 700;
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.4);
+            border: none; cursor: pointer;
         }
+        .btn-primary::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover:not(:disabled)::before { left: 100%; }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 82, 212, 0.5), 0 0 24px rgba(88, 28, 135, 0.3);
+        }
+        .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; transform: none; }
 
-        .filtros {
-            display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+        .btn-ghost-dark {
+            background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
+            font-weight: 600; cursor: pointer;
         }
-        .filtros input, .filtros select {
-            background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
-            color: #F1F5F9; border-radius: 0.85rem; padding: 0.7rem 1rem; font-size: 0.85rem;
-        }
-        .filtros input { flex: 1; min-width: 200px; }
-        .filtros input:focus, .filtros select:focus { outline: none; border-color: #3B82F6; }
-        .filtros select option { background: #131B2E; }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.24); }
 
-        .grid-productos {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem;
+        /* Fotos */
+        .photo-slot {
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 1rem; padding: 1rem; position: relative; text-align: center;
+            animation: fadeInUp 0.3s ease;
         }
-        .card-producto {
-            background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.09); border-radius: 1.25rem;
-            overflow: hidden; display: flex; flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            animation: fadeInUp 0.35s ease;
-        }
-        .card-producto:hover { transform: translateY(-4px); box-shadow: 0 28px 70px rgba(0,0,0,0.5); }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .card-img {
-            width: 100%; height: 170px; object-fit: cover; display: block;
-            background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
-        }
-        .card-img-placeholder {
-            width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
-            font-size: 2.5rem; background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
-        }
-        .card-body { padding: 1rem 1.1rem 1.2rem; flex: 1; display: flex; flex-direction: column; }
-        .card-cat {
-            font-size: 0.65rem; font-weight: 700; color: #93C5FD; text-transform: uppercase;
-            letter-spacing: 0.04em; margin-bottom: 0.35rem;
-        }
-        .card-title { font-weight: 700; color: white; font-size: 0.95rem; line-height: 1.35; margin-bottom: 0.4rem; }
-        .card-desc { font-size: 0.76rem; color: rgba(226,232,240,0.55); line-height: 1.5; flex: 1; margin-bottom: 0.8rem; }
-        .card-precio {
-            font-size: 1.15rem; font-weight: 800;
-            background: linear-gradient(135deg, #60A5FA, #A78BFA);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .card-fecha { font-size: 0.66rem; color: rgba(226,232,240,0.35); margin-top: 0.25rem; }
-        .card-chat {
-            margin-top: 0.9rem; display: block; text-align: center;
-            padding: 0.6rem; border-radius: 0.75rem; font-size: 0.78rem;
-        }
-
-        .estado { text-align: center; padding: 4rem 1rem; color: rgba(226,232,240,0.45); font-size: 0.9rem; }
-        .spinner {
-            display: inline-block; width: 16px; height: 16px;
-            border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6;
-            border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 0.5rem;
-            vertical-align: middle;
+        .photo-slot.photo-slot-rejected { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
+        .photo-slot-real-img { width: 100%; height: 90px; object-fit: cover; border-radius: 0.75rem; margin-bottom: 0.6rem; display: block; }
+        .photo-scanning { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.68rem; color: #93C5FD; font-weight: 700; }
+        .photo-approved-badge { font-size: 0.68rem; font-weight: 800; color: #34D399; }
+        .photo-rejected-badge { font-size: 0.68rem; font-weight: 800; color: #F87171; }
+        .photo-reject-reason { font-size: 0.63rem; color: #FCA5A5; margin-top: 0.4rem; line-height: 1.4; }
+        .photo-remove-btn { font-size: 0.65rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.5rem; }
+        .photo-remove-btn:hover { color: #FCA5A5; }
+        .spinner-mini {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state, .empty-state-inline {
+            text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4);
+        }
+        .empty-state-inline { grid-column: 1 / -1; }
+
+        /* Mis publicaciones */
+        .product-card-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem; border-radius: 0.85rem; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.6rem; animation: fadeInUp 0.3s ease;
+        }
+        .product-card-row:last-child { margin-bottom: 0; }
+        .product-row-img { width: 52px; height: 52px; object-fit: cover; border-radius: 0.6rem; flex-shrink: 0; }
+        .product-title { font-weight: 700; color: white; font-size: 0.85rem; }
+        .product-meta { font-size: 0.72rem; color: rgba(226,232,240,0.5); margin-top: 0.15rem; }
+        .photo-approved-badge-small { font-size: 0.65rem; font-weight: 700; color: #34D399; background: rgba(16,185,129,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+        .btn-delete { font-size: 0.68rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.3rem; display: block; }
+        .btn-delete:hover { color: #FCA5A5; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .toast {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
+            padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 1000; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 380px; color: #E2E8F0;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+        @keyframes slideInRight { from { transform: translateX(420px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(420px); opacity: 0; } }
+        .toast.hide { animation: slideOutRight 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .hidden { display: none !important; }
+
+        #authLoading {
+            position: fixed; inset: 0; z-index: 200; background: #0B1120;
+            display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+            color: #93C5FD; font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <!-- Pantalla mientras verificamos que el usuario esté logueado -->
+    <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
 
-        <header class="flex flex-wrap items-center justify-between gap-4 mb-7">
-            <div class="flex items-center gap-3">
-                <div class="brand-logo">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
-                    </svg>
+    <div id="app" class="hidden">
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+            <!-- HEADER -->
+            <header class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="brand-logo">
+                        <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Panel de Carga de Productos</h1>
+                        <p class="text-xs text-slate-400 font-medium">Plaza Market · <span id="userEmailLabel">—</span></p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-white">Catálogo</h1>
-                    <p class="text-xs text-slate-400 font-medium">Plaza Market · <span id="totalLabel">—</span></p>
+                <div class="flex items-center gap-3">
+                    <div class="status-pill">
+                        <span class="pulse-dot"></span>
+                        IA de Moderación Activa 24hs
+                    </div>
+                    <a href="plaza-market-catalogo.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm font-medium">Ver catálogo</a>
+                    <button id="logoutBtn" onclick="handleLogout()" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm font-medium">
+                        Salir
+                    </button>
                 </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
-                <a href="plaza-market-acceso-emprendedores.html" class="btn-primary px-4 py-2 rounded-lg text-sm">Vender / Ingresar</a>
-            </div>
-        </header>
+            </header>
 
-        <div class="filtros">
-            <input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros()">
-            <select id="filtroCategoria" onchange="aplicarFiltros()">
-                <option value="">Todas las categorías</option>
-                <option value="cosmetica">Cosmética / Estética</option>
-                <option value="perfumeria">Perfumería</option>
-                <option value="indumentaria">Indumentaria</option>
-                <option value="construccion">Construcción</option>
-                <option value="pintura">Pintura</option>
-                <option value="reformas">Reformas</option>
-                <option value="servicios">Servicios Profesionales</option>
-                <option value="estetica">Estética y Belleza</option>
-            </select>
-        </div>
+            <!-- FORMULARIO DE CARGA -->
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">Cargar Nuevo Producto</h2>
+                <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro y cada foto en el momento — no hace falta esperar una aprobación manual.</p>
 
-        <div id="contenido">
-            <div class="estado"><span class="spinner"></span> Cargando productos...</div>
-        </div>
+                <div class="space-y-4">
+                    <div>
+                        <label>Título del Producto</label>
+                        <input type="text" id="productTitle" placeholder="Ej: Perfume Lattafa Yara 100ml" class="mt-2" oninput="checkTitleAndDescription()">
+                    </div>
+                    <div>
+                        <label>Descripción</label>
+                        <textarea id="productDescription" placeholder="Contale a los compradores sobre tu producto..." class="mt-2" oninput="checkTitleAndDescription()"></textarea>
+                        <div id="categoryBlockWarning" class="category-block-warning hidden"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label>Categoría</label>
+                            <select id="productCategory" class="mt-2">
+                                <option value="">Seleccioná una categoría</option>
+                                <option value="cosmetica">Cosmética / Estética</option>
+                                <option value="perfumeria">Perfumería</option>
+                                <option value="indumentaria">Indumentaria</option>
+                                <option value="construccion">Construcción</option>
+                                <option value="pintura">Pintura</option>
+                                <option value="reformas">Reformas</option>
+                                <option value="servicios">Servicios Profesionales</option>
+                                <option value="estetica">Estética y Belleza (barbería, peluquería, uñas, pestañas, cejas)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Precio Unitario (ARS)</label>
+                            <input type="number" id="productPrice" placeholder="8499" min="0" step="1" class="mt-2">
+                        </div>
+                    </div>
 
-    </main>
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label>📸 Fotos del Producto</label>
+                            <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
+                            <button onclick="document.getElementById('photoFileInput').click()" class="btn-ghost-dark px-3 py-2 rounded-lg text-xs">📷 Subir Foto</button>
+                        </div>
+                        <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                    </div>
+
+                    <button id="publishBtn" onclick="publishProduct()" class="btn-primary w-full py-3.5 rounded-xl text-sm">
+                        Publicar Producto
+                    </button>
+                </div>
+            </section>
+
+            <!-- MIS PUBLICACIONES -->
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
+                <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
+                <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
+            </section>
+
+        </main>
+    </div>
 
     <script>
+        // ============================================================
+        // INICIALIZACIÓN DE SUPABASE
+        // ============================================================
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
-        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const { createClient } = window.supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let usuarioActual = null;
+
+        // ============================================================
+        // GUARDIA DE SESIÓN: si no está logueado, lo mandamos al acceso
+        // ============================================================
+        async function verificarSesion() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html';
+                return;
+            }
+            usuarioActual = session.user;
+            document.getElementById('userEmailLabel').textContent = usuarioActual.email;
+            document.getElementById('authLoading').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            renderPhotoSlots();
+            await cargarMisProductos();
+        }
+
+        async function handleLogout() {
+            const btn = document.getElementById('logoutBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Saliendo...';
+            await supabaseClient.auth.signOut();
+            window.location.href = 'plaza-market-acceso-emprendedores.html';
+        }
+
+        // ============================================================
+        // FILTRO ANTI-MERCADO NEGRO Y CONTENIDO PROHIBIDO
+        // ============================================================
+        function normalizeText(text) {
+            return text
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        const BLOCKED_KEYWORDS = [
+            'auto', 'autos', 'camioneta', 'camionetas', 'moto', 'motos', 'motocicleta', 'motocicletas',
+            'vehiculo', 'vehiculos', 'coche', 'coches',
+            'repuesto', 'repuestos', 'autoparte', 'autopartes', 'carroceria',
+            'embrague', 'amortiguador', 'amortiguadores', 'desarmadero', 'caja de cambios', 'motor',
+            'bujia', 'bujias', 'tapa de cilindro', 'tapa de cilindros',
+            'inmueble', 'inmuebles', 'inmobiliaria', 'terreno', 'terrenos', 'lote', 'lotes',
+            'departamento en venta', 'alquiler de depto', 'venta de casa', 'alquiler de propiedad',
+            'alquiler', 'alquilo', 'casa quinta', 'vendo casa',
+            'vip', 'hot', 'activos', 'pasivos',
+            'trans vip', 'gay vip', 'travesti vip',
+            'escort', 'escorts', 'puta', 'putas', 'gato', 'gatos', 'gaturras', 'telo', 'madama',
+            'proxeneta', 'prostitucion', 'servicios sexuales', 'citas de adultos',
+            'chicas vip', 'senoritas independientes', 'independientes vip',
+            'caballeros con caballeros', 'dotado', 'dotados',
+            'alquiler de chicas', 'alquiler de mujeres', 'alquilo chica', 'alquilo mujer',
+            'chica de compania', 'acompanantes', 'acompanamiento terapeutico',
+            'trato de novios', 'salidas pagas', 'presencias vip',
+            'masajes sensitivos', 'masajes descontracturantes caballeros', 'masajes con final feliz',
+            'final feliz', 'masajes relajantes varones', 'masajes intimos', 'masajistas independientes',
+            'masajes corporales hombres', 'atencion a caballeros',
+            'sexo', 'sexual', 'sexualidad', 'coito', 'masturbacion', 'orgasmo', 'porno', 'pornografia',
+            'pornografico', 'pornografica', 'erotico', 'erotica', 'shemales',
+            'videos hot', 'pack hot', 'telegram hot', 'fotos hot', 'onlyfans',
+            'comida', 'alimento', 'alimentos', 'alimenticio', 'alimenticios', 'gastronomico', 'gastronomia',
+            'pan', 'panes', 'pancito', 'pancitos', 'pan casero', 'pan dulce', 'pan integral', 'pan lactal',
+            'pan artesanal', 'panificado', 'panificados', 'panificacion', 'panificaciones',
+            'torta', 'tortas', 'factura', 'facturas', 'alfajor', 'alfajores', 'reposteria',
+            'budin', 'budines', 'empanada', 'empanadas', 'milanesa', 'milanesas',
+            'bizcocho', 'bizcochos', 'bizcochuelo', 'medialuna', 'medialunas', 'chipa', 'chipacito', 'chipacitos',
+            'scon', 'scones', 'galleta', 'galletas', 'galletita', 'galletitas', 'cookie', 'cookies',
+            'cupcake', 'cupcakes', 'muffin', 'muffins', 'brownie', 'brownies', 'mousse', 'flan',
+            'bombon', 'bombones', 'trufa', 'trufas', 'postre', 'postres', 'pastel casero', 'pasteles caseros',
+            'canoncito', 'canoncitos', 'crema pastelera', 'canoli', 'canolis', 'profiterol', 'profiteroles',
+            'lionesa', 'lionesas',
+            'pizza', 'pizzas', 'sandwich', 'sandwiches', 'hamburguesa', 'hamburguesas', 'choripan',
+            'bocadito', 'bocaditos', 'canape', 'canapes',
+            'vianda', 'viandas', 'comida casera', 'meal prep', 'tupper de comida',
+            'dulce de leche casero', 'mermelada casera', 'conserva casera', 'conservas caseras',
+            'queso artesanal', 'quesos artesanales', 'yogurt casero', 'fiambre casero', 'embutido casero',
+            'helado', 'helados', 'heladeria', 'keto', 'catering', 'delivery de comida'
+        ];
+
+        const BLOCKED_PATTERN = (function buildBlockedPattern() {
+            const escaped = BLOCKED_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'i');
+        })();
+
+        function checkBlockedCategory(text) {
+            const normalized = normalizeText(text);
+            const match = normalized.match(BLOCKED_PATTERN);
+            return match ? match[1] : null;
+        }
+
+        function checkTitleAndDescription() {
+            const title = document.getElementById('productTitle').value;
+            const description = document.getElementById('productDescription').value;
+            const combined = `${title} ${description}`;
+            const warningBox = document.getElementById('categoryBlockWarning');
+            const publishBtn = document.getElementById('publishBtn');
+
+            const blockedMatch = checkBlockedCategory(combined);
+
+            if (blockedMatch) {
+                warningBox.classList.remove('hidden');
+                warningBox.textContent = '🚫 Este rubro no está permitido en Plaza Market para garantizar la seguridad y confianza de la comunidad.';
+                publishBtn.disabled = true;
+                return false;
+            } else {
+                warningBox.classList.add('hidden');
+                publishBtn.disabled = false;
+                return true;
+            }
+        }
 
         const CATEGORY_LABELS = {
             cosmetica: 'Cosmética / Estética',
@@ -155,82 +423,319 @@
             estetica: 'Estética y Belleza'
         };
 
-        let todos = [];
+        // ============================================================
+        // FILTRO DE FOTOS — OCR REAL EN EL NAVEGADOR
+        // ============================================================
+        const NUMBER_WORDS = new Set([
+            'cero', 'uno', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
+        ]);
+        const FILLER_WORDS_PHOTO = new Set(['y', 'el', 'mi', 'numero', 'es', 'de', 'nro', 'tel']);
 
-        function escaparHtml(t) {
-            return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        function hasDigitPhonePattern(text) {
+            const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of matches) {
+                const digitsOnly = m.replace(/\D/g, '');
+                if (digitsOnly.length >= 7) return true;
+            }
+            const plain = text.match(/\d{7,}/g) || [];
+            return plain.length > 0;
         }
 
-        async function cargarCatalogo() {
-            const cont = document.getElementById('contenido');
+        function hasSpelledOutPhonePattern(text) {
+            const normalized = normalizeText(text);
+            const words = normalized.match(/[a-z]+/g) || [];
+            let run = 0, maxRun = 0;
+            for (const w of words) {
+                if (NUMBER_WORDS.has(w)) {
+                    run++;
+                    maxRun = Math.max(maxRun, run);
+                } else if (FILLER_WORDS_PHOTO.has(w)) {
+                    // no rompe la racha
+                } else {
+                    run = 0;
+                }
+            }
+            return maxRun >= 5;
+        }
 
-            const { data, error } = await db
-                .from('productos')
-                .select('*')
-                .order('creado_en', { ascending: false })
-                .limit(300);
+        function hasSocialMediaPattern(text) {
+            return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text);
+        }
 
-            if (error) {
-                cont.innerHTML = `<div class="estado">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">${error.message}</b><br>código: ${error.code || '—'}</div>`;
+        let uploadedPhotos = [];
+
+        async function handlePhotoFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const imageUrl = URL.createObjectURL(file);
+            const photo = {
+                id: Date.now() + Math.random(),
+                file: file,
+                imageUrl: imageUrl,
+                scanned: false,
+                approved: null,
+                reason: null
+            };
+
+            uploadedPhotos.push(photo);
+            renderPhotoSlots();
+            await scanPhotoReal(photo, file);
+            event.target.value = '';
+        }
+
+        async function scanPhotoReal(photo, file) {
+            try {
+                const worker = await Tesseract.createWorker('spa');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                const extracted = text || '';
+                let reason = null;
+
+                if (hasDigitPhonePattern(extracted)) {
+                    reason = 'Se detectó un número de teléfono escrito en la imagen.';
+                } else if (hasSpelledOutPhonePattern(extracted)) {
+                    reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
+                } else if (hasSocialMediaPattern(extracted)) {
+                    reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+                } else if (extracted.replace(/\s/g, '').length > 120) {
+                    reason = 'La imagen contiene demasiado texto estructurado para ser una foto de producto (parece un documento) — subí una foto real de lo que estás vendiendo.';
+                }
+
+                photo.scanned = true;
+                photo.approved = !reason;
+                photo.reason = reason;
+                renderPhotoSlots();
+
+                if (reason) {
+                    showToast(`🚫 Foto rechazada: ${reason}`, 'error');
+                } else {
+                    showToast('✅ Foto aprobada — sin datos de contacto detectados', 'success');
+                }
+            } catch (err) {
+                photo.scanned = true;
+                photo.approved = false;
+                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó automáticamente.';
+                renderPhotoSlots();
+                showToast('⚠️ No se pudo analizar la foto — no se aprobó por seguridad', 'error');
+                console.error(err);
+            }
+        }
+
+        function removePhoto(photoId) {
+            uploadedPhotos = uploadedPhotos.filter(p => p.id !== photoId);
+            renderPhotoSlots();
+        }
+
+        function renderPhotoSlots() {
+            const container = document.getElementById('photoSlotsContainer');
+            if (!container) return;
+
+            if (uploadedPhotos.length === 0) {
+                container.innerHTML = '<p class="empty-state-inline">Todavía no agregaste ninguna foto.</p>';
                 return;
             }
 
-            todos = data || [];
-            document.getElementById('totalLabel').textContent =
-                todos.length === 1 ? '1 publicación' : `${todos.length} publicaciones`;
-            aplicarFiltros();
-        }
-
-        function aplicarFiltros() {
-            const texto = document.getElementById('buscador').value.trim().toLowerCase();
-            const cat = document.getElementById('filtroCategoria').value;
-
-            let lista = todos;
-            if (cat) lista = lista.filter(p => p.categoria === cat);
-            if (texto) {
-                lista = lista.filter(p =>
-                    (p.titulo || '').toLowerCase().includes(texto) ||
-                    (p.descripcion || '').toLowerCase().includes(texto)
-                );
-            }
-            renderProductos(lista);
-        }
-
-        function renderProductos(lista) {
-            const cont = document.getElementById('contenido');
-
-            if (!lista.length) {
-                cont.innerHTML = todos.length
-                    ? '<div class="estado">No encontramos productos con ese filtro. 🤔</div>'
-                    : '<div class="estado">Todavía no hay productos publicados.<br>¡Sé el primero en publicar! 🚀</div>';
-                return;
-            }
-
-            cont.innerHTML = '<div class="grid-productos">' + lista.map(p => {
-                const img = (p.fotos && p.fotos[0])
-                    ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="card-img" loading="lazy">`
-                    : '<div class="card-img-placeholder">📦</div>';
-                const fecha = new Date(p.creado_en).toLocaleDateString('es-AR');
-                const desc = escaparHtml(p.descripcion).slice(0, 110);
+            container.innerHTML = uploadedPhotos.map(p => {
+                let statusBlock;
+                if (!p.scanned) {
+                    statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
+                } else if (p.approved) {
+                    statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
+                } else {
+                    statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
+                }
 
                 return `
-                <article class="card-producto">
-                    ${img}
-                    <div class="card-body">
-                        <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
-                        <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
-                        <p class="card-desc">${desc}${desc.length >= 110 ? '…' : ''}</p>
-                        <p class="card-precio">$${Number(p.precio).toLocaleString('es-AR')}</p>
-                        <p class="card-fecha">Publicado el ${fecha}</p>
-                        <a href="plaza-market-chat-servicios.html?sala=producto-${p.id}" class="btn-primary card-chat">
-                            💬 Consultar al vendedor
-                        </a>
-                    </div>
-                </article>`;
-            }).join('') + '</div>';
+                <div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
+                    <img src="${p.imageUrl}" alt="Foto del producto" class="photo-slot-real-img">
+                    ${statusBlock}
+                    <button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
+                </div>
+                `;
+            }).join('');
         }
 
-        window.addEventListener('DOMContentLoaded', cargarCatalogo);
+        // ============================================================
+        // SUBIR FOTOS APROBADAS AL DEPÓSITO (STORAGE)
+        // ============================================================
+        async function subirFotosAprobadas() {
+            const urls = [];
+            const aprobadas = uploadedPhotos.filter(p => p.approved);
+
+            for (const p of aprobadas) {
+                const ext = (p.file.name.split('.').pop() || 'jpg').toLowerCase();
+                const nombre = `${usuarioActual.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+                const { error } = await supabaseClient.storage
+                    .from('productos')
+                    .upload(nombre, p.file, { contentType: p.file.type });
+
+                if (error) throw error;
+
+                const { data } = supabaseClient.storage.from('productos').getPublicUrl(nombre);
+                urls.push(data.publicUrl);
+            }
+            return urls;
+        }
+
+        // ============================================================
+        // PUBLICAR PRODUCTO (GUARDA DE VERDAD EN SUPABASE)
+        // ============================================================
+        async function publishProduct() {
+            const title = document.getElementById('productTitle').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
+            const category = document.getElementById('productCategory').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+
+            if (!title) { showToast('❌ Ingresá un título para el producto', 'error'); return; }
+            if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
+            if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
+
+            const blockedMatch = checkBlockedCategory(`${title} ${description}`);
+            if (blockedMatch) {
+                showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
+                return;
+            }
+
+            if (uploadedPhotos.length === 0) {
+                showToast('❌ Agregá al menos una foto del producto', 'error');
+                return;
+            }
+            if (uploadedPhotos.some(p => !p.scanned)) {
+                showToast('⏳ Esperá a que la IA termine de analizar tus fotos', 'info');
+                return;
+            }
+            const approvedCount = uploadedPhotos.filter(p => p.approved).length;
+            if (approvedCount === 0) {
+                showToast('❌ Ninguna de tus fotos pasó el filtro. Subí al menos una foto limpia.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('publishBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-mini"></span> Publicando...';
+
+            try {
+                const urls = await subirFotosAprobadas();
+
+                const { error } = await supabaseClient.from('productos').insert({
+                    usuario_id: usuarioActual.id,
+                    titulo: title,
+                    descripcion: description,
+                    categoria: category,
+                    precio: price,
+                    fotos: urls
+                });
+
+                if (error) throw error;
+
+                showToast(`✅ "${title}" publicado y guardado con éxito`, 'success');
+
+                document.getElementById('productTitle').value = '';
+                document.getElementById('productDescription').value = '';
+                document.getElementById('productCategory').value = '';
+                document.getElementById('productPrice').value = '';
+                document.getElementById('categoryBlockWarning').classList.add('hidden');
+                uploadedPhotos = [];
+                renderPhotoSlots();
+                await cargarMisProductos();
+
+            } catch (err) {
+                console.error(err);
+                showToast(`🚫 No se pudo publicar: ${err.message || 'error desconocido'}`, 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = 'Publicar Producto';
+        }
+
+        // ============================================================
+        // MIS PUBLICACIONES (LEÍDAS DESDE SUPABASE)
+        // ============================================================
+        async function cargarMisProductos() {
+            const container = document.getElementById('myProductsList');
+
+            const { data, error } = await supabaseClient
+                .from('productos')
+                .select('*')
+                .eq('usuario_id', usuarioActual.id)
+                .order('creado_en', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<p class="empty-state">⚠️ Error al cargar: ${error.message}</p>`;
+                return;
+            }
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="empty-state">Todavía no publicaste ningún producto.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(p => {
+                const foto = (p.fotos && p.fotos[0]) ? `<img src="${p.fotos[0]}" class="product-row-img" alt="">` : '';
+                const fecha = new Date(p.creado_en).toLocaleString('es-AR');
+                return `
+                <div class="product-card-row">
+                    <div class="flex items-center gap-3">
+                        ${foto}
+                        <div>
+                            <p class="product-title">${escaparHtml(p.titulo)}</p>
+                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · $${Number(p.precio).toLocaleString('es-AR')} · ${fecha}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <span class="photo-approved-badge-small">✓ ${p.fotos ? p.fotos.length : 0} foto${(p.fotos && p.fotos.length === 1) ? '' : 's'}</span>
+                        <button class="btn-delete" onclick="borrarProducto(${p.id})">🗑 Eliminar</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function borrarProducto(id) {
+            if (!confirm('¿Seguro que querés eliminar esta publicación?')) return;
+            const { error } = await supabaseClient.from('productos').delete().eq('id', id);
+            if (error) {
+                showToast(`🚫 No se pudo eliminar: ${error.message}`, 'error');
+                return;
+            }
+            showToast('🗑 Publicación eliminada', 'info');
+            await cargarMisProductos();
+        }
+
+        function escaparHtml(t) {
+            return String(t).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ============================================================
+        // NOTIFICACIONES (TOAST)
+        // ============================================================
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '🚫';
+
+            toast.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <span class="text-xl flex-shrink-0">${icon}</span>
+                    <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
+        }
+
+        // ============================================================
+        // ARRANQUE
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', verificarSesion);
     </script>
 </body>
 </html>
