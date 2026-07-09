@@ -115,9 +115,19 @@
         .desglose-nota { font-size: 0.68rem; color: rgba(226,232,240,0.45); margin-top: 0.55rem; line-height: 1.5; }
 
         .envio-hint { font-size: 0.7rem; color: rgba(226,232,240,0.45); margin-top: 0.45rem; line-height: 1.5; }
-        .checkbox-row { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.7rem; }
-        .checkbox-row input[type="checkbox"] { width: auto; accent-color: #0052D4; margin-top: 0.15rem; flex-shrink: 0; }
-        .checkbox-row span { font-size: 0.78rem; color: rgba(226,232,240,0.7); line-height: 1.5; }
+
+        .envio-opciones { display: grid; gap: 0.6rem; margin-top: 0.9rem; }
+        .envio-opcion {
+            display: flex; align-items: flex-start; gap: 0.7rem; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 0.85rem; padding: 0.85rem 1rem;
+        }
+        .envio-opcion:hover { background: rgba(255,255,255,0.06); }
+        .envio-opcion input[type="radio"] { width: auto; accent-color: #3B82F6; margin-top: 0.15rem; flex-shrink: 0; }
+        .envio-opcion.elegida { border-color: #3B82F6; background: rgba(0,82,212,0.12); }
+        .opcion-titulo { font-size: 0.82rem; font-weight: 700; color: #E2E8F0; }
+        .opcion-detalle { font-size: 0.74rem; color: rgba(226,232,240,0.55); margin-top: 0.2rem; display: block; }
+        .opcion-neto { color: #6EE7B7; font-weight: 700; }
 
         .category-block-warning {
             background: rgba(239,68,68,0.12); border: 1.5px solid rgba(239,68,68,0.4);
@@ -249,17 +259,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label>Categoría</label>
-                            <select id="productCategory" class="mt-2">
-                                <option value="">Seleccioná una categoría</option>
-                                <option value="cosmetica">Cosmética / Estética</option>
-                                <option value="perfumeria">Perfumería</option>
-                                <option value="indumentaria">Indumentaria</option>
-                                <option value="construccion">Construcción</option>
-                                <option value="pintura">Pintura</option>
-                                <option value="reformas">Reformas</option>
-                                <option value="servicios">Servicios Profesionales</option>
-                                <option value="estetica">Estética y Belleza (barbería, peluquería, uñas, pestañas, cejas)</option>
-                            </select>
+                            <select id="productCategory" class="mt-2"></select>
                         </div>
                         <div>
                             <label id="labelPrecio">Precio Unitario (ARS)</label>
@@ -270,14 +270,28 @@
                     <div id="desgloseComision" class="desglose hidden"></div>
 
                     <div id="seccionEnvio">
-                        <label>Envío</label>
+                        <label>¿Cuánto sale mandar este producto?</label>
                         <div class="mt-2">
-                            <div class="checkbox-row">
-                                <input type="checkbox" id="envioGratis" onchange="toggleEnvioGratis()">
-                                <span><strong>Envío gratis</strong> — lo absorbo yo. El costo del correo sale de mi ganancia.</span>
-                            </div>
                             <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)">
-                            <p class="envio-hint">El comprador paga este monto <strong>además</strong> del precio. El envío <strong>no paga comisión</strong>.</p>
+                            <p class="envio-hint">Lo que te cobra el correo. Plaza Market <strong>no cobra comisión sobre el envío</strong>: ese dinero va entero al correo.</p>
+
+                            <div class="envio-opciones">
+                                <label class="envio-opcion elegida" id="opcionComprador">
+                                    <input type="radio" name="quienPagaEnvio" value="comprador" checked onchange="actualizarDesglose()">
+                                    <div>
+                                        <span class="opcion-titulo">El envío lo paga el comprador</span>
+                                        <span class="opcion-detalle" id="txtOpcionComprador">Completá el precio y el costo del envío para ver las cuentas.</span>
+                                    </div>
+                                </label>
+
+                                <label class="envio-opcion" id="opcionVendedor">
+                                    <input type="radio" name="quienPagaEnvio" value="vendedor" onchange="actualizarDesglose()">
+                                    <div>
+                                        <span class="opcion-titulo">Envío gratis (el envío lo pagás vos)</span>
+                                        <span class="opcion-detalle" id="txtOpcionVendedor">Completá el precio y el costo del envío para ver las cuentas.</span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -316,6 +330,28 @@
         // del producto o servicio. El envío nunca paga comisión.
         const COMISION = 0.12;
 
+        // Seña obligatoria para reservar un servicio. Tiene que ser
+        // SIEMPRE mayor que la comisión, si no la plataforma queda en rojo.
+        const SENA = 0.20;
+
+        // Las categorías cambian según lo que se publique.
+        const CATEGORIAS = {
+            producto: [
+                ['perfumeria', 'Perfumería'],
+                ['cosmetica', 'Cosmética'],
+                ['indumentaria', 'Indumentaria'],
+                ['construccion', 'Materiales de construcción'],
+                ['pintura', 'Pinturas y revestimientos']
+            ],
+            servicio: [
+                ['estetica', 'Estética y Belleza (barbería, peluquería, uñas, pestañas, cejas)'],
+                ['masajes', 'Masajes y Bienestar'],
+                ['servicios', 'Servicios Profesionales (electricista, plomero, gasista, contador)'],
+                ['reformas', 'Reformas y refacciones'],
+                ['construccion', 'Construcción (mano de obra)']
+            ]
+        };
+
         const { createClient } = window.supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -336,35 +372,83 @@
         function onEnvioInput(e) {
             const d = soloDigitos(e.target.value);
             e.target.value = d ? formatearPesos(d) : '';
+            actualizarDesglose();
         }
         function valorPrecio() { return Number(soloDigitos(document.getElementById('productPrice').value)) || 0; }
         function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
 
         // ============================================================
-        // DESGLOSE DE COMISIÓN EN VIVO
+        // DESGLOSE EN VIVO
         // ============================================================
+        function envioLoPagaVendedor() {
+            const r = document.querySelector('input[name="quienPagaEnvio"]:checked');
+            return r && r.value === 'vendedor';
+        }
+
         function actualizarDesglose() {
             const caja = document.getElementById('desgloseComision');
             const precio = valorPrecio();
+            const envio = valorEnvio();
+            const esServicio = tipoActual === 'servicio';
+
+            // Resaltar visualmente la opción elegida
+            if (!esServicio) {
+                const gratis = envioLoPagaVendedor();
+                document.getElementById('opcionComprador').classList.toggle('elegida', !gratis);
+                document.getElementById('opcionVendedor').classList.toggle('elegida', gratis);
+
+                if (precio && envio) {
+                    const com = Math.round(precio * COMISION);
+                    document.getElementById('txtOpcionComprador').innerHTML =
+                        `El comprador paga ${formatearPesos(precio + envio)} · Neto a cobrar: <span class="opcion-neto">${formatearPesos(precio - com)}</span>`;
+                    document.getElementById('txtOpcionVendedor').innerHTML =
+                        `El comprador paga ${formatearPesos(precio)} · Neto a cobrar: <span class="opcion-neto">${formatearPesos(precio - com - envio)}</span>`;
+                } else {
+                    const aviso = 'Completá el precio y el costo del envío para ver las cuentas.';
+                    document.getElementById('txtOpcionComprador').textContent = aviso;
+                    document.getElementById('txtOpcionVendedor').textContent = aviso;
+                }
+            }
 
             if (!precio) { caja.classList.add('hidden'); return; }
 
             const comision = Math.round(precio * COMISION);
-            const recibis = precio - comision;
-            const etiqueta = tipoActual === 'servicio' ? 'Precio del servicio' : 'Precio publicado';
+            let filas = `
+                <div class="desglose-fila"><span>${esServicio ? 'Precio del servicio' : 'Precio publicado'}</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>`;
 
-            caja.innerHTML = `
-                <div class="desglose-fila"><span>${etiqueta}</span><span>${formatearPesos(precio)}</span></div>
-                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
-                <div class="desglose-fila total"><span><strong>Recibís</strong></span><span>${formatearPesos(recibis)}</span></div>
-                <p class="desglose-nota">La comisión se calcula <strong>solo sobre el precio</strong>. El envío no paga comisión — ese dinero va entero al correo.</p>
-            `;
+            let neto = precio - comision;
+            let nota = '';
+
+            if (esServicio) {
+                const sena = Math.round(precio * SENA);
+                filas += `<div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>
+                    <div class="desglose-fila" style="margin-top:0.5rem;"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>`;
+                nota = `La reserva con seña es <strong>obligatoria</strong>: es la única forma de que la comisión se cobre sin manejar efectivo. De esa seña sale la comisión, y el resto (${formatearPesos(precio - sena)}) lo cobrás vos al dar el servicio.
+                    <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat. La seña empieza a cobrarse cuando conectemos los pagos.`;
+            } else {
+                const gratis = envioLoPagaVendedor();
+                if (envio) {
+                    filas += `<div class="desglose-fila"><span>Costo del envío</span><span>${formatearPesos(envio)}</span></div>`;
+                    if (gratis) neto -= envio;
+                }
+                filas += `<div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>`;
+                nota = 'La comisión se calcula <strong>solo sobre el precio</strong>. El envío no paga comisión — ese dinero va entero al correo.';
+            }
+
+            caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
             caja.classList.remove('hidden');
         }
 
         // ============================================================
         // PRODUCTO / SERVICIO
         // ============================================================
+        function cargarCategorias(tipo) {
+            const sel = document.getElementById('productCategory');
+            sel.innerHTML = '<option value="">Seleccioná una categoría</option>' +
+                CATEGORIAS[tipo].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+        }
+
         function setTipo(tipo) {
             tipoActual = tipo;
             document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
@@ -372,15 +456,8 @@
             document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('labelPrecio').textContent =
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
+            cargarCategorias(tipo);
             actualizarDesglose();
-        }
-
-        function toggleEnvioGratis() {
-            const gratis = document.getElementById('envioGratis').checked;
-            const campo = document.getElementById('costoEnvio');
-            campo.disabled = gratis;
-            if (gratis) { campo.value = ''; campo.style.opacity = '0.4'; }
-            else { campo.style.opacity = '1'; }
         }
 
         // ============================================================
@@ -396,6 +473,7 @@
             document.getElementById('userEmailLabel').textContent = usuarioActual.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
+            setTipo('producto');
             renderPhotoSlots();
             await cargarMisProductos();
         }
@@ -484,9 +562,10 @@
         }
 
         const CATEGORY_LABELS = {
-            cosmetica: 'Cosmética / Estética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
-            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas',
-            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza'
+            cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
+            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas y refacciones',
+            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza',
+            masajes: 'Masajes y Bienestar'
         };
 
         // ============================================================
@@ -601,15 +680,15 @@
             const category = document.getElementById('productCategory').value;
             const price = valorPrecio();
             const esProducto = tipoActual === 'producto';
-            const envioGratis = esProducto && document.getElementById('envioGratis').checked;
-            const costoEnvio = (esProducto && !envioGratis) ? valorEnvio() : 0;
+            const envioGratis = esProducto && envioLoPagaVendedor();
+            const costoEnvio = esProducto ? valorEnvio() : 0;
 
             if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
             if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
 
-            if (esProducto && !envioGratis && costoEnvio <= 0) {
-                showToast('❌ Poné el costo del envío, o tildá "Envío gratis"', 'error');
+            if (esProducto && costoEnvio <= 0) {
+                showToast('❌ Poné cuánto sale mandar el producto (aunque el envío lo regales)', 'error');
                 return;
             }
 
@@ -649,10 +728,10 @@
                 document.getElementById('productCategory').value = '';
                 document.getElementById('productPrice').value = '';
                 document.getElementById('costoEnvio').value = '';
-                document.getElementById('envioGratis').checked = false;
-                toggleEnvioGratis();
+                document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
                 document.getElementById('categoryBlockWarning').classList.add('hidden');
                 document.getElementById('desgloseComision').classList.add('hidden');
+                actualizarDesglose();
                 uploadedPhotos = [];
                 renderPhotoSlots();
                 await cargarMisProductos();
@@ -684,12 +763,17 @@
                     : `<div class="product-row-icon">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
                 const fecha = new Date(p.creado_en).toLocaleString('es-AR');
                 const comision = Math.round(Number(p.precio) * COMISION);
-                const recibis = Number(p.precio) - comision;
+                let recibis = Number(p.precio) - comision;
 
                 let envioTxt = '';
-                if (p.tipo === 'servicio') envioTxt = 'Servicio';
-                else if (p.envio_gratis) envioTxt = 'Envío gratis';
-                else envioTxt = `Envío ${formatearPesos(p.costo_envio)}`;
+                if (p.tipo === 'servicio') {
+                    envioTxt = `Servicio · seña ${formatearPesos(Math.round(Number(p.precio) * SENA))}`;
+                } else if (p.envio_gratis) {
+                    envioTxt = `Envío gratis (te cuesta ${formatearPesos(p.costo_envio)})`;
+                    recibis -= Number(p.costo_envio);
+                } else {
+                    envioTxt = `Envío ${formatearPesos(p.costo_envio)} (lo paga el comprador)`;
+                }
 
                 return `<div class="product-card-row">
                     <div class="flex items-center gap-3">
