@@ -36,11 +36,8 @@
 
         :root {
             --primary: #0052D4;
-            --indigo-deep: #3949AB;
-            --violet-deep: #583C87;
             --success: #10B981;
             --danger: #EF4444;
-            --warning: #F59E0B;
         }
 
         button, input, select, textarea { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -94,10 +91,33 @@
         select option { background: #131B2E; color: #F1F5F9; }
         textarea { resize: vertical; min-height: 90px; }
 
-        .info-note {
-            background: rgba(0, 82, 212, 0.08); border: 1px solid rgba(0, 82, 212, 0.25);
-            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.78rem; color: #BFDBFE; line-height: 1.55;
+        /* Selector Producto / Servicio */
+        .tipo-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.5rem; }
+        .tipo-btn {
+            background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+            color: rgba(226,232,240,0.65); border-radius: 0.85rem; padding: 0.85rem;
+            font-size: 0.83rem; font-weight: 700; cursor: pointer;
         }
+        .tipo-btn:hover { background: rgba(255,255,255,0.07); }
+        .tipo-btn.activo {
+            background: linear-gradient(135deg, rgba(0,82,212,0.25), rgba(88,28,135,0.28));
+            border-color: #3B82F6; color: white;
+        }
+
+        /* Desglose de comisión */
+        .desglose {
+            margin-top: 0.75rem; background: rgba(16,185,129,0.06);
+            border: 1px solid rgba(16,185,129,0.22); border-radius: 0.85rem; padding: 0.85rem 1rem;
+        }
+        .desglose-fila { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 0.18rem 0; color: rgba(226,232,240,0.7); }
+        .desglose-fila.total { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.4rem; padding-top: 0.5rem; }
+        .desglose-fila.total span:last-child { color: #6EE7B7; font-weight: 800; font-size: 0.95rem; }
+        .desglose-nota { font-size: 0.68rem; color: rgba(226,232,240,0.45); margin-top: 0.55rem; line-height: 1.5; }
+
+        .envio-hint { font-size: 0.7rem; color: rgba(226,232,240,0.45); margin-top: 0.45rem; line-height: 1.5; }
+        .checkbox-row { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.7rem; }
+        .checkbox-row input[type="checkbox"] { width: auto; accent-color: #0052D4; margin-top: 0.15rem; flex-shrink: 0; }
+        .checkbox-row span { font-size: 0.78rem; color: rgba(226,232,240,0.7); line-height: 1.5; }
 
         .category-block-warning {
             background: rgba(239,68,68,0.12); border: 1.5px solid rgba(239,68,68,0.4);
@@ -108,33 +128,21 @@
         .btn-primary {
             background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
             color: white; font-weight: 700;
-            position: relative; overflow: hidden;
             box-shadow: 0 4px 20px rgba(0, 82, 212, 0.4);
             border: none; cursor: pointer;
         }
-        .btn-primary::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-        .btn-primary:hover:not(:disabled)::before { left: 100%; }
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 16px 34px rgba(0, 82, 212, 0.5), 0 0 24px rgba(88, 28, 135, 0.3);
-        }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
         .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; transform: none; }
 
         .btn-ghost-dark {
             background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
-            font-weight: 600; cursor: pointer;
+            font-weight: 600; cursor: pointer; text-decoration: none;
         }
-        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.24); }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
 
-        /* Fotos */
         .photo-slot {
             background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
-            border-radius: 1rem; padding: 1rem; position: relative; text-align: center;
-            animation: fadeInUp 0.3s ease;
+            border-radius: 1rem; padding: 1rem; text-align: center;
         }
         .photo-slot.photo-slot-rejected { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
         .photo-slot-real-img { width: 100%; height: 90px; object-fit: cover; border-radius: 0.75rem; margin-bottom: 0.6rem; display: block; }
@@ -151,40 +159,34 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .empty-state, .empty-state-inline {
-            text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4);
-        }
+        .empty-state, .empty-state-inline { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4); }
         .empty-state-inline { grid-column: 1 / -1; }
 
-        /* Mis publicaciones */
         .product-card-row {
             display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
             padding: 0.85rem 1rem; border-radius: 0.85rem; background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.6rem; animation: fadeInUp 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.6rem;
         }
-        .product-card-row:last-child { margin-bottom: 0; }
         .product-row-img { width: 52px; height: 52px; object-fit: cover; border-radius: 0.6rem; flex-shrink: 0; }
+        .product-row-icon {
+            width: 52px; height: 52px; border-radius: 0.6rem; flex-shrink: 0; font-size: 1.4rem;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+        }
         .product-title { font-weight: 700; color: white; font-size: 0.85rem; }
         .product-meta { font-size: 0.72rem; color: rgba(226,232,240,0.5); margin-top: 0.15rem; }
-        .photo-approved-badge-small { font-size: 0.65rem; font-weight: 700; color: #34D399; background: rgba(16,185,129,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+        .badge-small { font-size: 0.65rem; font-weight: 700; color: #34D399; background: rgba(16,185,129,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; white-space: nowrap; }
         .btn-delete { font-size: 0.68rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.3rem; display: block; }
         .btn-delete:hover { color: #FCA5A5; }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         .toast {
             position: fixed; top: 1.5rem; right: 1.5rem;
             background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
             padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            z-index: 1000; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            max-width: 380px; color: #E2E8F0;
+            z-index: 1000; max-width: 380px; color: #E2E8F0;
         }
         .toast.success { border-left: 4px solid var(--success); }
         .toast.error { border-left: 4px solid var(--danger); }
         .toast.info { border-left: 4px solid var(--primary); }
-        @keyframes slideInRight { from { transform: translateX(420px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(420px); opacity: 0; } }
-        .toast.hide { animation: slideOutRight 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
         .hidden { display: none !important; }
 
@@ -196,13 +198,11 @@
     </style>
 </head>
 <body>
-    <!-- Pantalla mientras verificamos que el usuario esté logueado -->
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
 
     <div id="app" class="hidden">
         <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-            <!-- HEADER -->
             <header class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="brand-logo">
@@ -216,32 +216,36 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div class="status-pill">
-                        <span class="pulse-dot"></span>
-                        IA de Moderación Activa 24hs
-                    </div>
-                    <a href="plaza-market-catalogo.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm font-medium">Ver catálogo</a>
-                    <button id="logoutBtn" onclick="handleLogout()" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm font-medium">
-                        Salir
-                    </button>
+                    <div class="status-pill"><span class="pulse-dot"></span> IA de Moderación Activa 24hs</div>
+                    <a href="plaza-market-catalogo.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Ver catálogo</a>
+                    <button id="logoutBtn" onclick="handleLogout()" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Salir</button>
                 </div>
             </header>
 
-            <!-- FORMULARIO DE CARGA -->
             <section class="glass-card p-6 sm:p-7">
-                <h2 class="text-lg font-bold text-white mb-1">Cargar Nuevo Producto</h2>
+                <h2 class="text-lg font-bold text-white mb-1">Cargar Nueva Publicación</h2>
                 <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro y cada foto en el momento — no hace falta esperar una aprobación manual.</p>
 
                 <div class="space-y-4">
                     <div>
-                        <label>Título del Producto</label>
+                        <label>¿Qué estás publicando?</label>
+                        <div class="tipo-toggle">
+                            <button type="button" id="btnTipoProducto" class="tipo-btn activo" onclick="setTipo('producto')">📦 Producto físico</button>
+                            <button type="button" id="btnTipoServicio" class="tipo-btn" onclick="setTipo('servicio')">🛠️ Servicio</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>Título</label>
                         <input type="text" id="productTitle" placeholder="Ej: Perfume Lattafa Yara 100ml" class="mt-2" oninput="checkTitleAndDescription()">
                     </div>
+
                     <div>
                         <label>Descripción</label>
-                        <textarea id="productDescription" placeholder="Contale a los compradores sobre tu producto..." class="mt-2" oninput="checkTitleAndDescription()"></textarea>
+                        <textarea id="productDescription" placeholder="Contale a los compradores sobre tu producto o servicio..." class="mt-2" oninput="checkTitleAndDescription()"></textarea>
                         <div id="categoryBlockWarning" class="category-block-warning hidden"></div>
                     </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label>Categoría</label>
@@ -258,14 +262,28 @@
                             </select>
                         </div>
                         <div>
-                            <label>Precio Unitario (ARS)</label>
-                            <input type="number" id="productPrice" placeholder="8499" min="0" step="1" class="mt-2">
+                            <label id="labelPrecio">Precio Unitario (ARS)</label>
+                            <input type="text" id="productPrice" inputmode="numeric" placeholder="$8.499" class="mt-2" oninput="onPrecioInput(event)">
+                        </div>
+                    </div>
+
+                    <div id="desgloseComision" class="desglose hidden"></div>
+
+                    <div id="seccionEnvio">
+                        <label>Envío</label>
+                        <div class="mt-2">
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="envioGratis" onchange="toggleEnvioGratis()">
+                                <span><strong>Envío gratis</strong> — lo absorbo yo. El costo del correo sale de mi ganancia.</span>
+                            </div>
+                            <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)">
+                            <p class="envio-hint">El comprador paga este monto <strong>además</strong> del precio. El envío <strong>no paga comisión</strong>.</p>
                         </div>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-3">
-                            <label>📸 Fotos del Producto</label>
+                            <label>📸 Fotos</label>
                             <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
                             <button onclick="document.getElementById('photoFileInput').click()" class="btn-ghost-dark px-3 py-2 rounded-lg text-xs">📷 Subir Foto</button>
                         </div>
@@ -273,12 +291,11 @@
                     </div>
 
                     <button id="publishBtn" onclick="publishProduct()" class="btn-primary w-full py-3.5 rounded-xl text-sm">
-                        Publicar Producto
+                        Publicar
                     </button>
                 </div>
             </section>
 
-            <!-- MIS PUBLICACIONES -->
             <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
                 <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
@@ -290,18 +307,84 @@
 
     <script>
         // ============================================================
-        // INICIALIZACIÓN DE SUPABASE
+        // CONFIGURACIÓN
         // ============================================================
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+
+        // La comisión de Plaza Market. Se calcula SOLO sobre el precio
+        // del producto o servicio. El envío nunca paga comisión.
+        const COMISION = 0.12;
 
         const { createClient } = window.supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let usuarioActual = null;
+        let tipoActual = 'producto';
 
         // ============================================================
-        // GUARDIA DE SESIÓN: si no está logueado, lo mandamos al acceso
+        // FORMATO DE PESOS
+        // ============================================================
+        function soloDigitos(s) { return (s || '').replace(/\D/g, ''); }
+        function formatearPesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+
+        function onPrecioInput(e) {
+            const d = soloDigitos(e.target.value);
+            e.target.value = d ? formatearPesos(d) : '';
+            actualizarDesglose();
+        }
+        function onEnvioInput(e) {
+            const d = soloDigitos(e.target.value);
+            e.target.value = d ? formatearPesos(d) : '';
+        }
+        function valorPrecio() { return Number(soloDigitos(document.getElementById('productPrice').value)) || 0; }
+        function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
+
+        // ============================================================
+        // DESGLOSE DE COMISIÓN EN VIVO
+        // ============================================================
+        function actualizarDesglose() {
+            const caja = document.getElementById('desgloseComision');
+            const precio = valorPrecio();
+
+            if (!precio) { caja.classList.add('hidden'); return; }
+
+            const comision = Math.round(precio * COMISION);
+            const recibis = precio - comision;
+            const etiqueta = tipoActual === 'servicio' ? 'Precio del servicio' : 'Precio publicado';
+
+            caja.innerHTML = `
+                <div class="desglose-fila"><span>${etiqueta}</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila total"><span><strong>Recibís</strong></span><span>${formatearPesos(recibis)}</span></div>
+                <p class="desglose-nota">La comisión se calcula <strong>solo sobre el precio</strong>. El envío no paga comisión — ese dinero va entero al correo.</p>
+            `;
+            caja.classList.remove('hidden');
+        }
+
+        // ============================================================
+        // PRODUCTO / SERVICIO
+        // ============================================================
+        function setTipo(tipo) {
+            tipoActual = tipo;
+            document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
+            document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
+            document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('labelPrecio').textContent =
+                tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
+            actualizarDesglose();
+        }
+
+        function toggleEnvioGratis() {
+            const gratis = document.getElementById('envioGratis').checked;
+            const campo = document.getElementById('costoEnvio');
+            campo.disabled = gratis;
+            if (gratis) { campo.value = ''; campo.style.opacity = '0.4'; }
+            else { campo.style.opacity = '1'; }
+        }
+
+        // ============================================================
+        // SESIÓN
         // ============================================================
         async function verificarSesion() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -318,23 +401,16 @@
         }
 
         async function handleLogout() {
-            const btn = document.getElementById('logoutBtn');
-            btn.disabled = true;
-            btn.innerHTML = 'Saliendo...';
+            document.getElementById('logoutBtn').disabled = true;
             await supabaseClient.auth.signOut();
             window.location.href = 'plaza-market-acceso-emprendedores.html';
         }
 
         // ============================================================
-        // FILTRO ANTI-MERCADO NEGRO Y CONTENIDO PROHIBIDO
+        // FILTRO DE RUBROS PROHIBIDOS
         // ============================================================
         function normalizeText(text) {
-            return text
-                .normalize('NFD')
-                .replace(/[̀-ͯ]/g, '')
-                .toLowerCase()
-                .replace(/\s+/g, ' ')
-                .trim();
+            return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
         }
 
         const BLOCKED_KEYWORDS = [
@@ -380,104 +456,69 @@
             'helado', 'helados', 'heladeria', 'keto', 'catering', 'delivery de comida'
         ];
 
-        const BLOCKED_PATTERN = (function buildBlockedPattern() {
+        const BLOCKED_PATTERN = (function () {
             const escaped = BLOCKED_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
             return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'i');
         })();
 
         function checkBlockedCategory(text) {
-            const normalized = normalizeText(text);
-            const match = normalized.match(BLOCKED_PATTERN);
+            const match = normalizeText(text).match(BLOCKED_PATTERN);
             return match ? match[1] : null;
         }
 
         function checkTitleAndDescription() {
-            const title = document.getElementById('productTitle').value;
-            const description = document.getElementById('productDescription').value;
-            const combined = `${title} ${description}`;
+            const combined = document.getElementById('productTitle').value + ' ' + document.getElementById('productDescription').value;
             const warningBox = document.getElementById('categoryBlockWarning');
             const publishBtn = document.getElementById('publishBtn');
+            const blocked = checkBlockedCategory(combined);
 
-            const blockedMatch = checkBlockedCategory(combined);
-
-            if (blockedMatch) {
+            if (blocked) {
                 warningBox.classList.remove('hidden');
                 warningBox.textContent = '🚫 Este rubro no está permitido en Plaza Market para garantizar la seguridad y confianza de la comunidad.';
                 publishBtn.disabled = true;
                 return false;
-            } else {
-                warningBox.classList.add('hidden');
-                publishBtn.disabled = false;
-                return true;
             }
+            warningBox.classList.add('hidden');
+            publishBtn.disabled = false;
+            return true;
         }
 
         const CATEGORY_LABELS = {
-            cosmetica: 'Cosmética / Estética',
-            perfumeria: 'Perfumería',
-            indumentaria: 'Indumentaria',
-            construccion: 'Construcción',
-            pintura: 'Pintura',
-            reformas: 'Reformas',
-            servicios: 'Servicios Profesionales',
-            estetica: 'Estética y Belleza'
+            cosmetica: 'Cosmética / Estética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
+            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas',
+            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza'
         };
 
         // ============================================================
-        // FILTRO DE FOTOS — OCR REAL EN EL NAVEGADOR
+        // FILTRO DE FOTOS (OCR REAL)
         // ============================================================
-        const NUMBER_WORDS = new Set([
-            'cero', 'uno', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
-        ]);
-        const FILLER_WORDS_PHOTO = new Set(['y', 'el', 'mi', 'numero', 'es', 'de', 'nro', 'tel']);
+        const NUMBER_WORDS = new Set(['cero','uno','una','dos','tres','cuatro','cinco','seis','siete','ocho','nueve']);
+        const FILLER_WORDS_PHOTO = new Set(['y','el','mi','numero','es','de','nro','tel']);
 
         function hasDigitPhonePattern(text) {
             const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
-            for (const m of matches) {
-                const digitsOnly = m.replace(/\D/g, '');
-                if (digitsOnly.length >= 7) return true;
-            }
-            const plain = text.match(/\d{7,}/g) || [];
-            return plain.length > 0;
+            for (const m of matches) { if (m.replace(/\D/g, '').length >= 7) return true; }
+            return (text.match(/\d{7,}/g) || []).length > 0;
         }
 
         function hasSpelledOutPhonePattern(text) {
-            const normalized = normalizeText(text);
-            const words = normalized.match(/[a-z]+/g) || [];
+            const words = normalizeText(text).match(/[a-z]+/g) || [];
             let run = 0, maxRun = 0;
             for (const w of words) {
-                if (NUMBER_WORDS.has(w)) {
-                    run++;
-                    maxRun = Math.max(maxRun, run);
-                } else if (FILLER_WORDS_PHOTO.has(w)) {
-                    // no rompe la racha
-                } else {
-                    run = 0;
-                }
+                if (NUMBER_WORDS.has(w)) { run++; maxRun = Math.max(maxRun, run); }
+                else if (!FILLER_WORDS_PHOTO.has(w)) { run = 0; }
             }
             return maxRun >= 5;
         }
 
-        function hasSocialMediaPattern(text) {
-            return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text);
-        }
+        function hasSocialMediaPattern(text) { return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text); }
 
         let uploadedPhotos = [];
 
         async function handlePhotoFileSelected(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            const imageUrl = URL.createObjectURL(file);
-            const photo = {
-                id: Date.now() + Math.random(),
-                file: file,
-                imageUrl: imageUrl,
-                scanned: false,
-                approved: null,
-                reason: null
-            };
-
+            const photo = { id: Date.now() + Math.random(), file, imageUrl: URL.createObjectURL(file), scanned: false, approved: null, reason: null };
             uploadedPhotos.push(photo);
             renderPhotoSlots();
             await scanPhotoReal(photo, file);
@@ -492,33 +533,21 @@
 
                 const extracted = text || '';
                 let reason = null;
-
-                if (hasDigitPhonePattern(extracted)) {
-                    reason = 'Se detectó un número de teléfono escrito en la imagen.';
-                } else if (hasSpelledOutPhonePattern(extracted)) {
-                    reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
-                } else if (hasSocialMediaPattern(extracted)) {
-                    reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
-                } else if (extracted.replace(/\s/g, '').length > 120) {
-                    reason = 'La imagen contiene demasiado texto estructurado para ser una foto de producto (parece un documento) — subí una foto real de lo que estás vendiendo.';
-                }
+                if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
+                else if (hasSpelledOutPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
+                else if (hasSocialMediaPattern(extracted)) reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+                else if (extracted.replace(/\s/g, '').length > 120) reason = 'La imagen contiene demasiado texto (parece un documento) — subí una foto real de lo que ofrecés.';
 
                 photo.scanned = true;
                 photo.approved = !reason;
                 photo.reason = reason;
                 renderPhotoSlots();
-
-                if (reason) {
-                    showToast(`🚫 Foto rechazada: ${reason}`, 'error');
-                } else {
-                    showToast('✅ Foto aprobada — sin datos de contacto detectados', 'success');
-                }
+                showToast(reason ? `🚫 Foto rechazada: ${reason}` : '✅ Foto aprobada — sin datos de contacto detectados', reason ? 'error' : 'success');
             } catch (err) {
-                photo.scanned = true;
-                photo.approved = false;
-                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó automáticamente.';
+                photo.scanned = true; photo.approved = false;
+                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó.';
                 renderPhotoSlots();
-                showToast('⚠️ No se pudo analizar la foto — no se aprobó por seguridad', 'error');
+                showToast('⚠️ No se pudo analizar la foto', 'error');
                 console.error(err);
             }
         }
@@ -531,86 +560,67 @@
         function renderPhotoSlots() {
             const container = document.getElementById('photoSlotsContainer');
             if (!container) return;
-
             if (uploadedPhotos.length === 0) {
                 container.innerHTML = '<p class="empty-state-inline">Todavía no agregaste ninguna foto.</p>';
                 return;
             }
-
             container.innerHTML = uploadedPhotos.map(p => {
                 let statusBlock;
-                if (!p.scanned) {
-                    statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
-                } else if (p.approved) {
-                    statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
-                } else {
-                    statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
-                }
-
-                return `
-                <div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
-                    <img src="${p.imageUrl}" alt="Foto del producto" class="photo-slot-real-img">
+                if (!p.scanned) statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
+                else if (p.approved) statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
+                else statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
+                return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
+                    <img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">
                     ${statusBlock}
                     <button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
-                </div>
-                `;
+                </div>`;
             }).join('');
         }
 
         // ============================================================
-        // SUBIR FOTOS APROBADAS AL DEPÓSITO (STORAGE)
+        // SUBIR FOTOS AL DEPÓSITO
         // ============================================================
         async function subirFotosAprobadas() {
             const urls = [];
-            const aprobadas = uploadedPhotos.filter(p => p.approved);
-
-            for (const p of aprobadas) {
+            for (const p of uploadedPhotos.filter(p => p.approved)) {
                 const ext = (p.file.name.split('.').pop() || 'jpg').toLowerCase();
                 const nombre = `${usuarioActual.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-                const { error } = await supabaseClient.storage
-                    .from('productos')
-                    .upload(nombre, p.file, { contentType: p.file.type });
-
+                const { error } = await supabaseClient.storage.from('productos').upload(nombre, p.file, { contentType: p.file.type });
                 if (error) throw error;
-
-                const { data } = supabaseClient.storage.from('productos').getPublicUrl(nombre);
-                urls.push(data.publicUrl);
+                urls.push(supabaseClient.storage.from('productos').getPublicUrl(nombre).data.publicUrl);
             }
             return urls;
         }
 
         // ============================================================
-        // PUBLICAR PRODUCTO (GUARDA DE VERDAD EN SUPABASE)
+        // PUBLICAR
         // ============================================================
         async function publishProduct() {
             const title = document.getElementById('productTitle').value.trim();
             const description = document.getElementById('productDescription').value.trim();
             const category = document.getElementById('productCategory').value;
-            const price = parseFloat(document.getElementById('productPrice').value);
+            const price = valorPrecio();
+            const esProducto = tipoActual === 'producto';
+            const envioGratis = esProducto && document.getElementById('envioGratis').checked;
+            const costoEnvio = (esProducto && !envioGratis) ? valorEnvio() : 0;
 
-            if (!title) { showToast('❌ Ingresá un título para el producto', 'error'); return; }
+            if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
             if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
 
-            const blockedMatch = checkBlockedCategory(`${title} ${description}`);
-            if (blockedMatch) {
-                showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
+            if (esProducto && !envioGratis && costoEnvio <= 0) {
+                showToast('❌ Poné el costo del envío, o tildá "Envío gratis"', 'error');
                 return;
             }
 
-            if (uploadedPhotos.length === 0) {
-                showToast('❌ Agregá al menos una foto del producto', 'error');
+            if (checkBlockedCategory(`${title} ${description}`)) {
+                showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
                 return;
             }
-            if (uploadedPhotos.some(p => !p.scanned)) {
-                showToast('⏳ Esperá a que la IA termine de analizar tus fotos', 'info');
-                return;
-            }
-            const approvedCount = uploadedPhotos.filter(p => p.approved).length;
-            if (approvedCount === 0) {
-                showToast('❌ Ninguna de tus fotos pasó el filtro. Subí al menos una foto limpia.', 'error');
-                return;
+            if (uploadedPhotos.length === 0) { showToast('❌ Agregá al menos una foto', 'error'); return; }
+            if (uploadedPhotos.some(p => !p.scanned)) { showToast('⏳ Esperá a que la IA analice tus fotos', 'info'); return; }
+            if (uploadedPhotos.filter(p => p.approved).length === 0) {
+                showToast('❌ Ninguna foto pasó el filtro. Subí al menos una foto limpia.', 'error'); return;
             }
 
             const btn = document.getElementById('publishBtn');
@@ -619,16 +629,17 @@
 
             try {
                 const urls = await subirFotosAprobadas();
-
                 const { error } = await supabaseClient.from('productos').insert({
                     usuario_id: usuarioActual.id,
                     titulo: title,
                     descripcion: description,
                     categoria: category,
                     precio: price,
-                    fotos: urls
+                    fotos: urls,
+                    tipo: tipoActual,
+                    envio_gratis: envioGratis,
+                    costo_envio: costoEnvio
                 });
-
                 if (error) throw error;
 
                 showToast(`✅ "${title}" publicado y guardado con éxito`, 'success');
@@ -637,55 +648,60 @@
                 document.getElementById('productDescription').value = '';
                 document.getElementById('productCategory').value = '';
                 document.getElementById('productPrice').value = '';
+                document.getElementById('costoEnvio').value = '';
+                document.getElementById('envioGratis').checked = false;
+                toggleEnvioGratis();
                 document.getElementById('categoryBlockWarning').classList.add('hidden');
+                document.getElementById('desgloseComision').classList.add('hidden');
                 uploadedPhotos = [];
                 renderPhotoSlots();
                 await cargarMisProductos();
-
             } catch (err) {
                 console.error(err);
                 showToast(`🚫 No se pudo publicar: ${err.message || 'error desconocido'}`, 'error');
             }
 
             btn.disabled = false;
-            btn.innerHTML = 'Publicar Producto';
+            btn.innerHTML = 'Publicar';
         }
 
         // ============================================================
-        // MIS PUBLICACIONES (LEÍDAS DESDE SUPABASE)
+        // MIS PUBLICACIONES
         // ============================================================
         async function cargarMisProductos() {
             const container = document.getElementById('myProductsList');
-
             const { data, error } = await supabaseClient
-                .from('productos')
-                .select('*')
+                .from('productos').select('*')
                 .eq('usuario_id', usuarioActual.id)
                 .order('creado_en', { ascending: false });
 
-            if (error) {
-                container.innerHTML = `<p class="empty-state">⚠️ Error al cargar: ${error.message}</p>`;
-                return;
-            }
-            if (!data || data.length === 0) {
-                container.innerHTML = '<p class="empty-state">Todavía no publicaste ningún producto.</p>';
-                return;
-            }
+            if (error) { container.innerHTML = `<p class="empty-state">⚠️ Error al cargar: ${error.message}</p>`; return; }
+            if (!data || data.length === 0) { container.innerHTML = '<p class="empty-state">Todavía no publicaste nada.</p>'; return; }
 
             container.innerHTML = data.map(p => {
-                const foto = (p.fotos && p.fotos[0]) ? `<img src="${p.fotos[0]}" class="product-row-img" alt="">` : '';
+                const foto = (p.fotos && p.fotos[0])
+                    ? `<img src="${p.fotos[0]}" class="product-row-img" alt="">`
+                    : `<div class="product-row-icon">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
                 const fecha = new Date(p.creado_en).toLocaleString('es-AR');
-                return `
-                <div class="product-card-row">
+                const comision = Math.round(Number(p.precio) * COMISION);
+                const recibis = Number(p.precio) - comision;
+
+                let envioTxt = '';
+                if (p.tipo === 'servicio') envioTxt = 'Servicio';
+                else if (p.envio_gratis) envioTxt = 'Envío gratis';
+                else envioTxt = `Envío ${formatearPesos(p.costo_envio)}`;
+
+                return `<div class="product-card-row">
                     <div class="flex items-center gap-3">
                         ${foto}
                         <div>
                             <p class="product-title">${escaparHtml(p.titulo)}</p>
-                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · $${Number(p.precio).toLocaleString('es-AR')} · ${fecha}</p>
+                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}</p>
+                            <p class="product-meta">Recibís ${formatearPesos(recibis)} · ${fecha}</p>
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <span class="photo-approved-badge-small">✓ ${p.fotos ? p.fotos.length : 0} foto${(p.fotos && p.fotos.length === 1) ? '' : 's'}</span>
+                        <span class="badge-small">✓ ${p.fotos ? p.fotos.length : 0} foto${(p.fotos && p.fotos.length === 1) ? '' : 's'}</span>
                         <button class="btn-delete" onclick="borrarProducto(${p.id})">🗑 Eliminar</button>
                     </div>
                 </div>`;
@@ -695,41 +711,29 @@
         async function borrarProducto(id) {
             if (!confirm('¿Seguro que querés eliminar esta publicación?')) return;
             const { error } = await supabaseClient.from('productos').delete().eq('id', id);
-            if (error) {
-                showToast(`🚫 No se pudo eliminar: ${error.message}`, 'error');
-                return;
-            }
+            if (error) { showToast(`🚫 No se pudo eliminar: ${error.message}`, 'error'); return; }
             showToast('🗑 Publicación eliminada', 'info');
             await cargarMisProductos();
         }
 
-        function escaparHtml(t) {
-            return String(t).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
         // ============================================================
-        // NOTIFICACIONES (TOAST)
+        // TOAST
         // ============================================================
         function showToast(message, type) {
             const toast = document.createElement('div');
             toast.className = `toast ${type || 'info'}`;
-
             let icon = 'ℹ️';
             if (type === 'success') icon = '✅';
             if (type === 'error') icon = '🚫';
-
-            toast.innerHTML = `
-                <div class="flex gap-3 items-start">
-                    <span class="text-xl flex-shrink-0">${icon}</span>
-                    <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300 flex-shrink-0">✕</button>
-                </div>
-            `;
+            toast.innerHTML = `<div class="flex gap-3 items-start">
+                <span class="text-xl flex-shrink-0">${icon}</span>
+                <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300">✕</button>
+            </div>`;
             document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.add('hide');
-                setTimeout(() => toast.remove(), 400);
-            }, 5000);
+            setTimeout(() => toast.remove(), 5500);
         }
 
         // ============================================================
