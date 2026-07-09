@@ -82,6 +82,10 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
         .card-fecha { font-size: 0.66rem; color: rgba(226,232,240,0.35); margin-top: 0.25rem; }
+        .card-envio { font-size: 0.72rem; margin-top: 0.3rem; font-weight: 600; }
+        .card-envio.gratis { color: #34D399; }
+        .card-envio.pago { color: rgba(226,232,240,0.55); }
+        .card-envio.servicio { color: #C4B5FD; }
         .card-chat {
             margin-top: 0.9rem; display: block; text-align: center;
             padding: 0.6rem; border-radius: 0.75rem; font-size: 0.78rem;
@@ -114,7 +118,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
-                <a href="plaza-market-acceso-emprendedores.html" class="btn-primary px-4 py-2 rounded-lg text-sm">Vender / Ingresar</a>
+                <a href="plaza-market-panel-carga-productos.html" class="btn-primary px-4 py-2 rounded-lg text-sm">Vender / Ingresar</a>
             </div>
         </header>
 
@@ -207,11 +211,19 @@
             }
 
             cont.innerHTML = '<div class="grid-productos">' + lista.map(p => {
+                const esServicio = p.tipo === 'servicio';
                 const img = (p.fotos && p.fotos[0])
                     ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="card-img" loading="lazy">`
-                    : '<div class="card-img-placeholder">📦</div>';
+                    : `<div class="card-img-placeholder">${esServicio ? '🛠️' : '📦'}</div>`;
                 const fecha = new Date(p.creado_en).toLocaleDateString('es-AR');
                 const desc = escaparHtml(p.descripcion).slice(0, 110);
+
+                let envio;
+                if (esServicio) envio = '<p class="card-envio servicio">🛠️ Servicio · se coordina por chat</p>';
+                else if (p.envio_gratis) envio = '<p class="card-envio gratis">🚚 Envío gratis</p>';
+                else envio = `<p class="card-envio pago">🚚 + $${Number(p.costo_envio || 0).toLocaleString('es-AR')} de envío</p>`;
+
+                const textoBoton = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
 
                 return `
                 <article class="card-producto">
@@ -221,9 +233,10 @@
                         <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
                         <p class="card-desc">${desc}${desc.length >= 110 ? '…' : ''}</p>
                         <p class="card-precio">$${Number(p.precio).toLocaleString('es-AR')}</p>
+                        ${envio}
                         <p class="card-fecha">Publicado el ${fecha}</p>
                         <a href="plaza-market-chat-servicios.html?sala=producto-${p.id}" class="btn-primary card-chat">
-                            💬 Consultar al vendedor
+                            ${textoBoton}
                         </a>
                     </div>
                 </article>`;
