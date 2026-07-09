@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Catálogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main, header { position: relative; z-index: 1; }
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,82,212,0.4); flex-shrink: 0;
+        }
+        .btn-ghost-dark {
+            background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
+            font-weight: 600; cursor: pointer; text-decoration: none;
+        }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
+        .btn-primary {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700; border: none; cursor: pointer; text-decoration: none;
+            box-shadow: 0 4px 20px rgba(0,82,212,0.4);
+        }
+
+        .filtros {
+            display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+        }
+        .filtros input, .filtros select {
+            background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9; border-radius: 0.85rem; padding: 0.7rem 1rem; font-size: 0.85rem;
+        }
+        .filtros input { flex: 1; min-width: 200px; }
+        .filtros input:focus, .filtros select:focus { outline: none; border-color: #3B82F6; }
+        .filtros select option { background: #131B2E; }
+
+        .grid-productos {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem;
+        }
+        .card-producto {
+            background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09); border-radius: 1.25rem;
+            overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            animation: fadeInUp 0.35s ease;
+        }
+        .card-producto:hover { transform: translateY(-4px); box-shadow: 0 28px 70px rgba(0,0,0,0.5); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-img {
+            width: 100%; height: 170px; object-fit: cover; display: block;
+            background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
+        }
+        .card-img-placeholder {
+            width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
+        }
+        .card-body { padding: 1rem 1.1rem 1.2rem; flex: 1; display: flex; flex-direction: column; }
+        .card-cat {
+            font-size: 0.65rem; font-weight: 700; color: #93C5FD; text-transform: uppercase;
+            letter-spacing: 0.04em; margin-bottom: 0.35rem;
+        }
+        .card-title { font-weight: 700; color: white; font-size: 0.95rem; line-height: 1.35; margin-bottom: 0.4rem; }
+        .card-desc { font-size: 0.76rem; color: rgba(226,232,240,0.55); line-height: 1.5; flex: 1; margin-bottom: 0.8rem; }
+        .card-precio {
+            font-size: 1.15rem; font-weight: 800;
+            background: linear-gradient(135deg, #60A5FA, #A78BFA);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .card-fecha { font-size: 0.66rem; color: rgba(226,232,240,0.35); margin-top: 0.25rem; }
+        .card-chat {
+            margin-top: 0.9rem; display: block; text-align: center;
+            padding: 0.6rem; border-radius: 0.75rem; font-size: 0.78rem;
+        }
+
+        .estado { text-align: center; padding: 4rem 1rem; color: rgba(226,232,240,0.45); font-size: 0.9rem; }
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+        <header class="flex flex-wrap items-center justify-between gap-4 mb-7">
+            <div class="flex items-center gap-3">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Catálogo</h1>
+                    <p class="text-xs text-slate-400 font-medium">Plaza Market · <span id="totalLabel">—</span></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
+                <a href="plaza-market-acceso-emprendedores.html" class="btn-primary px-4 py-2 rounded-lg text-sm">Vender / Ingresar</a>
+            </div>
+        </header>
+
+        <div class="filtros">
+            <input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros()">
+            <select id="filtroCategoria" onchange="aplicarFiltros()">
+                <option value="">Todas las categorías</option>
+                <option value="cosmetica">Cosmética / Estética</option>
+                <option value="perfumeria">Perfumería</option>
+                <option value="indumentaria">Indumentaria</option>
+                <option value="construccion">Construcción</option>
+                <option value="pintura">Pintura</option>
+                <option value="reformas">Reformas</option>
+                <option value="servicios">Servicios Profesionales</option>
+                <option value="estetica">Estética y Belleza</option>
+            </select>
+        </div>
+
+        <div id="contenido">
+            <div class="estado"><span class="spinner"></span> Cargando productos...</div>
+        </div>
+
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const CATEGORY_LABELS = {
+            cosmetica: 'Cosmética / Estética',
+            perfumeria: 'Perfumería',
+            indumentaria: 'Indumentaria',
+            construccion: 'Construcción',
+            pintura: 'Pintura',
+            reformas: 'Reformas',
+            servicios: 'Servicios Profesionales',
+            estetica: 'Estética y Belleza'
+        };
+
+        let todos = [];
+
+        function escaparHtml(t) {
+            return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        async function cargarCatalogo() {
+            const cont = document.getElementById('contenido');
+
+            const { data, error } = await db
+                .from('productos')
+                .select('*')
+                .order('creado_en', { ascending: false })
+                .limit(300);
+
+            if (error) {
+                cont.innerHTML = `<div class="estado">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">${error.message}</b><br>código: ${error.code || '—'}</div>`;
+                return;
+            }
+
+            todos = data || [];
+            document.getElementById('totalLabel').textContent =
+                todos.length === 1 ? '1 publicación' : `${todos.length} publicaciones`;
+            aplicarFiltros();
+        }
+
+        function aplicarFiltros() {
+            const texto = document.getElementById('buscador').value.trim().toLowerCase();
+            const cat = document.getElementById('filtroCategoria').value;
+
+            let lista = todos;
+            if (cat) lista = lista.filter(p => p.categoria === cat);
+            if (texto) {
+                lista = lista.filter(p =>
+                    (p.titulo || '').toLowerCase().includes(texto) ||
+                    (p.descripcion || '').toLowerCase().includes(texto)
+                );
+            }
+            renderProductos(lista);
+        }
+
+        function renderProductos(lista) {
+            const cont = document.getElementById('contenido');
+
+            if (!lista.length) {
+                cont.innerHTML = todos.length
+                    ? '<div class="estado">No encontramos productos con ese filtro. 🤔</div>'
+                    : '<div class="estado">Todavía no hay productos publicados.<br>¡Sé el primero en publicar! 🚀</div>';
+                return;
+            }
+
+            cont.innerHTML = '<div class="grid-productos">' + lista.map(p => {
+                const img = (p.fotos && p.fotos[0])
+                    ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="card-img" loading="lazy">`
+                    : '<div class="card-img-placeholder">📦</div>';
+                const fecha = new Date(p.creado_en).toLocaleDateString('es-AR');
+                const desc = escaparHtml(p.descripcion).slice(0, 110);
+
+                return `
+                <article class="card-producto">
+                    ${img}
+                    <div class="card-body">
+                        <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
+                        <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
+                        <p class="card-desc">${desc}${desc.length >= 110 ? '…' : ''}</p>
+                        <p class="card-precio">$${Number(p.precio).toLocaleString('es-AR')}</p>
+                        <p class="card-fecha">Publicado el ${fecha}</p>
+                        <a href="plaza-market-chat-servicios.html?sala=producto-${p.id}" class="btn-primary card-chat">
+                            💬 Consultar al vendedor
+                        </a>
+                    </div>
+                </article>`;
+            }).join('') + '</div>';
+        }
+
+        window.addEventListener('DOMContentLoaded', cargarCatalogo);
+    </script>
+</body>
+</html>
