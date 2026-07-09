@@ -126,14 +126,15 @@
             <input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros()">
             <select id="filtroCategoria" onchange="aplicarFiltros()">
                 <option value="">Todas las categorías</option>
-                <option value="cosmetica">Cosmética / Estética</option>
                 <option value="perfumeria">Perfumería</option>
+                <option value="cosmetica">Cosmética</option>
                 <option value="indumentaria">Indumentaria</option>
                 <option value="construccion">Construcción</option>
                 <option value="pintura">Pintura</option>
-                <option value="reformas">Reformas</option>
-                <option value="servicios">Servicios Profesionales</option>
                 <option value="estetica">Estética y Belleza</option>
+                <option value="masajes">Masajes y Bienestar</option>
+                <option value="servicios">Servicios Profesionales</option>
+                <option value="reformas">Reformas y refacciones</option>
             </select>
         </div>
 
@@ -149,14 +150,15 @@
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const CATEGORY_LABELS = {
-            cosmetica: 'Cosmética / Estética',
+            cosmetica: 'Cosmética',
             perfumeria: 'Perfumería',
             indumentaria: 'Indumentaria',
             construccion: 'Construcción',
             pintura: 'Pintura',
-            reformas: 'Reformas',
+            reformas: 'Reformas y refacciones',
             servicios: 'Servicios Profesionales',
-            estetica: 'Estética y Belleza'
+            estetica: 'Estética y Belleza',
+            masajes: 'Masajes y Bienestar'
         };
 
         let todos = [];
