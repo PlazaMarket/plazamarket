@@ -428,12 +428,17 @@
                     <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat. La seña empieza a cobrarse cuando conectemos los pagos.`;
             } else {
                 const gratis = envioLoPagaVendedor();
-                if (envio) {
-                    filas += `<div class="desglose-fila"><span>Costo del envío</span><span>${formatearPesos(envio)}</span></div>`;
-                    if (gratis) neto -= envio;
+
+                if (gratis && envio) {
+                    filas += `<div class="desglose-fila"><span>Envío que pagás vos</span><span>−${formatearPesos(envio)}</span></div>`;
+                    neto -= envio;
                 }
+
                 filas += `<div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>`;
-                nota = 'La comisión se calcula <strong>solo sobre el precio</strong>. El envío no paga comisión — ese dinero va entero al correo.';
+
+                nota = gratis
+                    ? `Estás regalando el envío: esos ${formatearPesos(envio)} salen de tu ganancia. El comprador paga solo ${formatearPesos(precio)}.`
+                    : `El comprador paga ${formatearPesos(precio + envio)} (precio + envío). La comisión se calcula <strong>solo sobre el precio</strong> — el envío va entero al correo.`;
             }
 
             caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
