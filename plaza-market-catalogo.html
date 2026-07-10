@@ -35,32 +35,31 @@
             color: white; font-weight: 700; border: none; cursor: pointer; text-decoration: none;
             box-shadow: 0 4px 20px rgba(0,82,212,0.4);
         }
-
-        .filtros {
-            display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem;
-        }
+        .filtros { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
         .filtros input, .filtros select {
             background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
             color: #F1F5F9; border-radius: 0.85rem; padding: 0.7rem 1rem; font-size: 0.85rem;
         }
-        .filtros input { flex: 1; min-width: 200px; }
+        .filtros input { flex: 1; min-width: 180px; }
         .filtros input:focus, .filtros select:focus { outline: none; border-color: #3B82F6; }
         .filtros select option { background: #131B2E; }
 
-        .grid-productos {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem;
-        }
+        .seccion-titulo { font-size: 1rem; font-weight: 700; color: #E2E8F0; margin: 0 0 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+        .strip { display: flex; gap: 0.9rem; overflow-x: auto; padding-bottom: 0.6rem; margin-bottom: 2rem; }
+        .strip .card-producto { min-width: 190px; max-width: 190px; }
+
+        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; }
         .card-producto {
             background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.09); border-radius: 1.25rem;
             overflow: hidden; display: flex; flex-direction: column;
             box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer;
             animation: fadeInUp 0.35s ease;
         }
         .card-producto:hover { transform: translateY(-4px); box-shadow: 0 28px 70px rgba(0,0,0,0.5); }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+        .card-img-wrap { position: relative; }
         .card-img {
             width: 100%; height: 170px; object-fit: cover; display: block;
             background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
@@ -69,6 +68,17 @@
             width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
             font-size: 2.5rem; background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
         }
+        .card-fotos-badge {
+            position: absolute; bottom: 0.5rem; right: 0.5rem;
+            background: rgba(11,17,32,0.8); color: #E2E8F0; font-size: 0.66rem; font-weight: 700;
+            padding: 0.2rem 0.5rem; border-radius: 999px;
+        }
+        .badge-agotado {
+            position: absolute; top: 0.5rem; left: 0.5rem;
+            background: rgba(239,68,68,0.92); color: white; font-size: 0.66rem; font-weight: 800;
+            padding: 0.25rem 0.6rem; border-radius: 999px; letter-spacing: 0.03em;
+        }
+        .img-agotada { filter: grayscale(0.7) brightness(0.6); }
         .card-body { padding: 1rem 1.1rem 1.2rem; flex: 1; display: flex; flex-direction: column; }
         .card-cat {
             font-size: 0.65rem; font-weight: 700; color: #93C5FD; text-transform: uppercase;
@@ -81,29 +91,67 @@
             background: linear-gradient(135deg, #60A5FA, #A78BFA);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .card-fecha { font-size: 0.66rem; color: rgba(226,232,240,0.35); margin-top: 0.25rem; }
         .card-envio { font-size: 0.72rem; margin-top: 0.3rem; font-weight: 600; }
         .card-envio.gratis { color: #34D399; }
         .card-envio.pago { color: rgba(226,232,240,0.55); }
         .card-envio.servicio { color: #C4B5FD; }
-        .card-chat {
-            margin-top: 0.9rem; display: block; text-align: center;
-            padding: 0.6rem; border-radius: 0.75rem; font-size: 0.78rem;
-        }
-
+        .card-stats { display: flex; gap: 0.9rem; margin-top: 0.55rem; font-size: 0.7rem; color: rgba(226,232,240,0.45); }
         .estado { text-align: center; padding: 4rem 1rem; color: rgba(226,232,240,0.45); font-size: 0.9rem; }
         .spinner {
             display: inline-block; width: 16px; height: 16px;
             border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6;
-            border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 0.5rem;
-            vertical-align: middle;
+            border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 0.5rem; vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .modal-fondo {
+            position: fixed; inset: 0; z-index: 100; background: rgba(11,17,32,0.88);
+            backdrop-filter: blur(8px); display: none; align-items: flex-start; justify-content: center;
+            padding: 2rem 1rem; overflow-y: auto;
+        }
+        .modal-fondo.abierto { display: flex; }
+        .modal-card {
+            background: #131B2E; border: 1px solid rgba(255,255,255,0.1); border-radius: 1.5rem;
+            max-width: 640px; width: 100%; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: fadeInUp 0.3s ease;
+        }
+        .modal-cerrar {
+            position: absolute; top: 1.2rem; right: 1.2rem; z-index: 101;
+            background: rgba(11,17,32,0.85); border: 1px solid rgba(255,255,255,0.18); color: #E2E8F0;
+            width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;
+        }
+        .modal-foto-principal { width: 100%; height: 320px; object-fit: cover; display: block; background: #0B1120; }
+        .modal-miniaturas { display: flex; gap: 0.5rem; padding: 0.7rem; overflow-x: auto; background: rgba(0,0,0,0.2); }
+        .modal-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
+        .modal-mini.activa { border-color: #3B82F6; }
+        .modal-body { padding: 1.5rem; }
+        .modal-precio {
+            font-size: 1.7rem; font-weight: 800;
+            background: linear-gradient(135deg, #60A5FA, #A78BFA);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .modal-desc { font-size: 0.9rem; color: rgba(226,232,240,0.75); line-height: 1.7; margin: 1rem 0; white-space: pre-wrap; }
+        .modal-stats { display: flex; gap: 1.5rem; margin: 1rem 0; font-size: 0.8rem; color: rgba(226,232,240,0.55); }
+        .modal-seccion { border-top: 1px solid rgba(255,255,255,0.09); margin-top: 1.3rem; padding-top: 1.1rem; }
+        .modal-seccion-tit { font-size: 0.82rem; font-weight: 700; color: #93C5FD; margin-bottom: 0.7rem; }
+        .mini-grid { display: flex; gap: 0.7rem; overflow-x: auto; padding-bottom: 0.4rem; }
+        .mini-prod { min-width: 120px; max-width: 120px; cursor: pointer; }
+        .mini-prod img, .mini-prod .mini-ph {
+            width: 120px; height: 90px; object-fit: cover; border-radius: 0.6rem; display: block;
+            background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
+        }
+        .mini-prod .mini-ph { display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+        .mini-prod p { font-size: 0.7rem; color: #E2E8F0; margin: 0.35rem 0 0; line-height: 1.3; }
+        .mini-prod .mini-precio { color: #93C5FD; font-weight: 700; }
+        .agotado-cartel {
+            background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5;
+            border-radius: 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.8rem; font-weight: 600; text-align: center; margin-top: 0.9rem;
+        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-
         <header class="flex flex-wrap items-center justify-between gap-4 mb-7">
             <div class="flex items-center gap-3">
                 <div class="brand-logo">
@@ -136,13 +184,53 @@
                 <option value="servicios">Servicios Profesionales</option>
                 <option value="reformas">Reformas y refacciones</option>
             </select>
+            <select id="ordenar" onchange="aplicarFiltros()">
+                <option value="nuevo">Más nuevas primero</option>
+                <option value="az">Nombre: A → Z</option>
+                <option value="precio-bajo">Precio: más bajo</option>
+                <option value="precio-alto">Precio: más alto</option>
+                <option value="vistas">Más vistas</option>
+            </select>
+        </div>
+
+        <div id="seccionHistorial" class="hidden">
+            <p class="seccion-titulo">🕘 Vistos recientemente</p>
+            <div id="stripHistorial" class="strip"></div>
         </div>
 
         <div id="contenido">
             <div class="estado"><span class="spinner"></span> Cargando productos...</div>
         </div>
-
     </main>
+
+    <div id="modalFondo" class="modal-fondo" onclick="cerrarModalSiFondo(event)">
+        <div class="modal-card" style="position: relative;">
+            <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
+            <img id="modalFotoPrincipal" class="modal-foto-principal" src="" alt="">
+            <div id="modalMiniaturas" class="modal-miniaturas"></div>
+            <div class="modal-body">
+                <p class="card-cat" id="modalCat"></p>
+                <h2 class="text-xl font-bold text-white mb-1" id="modalTitulo"></h2>
+                <p class="modal-precio" id="modalPrecio"></p>
+                <p id="modalEnvio" class="card-envio" style="margin-top:0.4rem;"></p>
+                <p id="modalStock" class="text-sm" style="margin-top:0.4rem;color:rgba(226,232,240,0.6);"></p>
+                <div class="modal-stats" id="modalStats"></div>
+                <p class="modal-desc" id="modalDesc"></p>
+                <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
+                <div id="modalAgotado" class="agotado-cartel hidden">Este producto está agotado por ahora.</div>
+
+                <div id="modalDelVendedor" class="modal-seccion hidden">
+                    <p class="modal-seccion-tit">Más publicaciones de este vendedor</p>
+                    <div id="gridDelVendedor" class="mini-grid"></div>
+                </div>
+
+                <div id="modalInteresar" class="modal-seccion hidden">
+                    <p class="modal-seccion-tit">También podría interesarte</p>
+                    <div id="gridInteresar" class="mini-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
@@ -150,100 +238,228 @@
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const CATEGORY_LABELS = {
-            cosmetica: 'Cosmética',
-            perfumeria: 'Perfumería',
-            indumentaria: 'Indumentaria',
-            construccion: 'Construcción',
-            pintura: 'Pintura',
-            reformas: 'Reformas y refacciones',
-            servicios: 'Servicios Profesionales',
-            estetica: 'Estética y Belleza',
-            masajes: 'Masajes y Bienestar'
+            cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
+            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas y refacciones',
+            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza', masajes: 'Masajes y Bienestar'
         };
 
         let todos = [];
+        let miUserId = null;
 
-        function escaparHtml(t) {
-            return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+        function agotado(p) { return p.tipo === 'producto' && p.stock !== null && p.stock !== undefined && p.stock <= 0; }
 
         async function cargarCatalogo() {
+            // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
+            try {
+                const { data: { session } } = await db.auth.getSession();
+                if (session) miUserId = session.user.id;
+            } catch (e) {}
+
             const cont = document.getElementById('contenido');
-
-            const { data, error } = await db
-                .from('productos')
-                .select('*')
-                .order('creado_en', { ascending: false })
-                .limit(300);
-
+            const { data, error } = await db.from('productos').select('*').order('creado_en', { ascending: false }).limit(300);
             if (error) {
                 cont.innerHTML = `<div class="estado">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">${error.message}</b><br>código: ${error.code || '—'}</div>`;
                 return;
             }
-
             todos = data || [];
-            document.getElementById('totalLabel').textContent =
-                todos.length === 1 ? '1 publicación' : `${todos.length} publicaciones`;
+            document.getElementById('totalLabel').textContent = todos.length === 1 ? '1 publicación' : `${todos.length} publicaciones`;
+            renderHistorial();
             aplicarFiltros();
+        }
+
+        function ordenarLista(lista) {
+            const modo = document.getElementById('ordenar').value;
+            const l = lista.slice();
+            if (modo === 'az') l.sort((a, b) => (a.titulo || '').localeCompare(b.titulo || '', 'es'));
+            else if (modo === 'precio-bajo') l.sort((a, b) => Number(a.precio) - Number(b.precio));
+            else if (modo === 'precio-alto') l.sort((a, b) => Number(b.precio) - Number(a.precio));
+            else if (modo === 'vistas') l.sort((a, b) => (b.vistas || 0) - (a.vistas || 0));
+            else l.sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en));
+            return l;
         }
 
         function aplicarFiltros() {
             const texto = document.getElementById('buscador').value.trim().toLowerCase();
             const cat = document.getElementById('filtroCategoria').value;
-
             let lista = todos;
             if (cat) lista = lista.filter(p => p.categoria === cat);
-            if (texto) {
-                lista = lista.filter(p =>
-                    (p.titulo || '').toLowerCase().includes(texto) ||
-                    (p.descripcion || '').toLowerCase().includes(texto)
-                );
-            }
-            renderProductos(lista);
+            if (texto) lista = lista.filter(p =>
+                (p.titulo || '').toLowerCase().includes(texto) || (p.descripcion || '').toLowerCase().includes(texto));
+            renderProductos(ordenarLista(lista));
+        }
+
+        function tarjetaHTML(p) {
+            const esServicio = p.tipo === 'servicio';
+            const nFotos = (p.fotos && p.fotos.length) || 0;
+            const agot = agotado(p);
+            const imgClase = agot ? 'card-img img-agotada' : 'card-img';
+            const img = nFotos
+                ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="${imgClase}" loading="lazy">${nFotos > 1 ? `<span class="card-fotos-badge">📷 ${nFotos}</span>` : ''}`
+                : `<div class="card-img-placeholder">${esServicio ? '🛠️' : '📦'}</div>`;
+            const badgeAgot = agot ? '<span class="badge-agotado">AGOTADO</span>' : '';
+            const desc = escaparHtml(p.descripcion).slice(0, 100);
+
+            let envio;
+            if (esServicio) envio = '<p class="card-envio servicio">🛠️ Servicio · se coordina por chat</p>';
+            else if (p.envio_gratis) envio = '<p class="card-envio gratis">🚚 Envío gratis</p>';
+            else envio = `<p class="card-envio pago">🚚 + ${pesos(p.costo_envio)} de envío</p>`;
+
+            return `
+            <article class="card-producto" onclick="abrirModal(${p.id})">
+                <div class="card-img-wrap">${badgeAgot}${img}</div>
+                <div class="card-body">
+                    <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
+                    <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
+                    <p class="card-desc">${desc}${desc.length >= 100 ? '…' : ''}</p>
+                    <p class="card-precio">${pesos(p.precio)}</p>
+                    ${envio}
+                    <div class="card-stats">
+                        <span>👁 ${p.vistas || 0} vistas</span>
+                        <span>💬 ${p.consultas || 0} consultas</span>
+                    </div>
+                </div>
+            </article>`;
         }
 
         function renderProductos(lista) {
             const cont = document.getElementById('contenido');
-
             if (!lista.length) {
                 cont.innerHTML = todos.length
                     ? '<div class="estado">No encontramos productos con ese filtro. 🤔</div>'
                     : '<div class="estado">Todavía no hay productos publicados.<br>¡Sé el primero en publicar! 🚀</div>';
                 return;
             }
-
-            cont.innerHTML = '<div class="grid-productos">' + lista.map(p => {
-                const esServicio = p.tipo === 'servicio';
-                const img = (p.fotos && p.fotos[0])
-                    ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="card-img" loading="lazy">`
-                    : `<div class="card-img-placeholder">${esServicio ? '🛠️' : '📦'}</div>`;
-                const fecha = new Date(p.creado_en).toLocaleDateString('es-AR');
-                const desc = escaparHtml(p.descripcion).slice(0, 110);
-
-                let envio;
-                if (esServicio) envio = '<p class="card-envio servicio">🛠️ Servicio · se coordina por chat</p>';
-                else if (p.envio_gratis) envio = '<p class="card-envio gratis">🚚 Envío gratis</p>';
-                else envio = `<p class="card-envio pago">🚚 + $${Number(p.costo_envio || 0).toLocaleString('es-AR')} de envío</p>`;
-
-                const textoBoton = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
-
-                return `
-                <article class="card-producto">
-                    ${img}
-                    <div class="card-body">
-                        <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
-                        <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
-                        <p class="card-desc">${desc}${desc.length >= 110 ? '…' : ''}</p>
-                        <p class="card-precio">$${Number(p.precio).toLocaleString('es-AR')}</p>
-                        ${envio}
-                        <p class="card-fecha">Publicado el ${fecha}</p>
-                        <a href="plaza-market-chat-servicios.html?sala=producto-${p.id}" class="btn-primary card-chat">
-                            ${textoBoton}
-                        </a>
-                    </div>
-                </article>`;
-            }).join('') + '</div>';
+            cont.innerHTML = '<div class="grid-productos">' + lista.map(tarjetaHTML).join('') + '</div>';
         }
+
+        // ============================================================
+        // HISTORIAL (guardado en el navegador del visitante)
+        // ============================================================
+        function leerHistorial() {
+            try { return JSON.parse(localStorage.getItem('pm_historial') || '[]'); } catch (e) { return []; }
+        }
+        function guardarEnHistorial(id) {
+            let h = leerHistorial().filter(x => x !== id);
+            h.unshift(id);
+            h = h.slice(0, 8);
+            localStorage.setItem('pm_historial', JSON.stringify(h));
+        }
+        function renderHistorial() {
+            const ids = leerHistorial();
+            const items = ids.map(id => todos.find(p => p.id === id)).filter(Boolean);
+            const cont = document.getElementById('seccionHistorial');
+            if (!items.length) { cont.classList.add('hidden'); return; }
+            document.getElementById('stripHistorial').innerHTML = items.map(tarjetaHTML).join('');
+            cont.classList.remove('hidden');
+        }
+
+        // ============================================================
+        // VISTA GRANDE + CONTADOR
+        // ============================================================
+        function miniHTML(p) {
+            const foto = (p.fotos && p.fotos[0])
+                ? `<img src="${p.fotos[0]}" alt="">`
+                : `<div class="mini-ph">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
+            return `<div class="mini-prod" onclick="abrirModal(${p.id})">
+                ${foto}
+                <p>${escaparHtml((p.titulo || '').slice(0, 28))}</p>
+                <p class="mini-precio">${pesos(p.precio)}</p>
+            </div>`;
+        }
+
+        async function abrirModal(id) {
+            const p = todos.find(x => x.id === id);
+            if (!p) return;
+
+            const esServicio = p.tipo === 'servicio';
+            const fotos = (p.fotos && p.fotos.length) ? p.fotos : [];
+            const agot = agotado(p);
+
+            document.getElementById('modalCat').textContent = CATEGORY_LABELS[p.categoria] || p.categoria;
+            document.getElementById('modalTitulo').textContent = p.titulo;
+            document.getElementById('modalPrecio').textContent = pesos(p.precio);
+            document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
+
+            const envioEl = document.getElementById('modalEnvio');
+            if (esServicio) { envioEl.className = 'card-envio servicio'; envioEl.textContent = '🛠️ Servicio · se coordina por chat'; }
+            else if (p.envio_gratis) { envioEl.className = 'card-envio gratis'; envioEl.textContent = '🚚 Envío gratis'; }
+            else { envioEl.className = 'card-envio pago'; envioEl.textContent = `🚚 + ${pesos(p.costo_envio)} de envío`; }
+
+            const stockEl = document.getElementById('modalStock');
+            if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
+            else stockEl.classList.add('hidden');
+
+            const principal = document.getElementById('modalFotoPrincipal');
+            if (fotos.length) { principal.src = fotos[0]; principal.classList.remove('hidden'); } else { principal.classList.add('hidden'); }
+
+            document.getElementById('modalMiniaturas').innerHTML = fotos.length > 1
+                ? fotos.map((f, i) => `<img src="${f}" class="modal-mini ${i === 0 ? 'activa' : ''}" onclick="cambiarFoto('${f}', this)">`).join('') : '';
+
+            document.getElementById('modalStats').innerHTML =
+                `<span>👁 ${p.vistas || 0} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
+
+            // Botón consultar (deshabilitado si está agotado)
+            const btn = document.getElementById('modalBtnChat');
+            const cartel = document.getElementById('modalAgotado');
+            if (agot) {
+                btn.classList.add('hidden'); cartel.classList.remove('hidden');
+            } else {
+                btn.classList.remove('hidden'); cartel.classList.add('hidden');
+                btn.textContent = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
+                btn.onclick = (e) => { e.preventDefault(); consultar(p); };
+            }
+
+            // Más del vendedor
+            const delVend = todos.filter(x => x.usuario_id === p.usuario_id && x.id !== p.id).slice(0, 10);
+            const secVend = document.getElementById('modalDelVendedor');
+            if (delVend.length) { document.getElementById('gridDelVendedor').innerHTML = delVend.map(miniHTML).join(''); secVend.classList.remove('hidden'); }
+            else secVend.classList.add('hidden');
+
+            // También podría interesarte (misma categoría, de otros vendedores)
+            const interesar = todos.filter(x => x.categoria === p.categoria && x.id !== p.id && x.usuario_id !== p.usuario_id).slice(0, 10);
+            const secInt = document.getElementById('modalInteresar');
+            if (interesar.length) { document.getElementById('gridInteresar').innerHTML = interesar.map(miniHTML).join(''); secInt.classList.remove('hidden'); }
+            else secInt.classList.add('hidden');
+
+            document.getElementById('modalFondo').scrollTop = 0;
+            document.getElementById('modalFondo').classList.add('abierto');
+            document.body.style.overflow = 'hidden';
+
+            guardarEnHistorial(p.id);
+
+            // Contar la vista — salvo que sea el propio vendedor mirando lo suyo
+            if (miUserId && miUserId === p.usuario_id) return;
+            p.vistas = (p.vistas || 0) + 1;
+            document.getElementById('modalStats').innerHTML =
+                `<span>👁 ${p.vistas} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
+            db.rpc('sumar_vista', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
+        }
+
+        function cambiarFoto(url, el) {
+            document.getElementById('modalFotoPrincipal').src = url;
+            document.querySelectorAll('.modal-mini').forEach(m => m.classList.remove('activa'));
+            el.classList.add('activa');
+        }
+
+        async function consultar(p) {
+            const clave = 'consultado_' + p.id;
+            if (!sessionStorage.getItem(clave)) {
+                sessionStorage.setItem(clave, '1');
+                db.rpc('sumar_consulta', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
+            }
+            window.location.href = 'plaza-market-chat-servicios.html?sala=producto-' + p.id;
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalFondo').classList.remove('abierto');
+            document.body.style.overflow = '';
+            renderHistorial();
+            aplicarFiltros();
+        }
+        function cerrarModalSiFondo(e) { if (e.target.id === 'modalFondo') cerrarModal(); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
 
         window.addEventListener('DOMContentLoaded', cargarCatalogo);
     </script>
