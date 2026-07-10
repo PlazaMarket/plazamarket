@@ -172,6 +172,25 @@
         .empty-state, .empty-state-inline { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4); }
         .empty-state-inline { grid-column: 1 / -1; }
 
+        /* Zona grande para agregar fotos */
+        .dropzone {
+            border: 2px dashed rgba(255,255,255,0.22);
+            border-radius: 1.1rem; padding: 2.2rem 1rem; text-align: center; cursor: pointer;
+            background: rgba(255,255,255,0.02); margin-top: 0.6rem;
+        }
+        .dropzone:hover, .dropzone.arrastrando {
+            border-color: #3B82F6; background: rgba(0,82,212,0.12);
+        }
+        .dz-mas {
+            width: 52px; height: 52px; margin: 0 auto 0.7rem; border-radius: 50%;
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 300; line-height: 1;
+        }
+        .dz-titulo { font-size: 0.95rem; font-weight: 700; color: #E2E8F0; }
+        .dz-sub { font-size: 0.75rem; color: rgba(226,232,240,0.45); margin-top: 0.3rem; line-height: 1.5; }
+        .dz-contador { font-size: 0.72rem; color: #93C5FD; margin-top: 0.5rem; font-weight: 600; }
+
         .product-card-row {
             display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
             padding: 0.85rem 1rem; border-radius: 0.85rem; background: rgba(255,255,255,0.03);
@@ -296,12 +315,17 @@
                     </div>
 
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <label>📸 Fotos</label>
-                            <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
-                            <button onclick="document.getElementById('photoFileInput').click()" class="btn-ghost-dark px-3 py-2 rounded-lg text-xs">📷 Subir Foto</button>
+                        <label>📸 Fotos</label>
+                        <input type="file" id="photoFileInput" accept="image/*" multiple class="hidden" onchange="handlePhotoFileSelected(event)">
+
+                        <div id="dropzone" class="dropzone">
+                            <div class="dz-mas">+</div>
+                            <p class="dz-titulo">Agregar fotos</p>
+                            <p class="dz-sub">Hacé clic acá, o arrastrá las imágenes desde tu computadora.<br>Podés subir varias juntas.</p>
+                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos</p>
                         </div>
-                        <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+                        <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
                     </div>
 
                     <button id="publishBtn" onclick="publishProduct()" class="btn-primary w-full py-3.5 rounded-xl text-sm">
@@ -479,6 +503,7 @@
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             setTipo('producto');
+            activarDropzone();
             renderPhotoSlots();
             await cargarMisProductos();
         }
@@ -598,15 +623,55 @@
         function hasSocialMediaPattern(text) { return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text); }
 
         let uploadedPhotos = [];
+        const MAX_FOTOS = 10;
 
-        async function handlePhotoFileSelected(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const photo = { id: Date.now() + Math.random(), file, imageUrl: URL.createObjectURL(file), scanned: false, approved: null, reason: null };
-            uploadedPhotos.push(photo);
+        async function agregarArchivos(files) {
+            const restantes = MAX_FOTOS - uploadedPhotos.length;
+            if (restantes <= 0) {
+                showToast(`❌ Llegaste al máximo de ${MAX_FOTOS} fotos`, 'error');
+                return;
+            }
+
+            const imagenes = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (imagenes.length < files.length) {
+                showToast('❌ Por ahora solo se aceptan fotos, no videos', 'error');
+            }
+
+            const aAgregar = imagenes.slice(0, restantes);
+            if (imagenes.length > restantes) {
+                showToast(`⚠️ Se agregaron ${restantes}. El máximo es ${MAX_FOTOS} fotos.`, 'info');
+            }
+
+            const nuevas = aAgregar.map(file => ({
+                id: Date.now() + Math.random(),
+                file,
+                imageUrl: URL.createObjectURL(file),
+                scanned: false, approved: null, reason: null
+            }));
+
+            uploadedPhotos.push(...nuevas);
             renderPhotoSlots();
-            await scanPhotoReal(photo, file);
+
+            for (const photo of nuevas) {
+                await scanPhotoReal(photo, photo.file);
+            }
+        }
+
+        function handlePhotoFileSelected(event) {
+            agregarArchivos(event.target.files);
             event.target.value = '';
+        }
+
+        function activarDropzone() {
+            const dz = document.getElementById('dropzone');
+            dz.addEventListener('click', () => document.getElementById('photoFileInput').click());
+            ['dragenter', 'dragover'].forEach(ev =>
+                dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('arrastrando'); }));
+            ['dragleave', 'drop'].forEach(ev =>
+                dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('arrastrando'); }));
+            dz.addEventListener('drop', e => {
+                if (e.dataTransfer && e.dataTransfer.files.length) agregarArchivos(e.dataTransfer.files);
+            });
         }
 
         async function scanPhotoReal(photo, file) {
@@ -644,10 +709,12 @@
         function renderPhotoSlots() {
             const container = document.getElementById('photoSlotsContainer');
             if (!container) return;
-            if (uploadedPhotos.length === 0) {
-                container.innerHTML = '<p class="empty-state-inline">Todavía no agregaste ninguna foto.</p>';
-                return;
-            }
+
+            const contador = document.getElementById('contadorFotos');
+            if (contador) contador.textContent = `${uploadedPhotos.length} de ${MAX_FOTOS} fotos`;
+
+            if (uploadedPhotos.length === 0) { container.innerHTML = ''; return; }
+
             container.innerHTML = uploadedPhotos.map(p => {
                 let statusBlock;
                 if (!p.scanned) statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
