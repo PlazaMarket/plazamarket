@@ -160,6 +160,13 @@
             border-radius: 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.8rem; font-weight: 600; text-align: center; margin-top: 0.9rem;
         }
         .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .modal-fondo { padding: 0; align-items: stretch; }
+            .modal-card { border-radius: 0; max-width: 100%; min-height: 100vh; }
+            .modal-foto-principal { height: 44vh; }
+            .modal-flecha { width: 40px; height: 40px; font-size: 1.3rem; }
+        }
     </style>
 </head>
 <body>
@@ -177,8 +184,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
-                <a href="plaza-market-panel-carga-productos.html" class="btn-primary px-4 py-2 rounded-lg text-sm">Vender / Ingresar</a>
+                <a href="plaza-market-panel-carga-productos.html" class="btn-primary px-4 py-2 rounded-lg text-sm">🏪 Vender</a>
             </div>
         </header>
 
@@ -261,6 +267,7 @@
 
         let todos = [];
         let miUserId = null;
+        let sesionActiva = false;
         let fotosModal = [];
         let idxModal = 0;
 
@@ -272,7 +279,7 @@
             // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
             try {
                 const { data: { session } } = await db.auth.getSession();
-                if (session) miUserId = session.user.id;
+                if (session) { miUserId = session.user.id; sesionActiva = true; }
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
 
@@ -509,6 +516,12 @@
         });
 
         async function consultar(p) {
+            // La vidriera es abierta, pero para consultar/reservar hay que tener cuenta.
+            if (!sesionActiva) {
+                alert('Para consultar o reservar necesitás tener una cuenta (es gratis). Te llevamos al registro.');
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
+                return;
+            }
             const clave = 'consultado_' + p.id;
             if (!sessionStorage.getItem(clave)) {
                 sessionStorage.setItem(clave, '1');
