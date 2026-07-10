@@ -120,10 +120,22 @@
             background: rgba(11,17,32,0.85); border: 1px solid rgba(255,255,255,0.18); color: #E2E8F0;
             width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;
         }
+        .modal-foto-wrap { position: relative; background: #0B1120; }
         .modal-foto-principal { width: 100%; height: 360px; object-fit: contain; display: block; background: #0B1120; }
-        .modal-miniaturas { display: flex; gap: 0.5rem; padding: 0.7rem; overflow-x: auto; background: rgba(0,0,0,0.2); }
-        .modal-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
-        .modal-mini.activa { border-color: #3B82F6; }
+        .modal-flecha {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 5;
+            background: rgba(11,17,32,0.7); border: 1px solid rgba(255,255,255,0.2); color: white;
+            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-flecha:hover { background: rgba(11,17,32,0.95); }
+        .modal-flecha.izq { left: 0.7rem; }
+        .modal-flecha.der { right: 0.7rem; }
+        .modal-contador-fotos {
+            position: absolute; bottom: 0.7rem; left: 50%; transform: translateX(-50%);
+            background: rgba(11,17,32,0.75); color: #E2E8F0; font-size: 0.7rem; font-weight: 700;
+            padding: 0.25rem 0.7rem; border-radius: 999px; z-index: 5;
+        }
         .modal-body { padding: 1.5rem; }
         .modal-precio {
             font-size: 1.7rem; font-weight: 800;
@@ -206,8 +218,12 @@
     <div id="modalFondo" class="modal-fondo" onclick="cerrarModalSiFondo(event)">
         <div class="modal-card" style="position: relative;">
             <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
-            <img id="modalFotoPrincipal" class="modal-foto-principal" src="" alt="">
-            <div id="modalMiniaturas" class="modal-miniaturas"></div>
+            <div class="modal-foto-wrap">
+                <button class="modal-flecha izq hidden" id="flechaIzq" onclick="fotoAnterior(event)">‹</button>
+                <img id="modalFotoPrincipal" class="modal-foto-principal" src="" alt="">
+                <button class="modal-flecha der hidden" id="flechaDer" onclick="fotoSiguiente(event)">›</button>
+                <span class="modal-contador-fotos hidden" id="modalContadorFotos"></span>
+            </div>
             <div class="modal-body">
                 <p class="card-cat" id="modalCat"></p>
                 <h2 class="text-xl font-bold text-white mb-1" id="modalTitulo"></h2>
@@ -245,6 +261,8 @@
 
         let todos = [];
         let miUserId = null;
+        let fotosModal = [];
+        let idxModal = 0;
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
@@ -394,11 +412,9 @@
             if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
             else stockEl.classList.add('hidden');
 
-            const principal = document.getElementById('modalFotoPrincipal');
-            if (fotos.length) { principal.src = fotos[0]; principal.classList.remove('hidden'); } else { principal.classList.add('hidden'); }
-
-            document.getElementById('modalMiniaturas').innerHTML = fotos.length > 1
-                ? fotos.map((f, i) => `<img src="${f}" class="modal-mini ${i === 0 ? 'activa' : ''}" onclick="cambiarFoto('${f}', this)">`).join('') : '';
+            fotosModal = fotos;
+            idxModal = 0;
+            mostrarFoto();
 
             document.getElementById('modalStats').innerHTML =
                 `<span>👁 ${p.vistas || 0} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
@@ -440,11 +456,57 @@
             db.rpc('sumar_vista', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
         }
 
-        function cambiarFoto(url, el) {
-            document.getElementById('modalFotoPrincipal').src = url;
-            document.querySelectorAll('.modal-mini').forEach(m => m.classList.remove('activa'));
-            el.classList.add('activa');
+        function mostrarFoto() {
+            const principal = document.getElementById('modalFotoPrincipal');
+            const contador = document.getElementById('modalContadorFotos');
+            const izq = document.getElementById('flechaIzq');
+            const der = document.getElementById('flechaDer');
+
+            if (!fotosModal.length) {
+                principal.classList.add('hidden');
+                contador.classList.add('hidden'); izq.classList.add('hidden'); der.classList.add('hidden');
+                return;
+            }
+            principal.src = fotosModal[idxModal];
+            principal.classList.remove('hidden');
+
+            if (fotosModal.length > 1) {
+                contador.textContent = `${idxModal + 1} / ${fotosModal.length}`;
+                contador.classList.remove('hidden');
+                izq.classList.remove('hidden');
+                der.classList.remove('hidden');
+            } else {
+                contador.classList.add('hidden'); izq.classList.add('hidden'); der.classList.add('hidden');
+            }
         }
+
+        function fotoAnterior(e) {
+            if (e) e.stopPropagation();
+            if (!fotosModal.length) return;
+            idxModal = (idxModal - 1 + fotosModal.length) % fotosModal.length;
+            mostrarFoto();
+        }
+        function fotoSiguiente(e) {
+            if (e) e.stopPropagation();
+            if (!fotosModal.length) return;
+            idxModal = (idxModal + 1) % fotosModal.length;
+            mostrarFoto();
+        }
+
+        // Deslizar con el dedo en el celular
+        let touchX0 = null;
+        const fotoWrap = () => document.querySelector('.modal-foto-wrap');
+        document.addEventListener('DOMContentLoaded', () => {
+            const w = fotoWrap();
+            if (!w) return;
+            w.addEventListener('touchstart', e => { touchX0 = e.changedTouches[0].clientX; }, { passive: true });
+            w.addEventListener('touchend', e => {
+                if (touchX0 === null) return;
+                const dx = e.changedTouches[0].clientX - touchX0;
+                if (Math.abs(dx) > 40) { dx < 0 ? fotoSiguiente() : fotoAnterior(); }
+                touchX0 = null;
+            }, { passive: true });
+        });
 
         async function consultar(p) {
             const clave = 'consultado_' + p.id;
