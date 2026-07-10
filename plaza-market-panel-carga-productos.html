@@ -508,6 +508,7 @@
                 return;
             }
             usuarioActual = session.user;
+            localStorage.setItem('pm_uid', usuarioActual.id);
             document.getElementById('userEmailLabel').textContent = usuarioActual.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
@@ -519,6 +520,7 @@
 
         async function handleLogout() {
             document.getElementById('logoutBtn').disabled = true;
+            localStorage.removeItem('pm_uid');
             await supabaseClient.auth.signOut();
             window.location.href = 'plaza-market-acceso-emprendedores.html';
         }
