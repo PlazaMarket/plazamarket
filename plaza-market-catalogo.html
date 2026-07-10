@@ -120,7 +120,7 @@
             background: rgba(11,17,32,0.85); border: 1px solid rgba(255,255,255,0.18); color: #E2E8F0;
             width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;
         }
-        .modal-foto-principal { width: 100%; height: 320px; object-fit: cover; display: block; background: #0B1120; }
+        .modal-foto-principal { width: 100%; height: 360px; object-fit: contain; display: block; background: #0B1120; }
         .modal-miniaturas { display: flex; gap: 0.5rem; padding: 0.7rem; overflow-x: auto; background: rgba(0,0,0,0.2); }
         .modal-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
         .modal-mini.activa { border-color: #3B82F6; }
@@ -256,6 +256,7 @@
                 const { data: { session } } = await db.auth.getSession();
                 if (session) miUserId = session.user.id;
             } catch (e) {}
+            if (!miUserId) miUserId = localStorage.getItem('pm_uid');
 
             const cont = document.getElementById('contenido');
             const { data, error } = await db.from('productos').select('*').order('creado_en', { ascending: false }).limit(300);
@@ -347,9 +348,11 @@
             localStorage.setItem('pm_historial', JSON.stringify(h));
         }
         function renderHistorial() {
+            const cont = document.getElementById('seccionHistorial');
+            // Con pocos productos, "Vistos recientemente" solo duplica el catálogo. Lo mostramos cuando el catálogo crece.
+            if (todos.length < 4) { cont.classList.add('hidden'); return; }
             const ids = leerHistorial();
             const items = ids.map(id => todos.find(p => p.id === id)).filter(Boolean);
-            const cont = document.getElementById('seccionHistorial');
             if (!items.length) { cont.classList.add('hidden'); return; }
             document.getElementById('stripHistorial').innerHTML = items.map(tarjetaHTML).join('');
             cont.classList.remove('hidden');
