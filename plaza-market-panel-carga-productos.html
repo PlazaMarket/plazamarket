@@ -286,6 +286,12 @@
                         </div>
                     </div>
 
+                    <div id="seccionStock">
+                        <label>¿Cuántas unidades tenés en stock?</label>
+                        <input type="text" id="productStock" inputmode="numeric" placeholder="Ej: 5" class="mt-2" oninput="onStockInput(event)">
+                        <p class="envio-hint">Cuando el stock llegue a 0, la publicación se muestra como <strong>“Agotado”</strong> hasta que lo repongas.</p>
+                    </div>
+
                     <div id="desgloseComision" class="desglose hidden"></div>
 
                     <div id="seccionEnvio">
@@ -400,6 +406,8 @@
         }
         function valorPrecio() { return Number(soloDigitos(document.getElementById('productPrice').value)) || 0; }
         function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
+        function valorStock() { return Number(soloDigitos(document.getElementById('productStock').value)) || 0; }
+        function onStockInput(e) { e.target.value = soloDigitos(e.target.value); }
 
         // ============================================================
         // DESGLOSE EN VIVO
@@ -483,6 +491,7 @@
             document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
             document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
             document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionStock').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('labelPrecio').textContent =
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
             cargarCategorias(tipo);
@@ -759,6 +768,12 @@
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
             if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
 
+            const stock = esProducto ? valorStock() : null;
+            if (esProducto && stock <= 0) {
+                showToast('❌ Poné cuántas unidades tenés en stock (al menos 1)', 'error');
+                return;
+            }
+
             if (esProducto && costoEnvio <= 0) {
                 showToast('❌ Poné cuánto sale mandar el producto (aunque el envío lo regales)', 'error');
                 return;
@@ -789,7 +804,8 @@
                     fotos: urls,
                     tipo: tipoActual,
                     envio_gratis: envioGratis,
-                    costo_envio: costoEnvio
+                    costo_envio: costoEnvio,
+                    stock: stock
                 });
                 if (error) throw error;
 
@@ -799,6 +815,7 @@
                 document.getElementById('productDescription').value = '';
                 document.getElementById('productCategory').value = '';
                 document.getElementById('productPrice').value = '';
+                document.getElementById('productStock').value = '';
                 document.getElementById('costoEnvio').value = '';
                 document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
                 document.getElementById('categoryBlockWarning').classList.add('hidden');
@@ -847,13 +864,21 @@
                     envioTxt = `Envío ${formatearPesos(p.costo_envio)} (lo paga el comprador)`;
                 }
 
+                let stockTxt = '';
+                if (p.tipo === 'producto') {
+                    stockTxt = (p.stock > 0)
+                        ? ` · Stock: ${p.stock}`
+                        : ` · <span style="color:#FCA5A5;font-weight:700;">AGOTADO</span>`;
+                }
+
                 return `<div class="product-card-row">
                     <div class="flex items-center gap-3">
                         ${foto}
                         <div>
                             <p class="product-title">${escaparHtml(p.titulo)}</p>
-                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}</p>
+                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}${stockTxt}</p>
                             <p class="product-meta">Recibís ${formatearPesos(recibis)} · ${fecha}</p>
+                            <p class="product-meta" style="color:#93C5FD;margin-top:0.3rem;">👁 ${p.vistas || 0} vistas · 💬 ${p.consultas || 0} consultas</p>
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
