@@ -123,7 +123,8 @@
                         <div id="regStepCodigo" class="hidden">
                             <div class="info-note mb-4">
                                 📧 Te enviamos un <strong>código de 6 números</strong> a <span id="emailDestino" class="font-semibold text-blue-300"></span>.
-                                Buscalo en tu correo (y revisá <strong>spam</strong> por las dudas) y escribilo acá:
+                                Buscalo en tu correo (y revisá <strong>spam</strong> por las dudas) y escribilo acá.
+                                <strong>Tenés 1 hora para usarlo</strong>, así que sin apuro. 🙂
                             </div>
                             <div class="otp-container">
                                 <input class="otp-input" type="text" id="otp0" maxlength="1" inputmode="numeric">
@@ -238,6 +239,7 @@
             passPendiente = password;
             nombrePendiente = nombre;
             telefonoPendiente = telefono;
+            sessionStorage.setItem('pm_reg', JSON.stringify({ email, nombre, telefono }));
             document.getElementById('emailDestino').textContent = email;
             document.getElementById('regStepDatos').classList.add('hidden');
             document.getElementById('regStepCodigo').classList.remove('hidden');
@@ -256,10 +258,11 @@
 
             const { data, error } = await db.auth.verifyOtp({ email: emailPendiente, token: codigo, type: 'signup' });
             if (error) {
-                msg.textContent = 'Código incorrecto o vencido. Revisá y reintentá.';
+                msg.textContent = 'Ese código no coincide. Fijate bien y volvé a escribirlo — el que te llegó sirve por 1 hora, no hace falta pedir otro.';
                 btn.disabled = false; btn.innerHTML = txt;
                 return;
             }
+            sessionStorage.removeItem('pm_reg');
             showToast('✅ ¡Cuenta confirmada!', 'success');
             const uid = (data.user && data.user.id) || (data.session && data.session.user.id);
 
@@ -274,7 +277,15 @@
         async function reenviarCodigo() {
             if (!emailPendiente) return;
             const { error } = await db.auth.resend({ type: 'signup', email: emailPendiente });
-            showToast(error ? ('Error: ' + error.message) : 'Código reenviado. Revisá tu email.', error ? 'error' : 'success');
+            if (error) {
+                if (/seconds|security/i.test(error.message)) {
+                    showToast('Esperá unos segundos para pedir otro. Igual, el código que ya te llegó sigue sirviendo — probá con ese.', 'info');
+                } else {
+                    showToast('Error: ' + error.message, 'error');
+                }
+            } else {
+                showToast('Código reenviado. Revisá tu email (y spam).', 'success');
+            }
         }
 
         function volverADatos() {
@@ -311,7 +322,19 @@
         // Si ya está logueado, al catálogo directo
         (async () => {
             const { data: { session } } = await db.auth.getSession();
-            if (session) entrar(session.user.id);
+            if (session) { entrar(session.user.id); return; }
+            // Si se cerró o recargó la página en medio del registro, volvemos a la pantalla del código
+            const pend = sessionStorage.getItem('pm_reg');
+            if (pend) {
+                try {
+                    const d = JSON.parse(pend);
+                    emailPendiente = d.email; nombrePendiente = d.nombre; telefonoPendiente = d.telefono;
+                    switchTab('register');
+                    document.getElementById('emailDestino').textContent = d.email;
+                    document.getElementById('regStepDatos').classList.add('hidden');
+                    document.getElementById('regStepCodigo').classList.remove('hidden');
+                } catch (e) {}
+            }
         })();
     </script>
 </body>
