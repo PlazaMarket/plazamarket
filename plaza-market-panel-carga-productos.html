@@ -264,7 +264,7 @@
 
             <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">Cargar Nueva Publicación</h2>
-                <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro y cada foto en el momento — no hace falta esperar una aprobación manual.</p>
+                <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro en el momento (no se permiten rubros prohibidos) — no hace falta esperar una aprobación manual.</p>
 
                 <div class="space-y-4">
                     <div>
@@ -660,15 +660,12 @@
                 id: Date.now() + Math.random(),
                 file,
                 imageUrl: URL.createObjectURL(file),
-                scanned: false, approved: null, reason: null
+                scanned: true, approved: true, reason: null
             }));
 
             uploadedPhotos.push(...nuevas);
             renderPhotoSlots();
-
-            for (const photo of nuevas) {
-                await scanPhotoReal(photo, photo.file);
-            }
+            if (nuevas.length) showToast(`✅ ${nuevas.length} foto${nuevas.length === 1 ? '' : 's'} agregada${nuevas.length === 1 ? '' : 's'}`, 'success');
         }
 
         function handlePhotoFileSelected(event) {
