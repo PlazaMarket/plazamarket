@@ -212,6 +212,15 @@
         }
         .btn-editar:hover { background: rgba(0,82,212,0.28); }
 
+        .consulta-row { display:flex; align-items:center; gap:0.8rem; padding:0.8rem 1rem; border-radius:0.85rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); margin-bottom:0.6rem; text-decoration:none; }
+        .consulta-row:hover { background:rgba(255,255,255,0.07); }
+        .consulta-avatar { width:42px; height:42px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#0052D4,#583C87); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .consulta-nombre { font-weight:700; color:#fff; font-size:0.88rem; display:flex; align-items:center; gap:0.45rem; }
+        .consulta-prod { font-size:0.72rem; color:#93C5FD; margin-top:0.1rem; }
+        .consulta-prev { font-size:0.75rem; color:rgba(226,232,240,0.5); margin-top:0.15rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .consulta-flecha { color:rgba(226,232,240,0.4); font-size:1.3rem; flex-shrink:0; }
+        .badge-nuevo { background:#EF4444; color:#fff; font-size:0.68rem; font-weight:800; min-width:18px; height:18px; padding:0 5px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; }
+
         .toast {
             position: fixed; top: 1.5rem; right: 1.5rem;
             background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
@@ -296,7 +305,7 @@
 
                     <div id="desgloseComision" class="desglose hidden"></div>
 
-                    <div id="seccionEnvio">
+                    <div id="seccionEnvio" class="hidden">
                         <label>¿Cuánto sale mandar este producto?</label>
                         <div class="mt-2">
                             <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)">
@@ -351,6 +360,12 @@
             </section>
 
             <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">📨 Consultas de tus productos <span id="chatBadge" class="badge-nuevo hidden">0</span></h2>
+                <p class="text-sm text-slate-400 mb-5">Las personas que te preguntaron. Tocá para responderles en privado.</p>
+                <div id="consultasList"><p class="empty-state">Cargando...</p></div>
+            </section>
+
+            <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
                 <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
                 <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
@@ -400,6 +415,8 @@
         let misProductos = [];
         let editandoId = null;
         let fotosExistentes = [];
+        let miNombreVendedor = '';
+        let misConvIds = [];
 
         // ============================================================
         // FORMATO DE PESOS
@@ -433,57 +450,25 @@
         function actualizarDesglose() {
             const caja = document.getElementById('desgloseComision');
             const precio = valorPrecio();
-            const envio = valorEnvio();
             const esServicio = tipoActual === 'servicio';
-
-            // Resaltar visualmente la opción elegida
-            if (!esServicio) {
-                const gratis = envioLoPagaVendedor();
-                document.getElementById('opcionComprador').classList.toggle('elegida', !gratis);
-                document.getElementById('opcionVendedor').classList.toggle('elegida', gratis);
-
-                if (precio && envio) {
-                    const com = Math.round(precio * COMISION);
-                    document.getElementById('txtOpcionComprador').innerHTML =
-                        `El comprador paga ${formatearPesos(precio + envio)} · Neto a cobrar: <span class="opcion-neto">${formatearPesos(precio - com)}</span>`;
-                    document.getElementById('txtOpcionVendedor').innerHTML =
-                        `El comprador paga ${formatearPesos(precio)} · Neto a cobrar: <span class="opcion-neto">${formatearPesos(precio - com - envio)}</span>`;
-                } else {
-                    const aviso = 'Completá el precio y el costo del envío para ver las cuentas.';
-                    document.getElementById('txtOpcionComprador').textContent = aviso;
-                    document.getElementById('txtOpcionVendedor').textContent = aviso;
-                }
-            }
 
             if (!precio) { caja.classList.add('hidden'); return; }
 
             const comision = Math.round(precio * COMISION);
+            const neto = precio - comision;
             let filas = `
                 <div class="desglose-fila"><span>${esServicio ? 'Precio del servicio' : 'Precio publicado'}</span><span>${formatearPesos(precio)}</span></div>
-                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>`;
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>`;
 
-            let neto = precio - comision;
             let nota = '';
-
             if (esServicio) {
                 const sena = Math.round(precio * SENA);
-                filas += `<div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>
-                    <div class="desglose-fila" style="margin-top:0.5rem;"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>`;
-                nota = `La reserva con seña es <strong>obligatoria</strong>: es la única forma de que la comisión se cobre sin manejar efectivo. De esa seña sale la comisión, y el resto (${formatearPesos(precio - sena)}) lo cobrás vos al dar el servicio.
-                    <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat. La seña empieza a cobrarse cuando conectemos los pagos.`;
+                filas += `<div class="desglose-fila" style="margin-top:0.5rem;"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>`;
+                nota = `La reserva con seña es <strong>obligatoria</strong>: es la única forma de cobrar la comisión sin manejar efectivo. De esa seña sale la comisión, y el resto lo cobrás vos al dar el servicio.
+                    <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat.`;
             } else {
-                const gratis = envioLoPagaVendedor();
-
-                if (gratis && envio) {
-                    filas += `<div class="desglose-fila"><span>Envío que pagás vos</span><span>−${formatearPesos(envio)}</span></div>`;
-                    neto -= envio;
-                }
-
-                filas += `<div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>`;
-
-                nota = gratis
-                    ? `Estás regalando el envío: esos ${formatearPesos(envio)} salen de tu ganancia. El comprador paga solo ${formatearPesos(precio)}.`
-                    : `El comprador paga ${formatearPesos(precio + envio)} (precio + envío). La comisión se calcula <strong>solo sobre el precio</strong> — el envío va entero al correo.`;
+                nota = `La comisión se calcula sobre el precio. <strong>El envío se coordina con el comprador por chat</strong> (hasta que integremos el correo y se pueda calcular por provincia).`;
             }
 
             caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
@@ -503,7 +488,7 @@
             tipoActual = tipo;
             document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
             document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
-            document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionEnvio').classList.add('hidden');
             document.getElementById('seccionStock').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('labelPrecio').textContent =
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
@@ -529,6 +514,11 @@
             activarDropzone();
             renderPhotoSlots();
             await cargarMisProductos();
+
+            const { data: perf } = await supabaseClient.from('pm_perfiles').select('nombre').eq('id', usuarioActual.id).maybeSingle();
+            miNombreVendedor = (perf && perf.nombre) || usuarioActual.email;
+            await cargarConsultas();
+            escucharConsultas();
         }
 
         async function handleLogout() {
@@ -709,7 +699,6 @@
                 if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
                 else if (hasSpelledOutPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
                 else if (hasSocialMediaPattern(extracted)) reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
-                else if (extracted.replace(/\s/g, '').length > 120) reason = 'La imagen contiene demasiado texto (parece un documento) — subí una foto real de lo que ofrecés.';
 
                 photo.scanned = true;
                 photo.approved = !reason;
@@ -789,8 +778,8 @@
             const category = document.getElementById('productCategory').value;
             const price = valorPrecio();
             const esProducto = tipoActual === 'producto';
-            const envioGratis = esProducto && envioLoPagaVendedor();
-            const costoEnvio = esProducto ? valorEnvio() : 0;
+            const envioGratis = false;   // el envío se coordina por chat hasta integrar el correo
+            const costoEnvio = 0;
 
             if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
@@ -802,11 +791,6 @@
                 return;
             }
             const stock = esProducto ? Number(stockRaw) : null;
-
-            if (esProducto && costoEnvio <= 0) {
-                showToast('❌ Poné cuánto sale mandar el producto (aunque el envío lo regales)', 'error');
-                return;
-            }
 
             if (checkBlockedCategory(`${title} ${description}`)) {
                 showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
@@ -933,11 +917,8 @@
                 let envioTxt = '';
                 if (p.tipo === 'servicio') {
                     envioTxt = `Servicio · seña ${formatearPesos(Math.round(Number(p.precio) * SENA))}`;
-                } else if (p.envio_gratis) {
-                    envioTxt = `Envío gratis (te cuesta ${formatearPesos(p.costo_envio)})`;
-                    recibis -= Number(p.costo_envio);
                 } else {
-                    envioTxt = `Envío ${formatearPesos(p.costo_envio)} (lo paga el comprador)`;
+                    envioTxt = 'Envío a coordinar';
                 }
 
                 let stockTxt = '';
@@ -976,6 +957,88 @@
         }
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // ============================================================
+        // BANDEJA DE CONSULTAS (mensajes de compradores)
+        // ============================================================
+        function sonarPanel() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sine'; o.frequency.value = 680; g.gain.value = 0.07;
+                o.start(); o.stop(ctx.currentTime + 0.16);
+            } catch (e) {}
+        }
+
+        function actualizarBadge(n) {
+            const b = document.getElementById('chatBadge');
+            if (!b) return;
+            if (n > 0) { b.textContent = n; b.classList.remove('hidden'); } else { b.classList.add('hidden'); }
+        }
+
+        async function cargarConsultas() {
+            const cont = document.getElementById('consultasList');
+            const prodIds = misProductos.map(p => p.id);
+            if (!prodIds.length) { cont.innerHTML = '<p class="empty-state">Cuando publiques y te consulten, vas a ver acá las conversaciones.</p>'; actualizarBadge(0); return; }
+
+            const { data: cons, error } = await supabaseClient.from('pm_consultas').select('*').in('producto_id', prodIds);
+            if (error) { cont.innerHTML = `<p class="empty-state">⚠️ ${error.message}</p>`; return; }
+            if (!cons || !cons.length) { cont.innerHTML = '<p class="empty-state">Todavía nadie te consultó. Cuando lo hagan, aparece acá. 🔔</p>'; actualizarBadge(0); misConvIds = []; return; }
+
+            const convs = cons.map(c => ({ ...c, conversacion: 'prod' + c.producto_id + '_' + c.usuario_id }));
+            misConvIds = convs.map(c => c.conversacion);
+
+            const { data: lecturas } = await supabaseClient.from('pm_lecturas').select('*').eq('usuario_id', usuarioActual.id);
+            const lecturaMap = {}; (lecturas || []).forEach(l => lecturaMap[l.conversacion] = l.ultima_lectura);
+
+            const { data: md } = await supabaseClient.from('mensajes').select('*').in('conversacion', misConvIds).order('creado_en', { ascending: true });
+            const porConv = {}; (md || []).forEach(m => { (porConv[m.conversacion] = porConv[m.conversacion] || []).push(m); });
+
+            const prodMap = {}; misProductos.forEach(p => prodMap[p.id] = p);
+
+            convs.sort((a, b) => {
+                const la = (porConv[a.conversacion] || []).slice(-1)[0];
+                const lb = (porConv[b.conversacion] || []).slice(-1)[0];
+                return new Date((lb && lb.creado_en) || 0) - new Date((la && la.creado_en) || 0);
+            });
+
+            let total = 0;
+            cont.innerHTML = convs.map(c => {
+                const conv = porConv[c.conversacion] || [];
+                const last = conv.slice(-1)[0];
+                const ult = lecturaMap[c.conversacion] ? new Date(lecturaMap[c.conversacion]) : new Date(0);
+                const noLeidos = conv.filter(m => m.autor !== miNombreVendedor && new Date(m.creado_en) > ult).length;
+                total += noLeidos;
+                const prod = prodMap[c.producto_id];
+                const preview = last ? String(last.texto).slice(0, 42) : 'Te consultó — todavía sin mensajes';
+                const badge = noLeidos > 0 ? `<span class="badge-nuevo">${noLeidos}</span>` : '';
+                const inicial = ((c.nombre || '?').trim().slice(0, 1).toUpperCase()) || '?';
+                return `<a href="plaza-market-chat-servicios.html?sala=${encodeURIComponent(c.conversacion)}" class="consulta-row">
+                    <div class="consulta-avatar">${inicial}</div>
+                    <div style="flex:1; min-width:0;">
+                        <p class="consulta-nombre">${escaparHtml(c.nombre || 'Interesado')} ${badge}</p>
+                        <p class="consulta-prod">${prod ? escaparHtml(prod.titulo) : 'Producto'}</p>
+                        <p class="consulta-prev">${escaparHtml(preview)}</p>
+                    </div>
+                    <span class="consulta-flecha">›</span>
+                </a>`;
+            }).join('');
+
+            actualizarBadge(total);
+        }
+
+        function escucharConsultas() {
+            supabaseClient.channel('panel-consultas')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, (payload) => {
+                    const m = payload.new;
+                    if (misConvIds.includes(m.conversacion) && m.autor !== miNombreVendedor) {
+                        sonarPanel();
+                        cargarConsultas();
+                    }
+                })
+                .subscribe();
+        }
 
         // ============================================================
         // TOAST
