@@ -185,9 +185,8 @@
         </div>
 
         <p class="text-center text-xs text-slate-600 pb-4">
-            Para probar con otra persona: abran este mismo link agregando <code>?sala=loquesea</code> al final
-            (los dos con la misma sala). Las fotos por ahora se ven solo de tu lado — el envío de fotos entre
-            usuarios queda para el próximo paso (billetera y Andreani en el roadmap).
+            Esta es una conversación <strong>privada</strong> entre vos y la otra persona. Nadie más la ve.
+            Las fotos por ahora se ven solo de tu lado — el envío de fotos entre usuarios queda para el próximo paso.
         </p>
 
     </main>
@@ -200,24 +199,33 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Sala: viene de la URL (?sala=xxx). Por defecto, "general".
+        // Sala: viene de la URL (?sala=xxx).
         const params = new URLSearchParams(location.search);
-        const SALA = (params.get('sala') || 'general').toLowerCase().trim();
+        const SALA = (params.get('sala') || 'general').trim();
 
-        let miNombre = localStorage.getItem('pm_nombre') || '';
+        let miNombre = '';
+        let miUserId = null;
 
-        // ============================================================
-        // PORTADA: pedir el nombre
-        // ============================================================
-        function guardarNombre() {
-            const v = document.getElementById('gateInput').value.trim();
-            if (!v) return;
-            miNombre = v;
-            localStorage.setItem('pm_nombre', v);
-            document.getElementById('gateNombre').classList.add('hidden');
-            document.getElementById('miNombreLabel').textContent = v;
-            iniciarChat();
+        // Sonido corto de aviso cuando llega un mensaje
+        function sonar() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sine'; o.frequency.value = 680; g.gain.value = 0.07;
+                o.start(); o.stop(ctx.currentTime + 0.16);
+            } catch (e) {}
         }
+
+        // Marcar esta conversación como leída (para los "no leídos")
+        async function marcarLeido() {
+            if (!miUserId) return;
+            try {
+                await db.from('pm_lecturas').upsert({ usuario_id: miUserId, conversacion: SALA, ultima_lectura: new Date().toISOString() });
+            } catch (e) {}
+        }
+
+        function guardarNombre() {} // ya no se usa: la identidad viene de la cuenta
 
         // ============================================================
         // DETECCIÓN DE NÚMEROS DE TELÉFONO — EN DÍGITOS Y EN PALABRAS
@@ -341,7 +349,11 @@
             db.channel('sala-' + SALA)
                 .on('postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'mensajes', filter: 'conversacion=eq.' + SALA },
-                    (payload) => renderMensaje(payload.new)
+                    (payload) => {
+                        const m = payload.new;
+                        renderMensaje(m);
+                        if (m.autor !== miNombre) { sonar(); marcarLeido(); }
+                    }
                 )
                 .subscribe((status) => {
                     const dot = document.getElementById('connDot');
@@ -415,21 +427,24 @@
         }
 
         // ============================================================
-        // ARRANQUE
+        // ARRANQUE — requiere cuenta, identidad automática
         // ============================================================
-        function iniciarChat() {
-            cargarMensajes();
-            escucharEnVivo();
-        }
-
-        document.getElementById('salaLabel').textContent = SALA;
-        if (miNombre) {
+        (async () => {
+            document.getElementById('salaLabel').textContent = SALA.startsWith('prod') ? 'Conversación privada' : SALA;
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-chat-servicios.html?sala=' + SALA);
+                return;
+            }
+            miUserId = session.user.id;
+            const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
+            miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
             document.getElementById('gateNombre').classList.add('hidden');
             document.getElementById('miNombreLabel').textContent = miNombre;
-            iniciarChat();
-        } else {
-            document.getElementById('gateInput').focus();
-        }
+            await cargarMensajes();
+            escucharEnVivo();
+            marcarLeido();
+        })();
     </script>
 </body>
 </html>
