@@ -48,7 +48,7 @@
         .strip { display: flex; gap: 0.9rem; overflow-x: auto; padding-bottom: 0.6rem; margin-bottom: 2rem; }
         .strip .card-producto { min-width: 190px; max-width: 190px; }
 
-        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; }
+        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 0.9rem; }
         .card-producto {
             background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.09); border-radius: 1.25rem;
@@ -61,8 +61,8 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .card-img-wrap { position: relative; }
         .card-img {
-            width: 100%; height: 170px; object-fit: cover; display: block;
-            background: linear-gradient(135deg, rgba(0,82,212,0.2), rgba(88,28,135,0.25));
+            width: 100%; height: 170px; object-fit: contain; display: block;
+            background: #ffffff;
         }
         .card-img-placeholder {
             width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
@@ -180,6 +180,7 @@
                 </div>
             </a>
             <div class="flex items-center gap-3">
+                <span id="cuentaBox" class="text-xs text-slate-300" style="display:flex; align-items:center; gap:6px;"></span>
                 <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
                 <a href="plaza-market-panel-carga-productos.html" class="btn-primary px-4 py-2 rounded-lg text-sm">🏪 Vender</a>
             </div>
@@ -264,21 +265,43 @@
 
         let todos = [];
         let miUserId = null;
+        let miNombre = '';
         let sesionActiva = false;
         let fotosModal = [];
         let idxModal = 0;
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+
+        function renderCuenta() {
+            const box = document.getElementById('cuentaBox');
+            if (!box) return;
+            if (sesionActiva) {
+                box.innerHTML = `<span>👤 ${escaparHtml(miNombre)}</span> · <a href="#" onclick="salir(event)" style="color:#93C5FD;">Salir</a>`;
+            } else {
+                box.innerHTML = `<a href="plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html" style="color:#93C5FD;">Ingresar</a>`;
+            }
+        }
+        async function salir(e) {
+            if (e) e.preventDefault();
+            await db.auth.signOut();
+            localStorage.removeItem('pm_uid');
+            location.reload();
+        }
         function agotado(p) { return p.tipo === 'producto' && p.stock !== null && p.stock !== undefined && p.stock <= 0; }
 
         async function cargarCatalogo() {
             // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
             try {
                 const { data: { session } } = await db.auth.getSession();
-                if (session) { miUserId = session.user.id; sesionActiva = true; }
+                if (session) {
+                    miUserId = session.user.id; sesionActiva = true;
+                    const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
+                    miNombre = (perf && perf.nombre) || session.user.email;
+                }
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
+            renderCuenta();
 
             const cont = document.getElementById('contenido');
             const { data, error } = await db.from('productos').select('*').order('creado_en', { ascending: false }).limit(300);
@@ -326,8 +349,7 @@
 
             let envio;
             if (esServicio) envio = '<p class="card-envio servicio">🛠️ Servicio · se coordina por chat</p>';
-            else if (p.envio_gratis) envio = '<p class="card-envio gratis">🚚 Envío gratis</p>';
-            else envio = `<p class="card-envio pago">🚚 + ${pesos(p.costo_envio)} de envío</p>`;
+            else envio = '<p class="card-envio pago">🚚 Envío a coordinar</p>';
 
             return `
             <article class="card-producto" onclick="abrirModal(${p.id})">
@@ -409,8 +431,7 @@
 
             const envioEl = document.getElementById('modalEnvio');
             if (esServicio) { envioEl.className = 'card-envio servicio'; envioEl.textContent = '🛠️ Servicio · se coordina por chat'; }
-            else if (p.envio_gratis) { envioEl.className = 'card-envio gratis'; envioEl.textContent = '🚚 Envío gratis'; }
-            else { envioEl.className = 'card-envio pago'; envioEl.textContent = `🚚 + ${pesos(p.costo_envio)} de envío`; }
+            else { envioEl.className = 'card-envio pago'; envioEl.textContent = '🚚 Envío a coordinar con el vendedor'; }
 
             const stockEl = document.getElementById('modalStock');
             if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
@@ -423,13 +444,20 @@
             document.getElementById('modalStats').innerHTML =
                 `<span>👁 ${p.vistas || 0} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
 
-            // Botón consultar (deshabilitado si está agotado)
+            // Botón consultar — según el caso
             const btn = document.getElementById('modalBtnChat');
             const cartel = document.getElementById('modalAgotado');
+            btn.classList.add('hidden'); cartel.classList.add('hidden');
             if (agot) {
-                btn.classList.add('hidden'); cartel.classList.remove('hidden');
+                cartel.textContent = 'Este producto está agotado por ahora.';
+                cartel.style.cssText = 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#FCA5A5;';
+                cartel.classList.remove('hidden');
+            } else if (sesionActiva && miUserId === p.usuario_id) {
+                cartel.textContent = '📦 Esta es tu propia publicación. Para editarla, andá a "Vender".';
+                cartel.style.cssText = 'background:rgba(0,82,212,0.12); border:1px solid rgba(59,130,246,0.4); color:#BFDBFE;';
+                cartel.classList.remove('hidden');
             } else {
-                btn.classList.remove('hidden'); cartel.classList.add('hidden');
+                btn.classList.remove('hidden');
                 btn.textContent = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
                 btn.onclick = (e) => { e.preventDefault(); consultar(p); };
             }
@@ -521,7 +549,9 @@
             }
             // 1 consulta por persona interesada — la base no cuenta de más aunque vuelva a consultar
             db.rpc('registrar_consulta', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
-            window.location.href = 'plaza-market-chat-servicios.html?sala=producto-' + p.id;
+            // Sala PRIVADA por comprador: cada uno tiene su charla con el vendedor, nadie ve la del otro
+            const sala = 'prod' + p.id + '_' + miUserId;
+            window.location.href = 'plaza-market-chat-servicios.html?sala=' + encodeURIComponent(sala);
         }
 
         function cerrarModal() {
