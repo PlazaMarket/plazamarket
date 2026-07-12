@@ -268,7 +268,7 @@
 
             // Guardamos el perfil ahora que la persona está adentro (forma segura, sin gatillo)
             try {
-                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente });
+                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente, email: emailPendiente });
             } catch (e) { console.error('No se pudo guardar el perfil:', e); }
 
             entrar(uid);
