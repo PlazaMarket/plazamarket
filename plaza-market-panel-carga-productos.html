@@ -256,6 +256,7 @@
                 </a>
                 <div class="flex items-center gap-3">
                     <div class="status-pill"><span class="pulse-dot"></span> IA de Moderación Activa 24hs</div>
+                    <a href="plaza-market-catalogo.html" onclick="volverAtras(event)" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">← Atrás</a>
                     <a href="plaza-market-catalogo.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Catálogo</a>
                     <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Chat</a>
                     <button id="logoutBtn" onclick="handleLogout()" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Salir</button>
@@ -526,6 +527,12 @@
             localStorage.removeItem('pm_uid');
             await supabaseClient.auth.signOut();
             window.location.href = 'plaza-market-acceso-emprendedores.html';
+        }
+
+        function volverAtras(e) {
+            if (e) e.preventDefault();
+            if (document.referrer && history.length > 1) history.back();
+            else window.location.href = 'plaza-market-catalogo.html';
         }
 
         // ============================================================
