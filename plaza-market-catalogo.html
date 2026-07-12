@@ -62,7 +62,7 @@
         .card-img-wrap { position: relative; }
         .card-img {
             width: 100%; height: 170px; object-fit: contain; display: block;
-            background: #ffffff;
+            background: #0B1120;
         }
         .card-img-placeholder {
             width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
@@ -121,7 +121,7 @@
             width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;
         }
         .modal-foto-wrap { position: relative; background: #0B1120; }
-        .modal-foto-principal { width: 100%; height: 360px; object-fit: contain; display: block; background: #0B1120; }
+        .modal-foto-principal { width: 100%; height: 360px; object-fit: contain; display: block; background: #0B1120; cursor: zoom-in; }
         .modal-flecha {
             position: absolute; top: 50%; transform: translateY(-50%);
             width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 5;
@@ -224,7 +224,7 @@
             <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
             <div class="modal-foto-wrap">
                 <button class="modal-flecha izq hidden" id="flechaIzq" onclick="fotoAnterior(event)">‹</button>
-                <img id="modalFotoPrincipal" class="modal-foto-principal" src="" alt="">
+                <img id="modalFotoPrincipal" class="modal-foto-principal" src="" alt="" onclick="abrirZoom()">
                 <button class="modal-flecha der hidden" id="flechaDer" onclick="fotoSiguiente(event)">›</button>
                 <span class="modal-contador-fotos hidden" id="modalContadorFotos"></span>
             </div>
@@ -250,6 +250,10 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="lightbox" onclick="cerrarZoom()" style="position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.94); display:none; align-items:center; justify-content:center; padding:1rem; cursor:zoom-out;">
+        <img id="lightboxImg" src="" alt="" style="max-width:100%; max-height:100%; object-fit:contain;">
     </div>
 
     <script>
@@ -560,6 +564,14 @@
             renderHistorial();
             aplicarFiltros();
         }
+        function abrirZoom() {
+            const src = document.getElementById('modalFotoPrincipal').src;
+            if (!src) return;
+            document.getElementById('lightboxImg').src = src;
+            document.getElementById('lightbox').style.display = 'flex';
+        }
+        function cerrarZoom() { document.getElementById('lightbox').style.display = 'none'; }
+
         function cerrarModalSiFondo(e) { if (e.target.id === 'modalFondo') cerrarModal(); }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
 
