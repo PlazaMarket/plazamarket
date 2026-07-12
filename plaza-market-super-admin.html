@@ -25,6 +25,8 @@
         .row-ph { width: 40px; height: 40px; border-radius: 0.5rem; background: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
         .btn-del { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #FCA5A5; border-radius: 0.6rem; padding: 0.35rem 0.7rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
         .btn-del:hover { background: rgba(239,68,68,0.25); }
+        .btn-admin { background: rgba(0,82,212,0.15); border: 1px solid rgba(59,130,246,0.5); color: #93C5FD; border-radius: 0.6rem; padding: 0.35rem 0.7rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .btn-admin:hover { background: rgba(0,82,212,0.28); }
         .tabla-scroll { overflow-x: auto; }
         .empty { text-align: center; padding: 1.5rem; color: rgba(226,232,240,0.4); font-size: 0.85rem; }
         #authLoading { position: fixed; inset: 0; z-index: 200; background: #0B1120; display: flex; align-items: center; justify-content: center; gap: 0.7rem; color: #93C5FD; font-size: 0.9rem; }
@@ -74,8 +76,8 @@
                 <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
                 <div class="tabla-scroll">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Registrado</th></tr></thead>
-                        <tbody id="tablaUsuarios"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Registrado</th><th>Rol / Acción</th></tr></thead>
+                        <tbody id="tablaUsuarios"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -96,6 +98,8 @@
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
         let perfilMap = {};
+        let adminSet = new Set();
+        let miId = null;
 
         async function salir() { await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
 
@@ -112,6 +116,7 @@
                 window.location.href = 'plaza-market-catalogo.html';
                 return;
             }
+            miId = session.user.id;
             document.getElementById('adminEmail').textContent = session.user.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
@@ -119,15 +124,17 @@
         }
 
         async function cargarTodo() {
-            const [perfiles, productos, consultas] = await Promise.all([
+            const [perfiles, productos, consultas, admins] = await Promise.all([
                 db.from('pm_perfiles').select('*').order('creado_en', { ascending: false }),
                 db.from('productos').select('*').order('creado_en', { ascending: false }),
-                db.from('pm_consultas').select('*', { count: 'exact', head: true })
+                db.from('pm_consultas').select('*', { count: 'exact', head: true }),
+                db.from('pm_admins').select('id')
             ]);
 
             const us = perfiles.data || [];
             const ps = productos.data || [];
             perfilMap = {}; us.forEach(u => perfilMap[u.id] = u);
+            adminSet = new Set((admins.data || []).map(a => a.id));
 
             document.getElementById('stUsuarios').textContent = us.length;
             document.getElementById('stProductos').textContent = ps.length;
@@ -144,7 +151,9 @@
             tb.innerHTML = ps.map(p => {
                 const foto = (p.fotos && p.fotos[0]) ? `<img src="${p.fotos[0]}" class="row-img">` : `<div class="row-ph">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
                 const vend = perfilMap[p.usuario_id];
-                const vendTxt = vend ? escaparHtml(vend.nombre || vend.email || '—') : '—';
+                const vendTxt = vend
+                    ? `${escaparHtml(vend.nombre || '—')}<br><span style="color:rgba(226,232,240,0.45);font-size:0.72rem;">${escaparHtml(vend.email || '')}</span>`
+                    : '<span style="color:rgba(226,232,240,0.4);">Sin perfil</span>';
                 return `<tr>
                     <td>${foto}</td>
                     <td>${escaparHtml(p.titulo)}</td>
@@ -162,13 +171,35 @@
             if (!us.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             tb.innerHTML = us.map(u => {
                 const fecha = u.creado_en ? new Date(u.creado_en).toLocaleDateString('es-AR') : '—';
+                const esAdm = adminSet.has(u.id);
+                const badge = esAdm ? ' <span class="pill-admin">Admin</span>' : '';
+                let accion;
+                if (u.id === miId) accion = '<span style="color:rgba(226,232,240,0.4); font-size:0.72rem;">Sos vos</span>';
+                else if (esAdm) accion = `<button class="btn-del" onclick="quitarAdmin('${u.id}', this)">Quitar admin</button>`;
+                else accion = `<button class="btn-admin" onclick="hacerAdmin('${u.id}', this)">Hacer admin</button>`;
                 return `<tr>
-                    <td>${escaparHtml(u.nombre || '—')}</td>
+                    <td>${escaparHtml(u.nombre || '—')}${badge}</td>
                     <td>${escaparHtml(u.email || '—')}</td>
                     <td>${escaparHtml(u.telefono || '—')}</td>
                     <td>${fecha}</td>
+                    <td>${accion}</td>
                 </tr>`;
             }).join('');
+        }
+
+        async function hacerAdmin(id, btn) {
+            if (!confirm('¿Hacer administrador a esta persona? Va a poder ver y moderar todo Plaza Market.')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.from('pm_admins').insert({ id });
+            if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Hacer admin'; return; }
+            await cargarTodo();
+        }
+        async function quitarAdmin(id, btn) {
+            if (!confirm('¿Quitarle el rol de administrador a esta persona?')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.from('pm_admins').delete().eq('id', id);
+            if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Quitar admin'; return; }
+            await cargarTodo();
         }
 
         async function borrar(id, btn) {
