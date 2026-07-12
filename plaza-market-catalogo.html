@@ -570,8 +570,10 @@
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
                 return;
             }
-            // 1 consulta por persona interesada — la base no cuenta de más aunque vuelva a consultar
-            db.rpc('registrar_consulta', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
+            // 1 consulta por persona interesada — la base no cuenta de más aunque vuelva a consultar.
+            // IMPORTANTE: esperamos (await) a que se registre ANTES de cambiar de página. Si no,
+            // el navegador cancela el pedido al navegar y la consulta se pierde.
+            try { await db.rpc('registrar_consulta', { pid: p.id }); } catch (e) { console.error(e); }
             // Sala PRIVADA por comprador: cada uno tiene su charla con el vendedor, nadie ve la del otro
             const sala = 'prod' + p.id + '_' + miUserId;
             window.location.href = 'plaza-market-chat-servicios.html?sala=' + encodeURIComponent(sala);
