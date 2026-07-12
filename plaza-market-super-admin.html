@@ -76,7 +76,7 @@
                 <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
                 <div class="tabla-scroll">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Registrado</th><th>Rol / Acción</th></tr></thead>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Registrado</th><th>Rol</th></tr></thead>
                         <tbody id="tablaUsuarios"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
@@ -171,18 +171,15 @@
             if (!us.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             tb.innerHTML = us.map(u => {
                 const fecha = u.creado_en ? new Date(u.creado_en).toLocaleDateString('es-AR') : '—';
-                const esAdm = adminSet.has(u.id);
-                const badge = esAdm ? ' <span class="pill-admin">Admin</span>' : '';
-                let accion;
-                if (u.id === miId) accion = '<span style="color:rgba(226,232,240,0.4); font-size:0.72rem;">Sos vos</span>';
-                else if (esAdm) accion = `<button class="btn-del" onclick="quitarAdmin('${u.id}', this)">Quitar admin</button>`;
-                else accion = `<button class="btn-admin" onclick="hacerAdmin('${u.id}', this)">Hacer admin</button>`;
+                const rol = adminSet.has(u.id)
+                    ? '<span class="pill-admin">Dueño</span>'
+                    : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
                 return `<tr>
-                    <td>${escaparHtml(u.nombre || '—')}${badge}</td>
+                    <td>${escaparHtml(u.nombre || '—')}</td>
                     <td>${escaparHtml(u.email || '—')}</td>
                     <td>${escaparHtml(u.telefono || '—')}</td>
                     <td>${fecha}</td>
-                    <td>${accion}</td>
+                    <td>${rol}</td>
                 </tr>`;
             }).join('');
         }
