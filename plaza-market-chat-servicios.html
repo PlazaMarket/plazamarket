@@ -57,6 +57,12 @@
             border-radius: 1rem 1rem 0.25rem 1rem;
         }
         .msg-author { font-size: 0.68rem; color: #93C5FD; margin-bottom: 0.2rem; font-weight: 600; }
+        .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+        .msg-row:not(.mine) .msg-meta { justify-content: flex-start; }
+        .msg-time { font-size: 0.62rem; color: rgba(226,232,240,0.45); }
+        .msg-row.mine .msg-time { color: rgba(255,255,255,0.75); }
+        .msg-tick { font-size: 0.72rem; color: rgba(255,255,255,0.75); letter-spacing: -3px; padding-right: 2px; }
+        .msg-tick.leido { color: #38BDF8; }
         .msg-bubble img { max-width: 220px; border-radius: 0.6rem; margin-top: 0.3rem; display: block; }
         .msg-empty { text-align: center; color: #64748B; font-size: 0.82rem; padding: 2rem 1rem; }
         .msg-blocked-note {
@@ -206,6 +212,59 @@
         let miNombre = '';
         let miUserId = null;
 
+        // Estado para los tildes (enviado / recibido / leído)
+        let otherLastRead = 0;   // hasta cuándo leyó la otra persona (ms)
+        let otherPresent = false; // ¿la otra persona está en el chat ahora?
+        let entregadoHasta = 0;   // hasta cuándo sabemos que le llegó (ms)
+        const misMensajes = [];   // { creadoMs, el } de mis mensajes, para pintar tildes
+
+        function horaDe(iso) {
+            try { return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); }
+            catch (e) { return ''; }
+        }
+        function estadoDe(creadoMs) {
+            if (otherLastRead >= creadoMs) return 'leido';
+            if (otherPresent || creadoMs <= entregadoHasta) return 'entregado';
+            return 'enviado';
+        }
+        function pintarTick(item) {
+            if (!item.el) return;
+            const st = estadoDe(item.creadoMs);
+            if (st === 'leido') { item.el.textContent = '✓✓'; item.el.className = 'msg-tick leido'; }
+            else if (st === 'entregado') { item.el.textContent = '✓✓'; item.el.className = 'msg-tick'; }
+            else { item.el.textContent = '✓'; item.el.className = 'msg-tick'; }
+        }
+        function actualizarTicks() { misMensajes.forEach(pintarTick); }
+
+        // Cuánto leyó la OTRA persona (para arrancar con los tildes al día)
+        async function cargarLecturaOtro() {
+            try {
+                const { data } = await db.from('pm_lecturas').select('usuario_id, ultima_lectura').eq('conversacion', SALA);
+                (data || []).forEach(r => {
+                    if (r.usuario_id !== miUserId && r.ultima_lectura) {
+                        const t = new Date(r.ultima_lectura).getTime();
+                        if (t > otherLastRead) otherLastRead = t;
+                    }
+                });
+            } catch (e) {}
+        }
+
+        // Escuchar cuando la otra persona lee (para pasar a tildes azules en vivo)
+        function escucharLecturas() {
+            db.channel('lecturas-' + SALA)
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'pm_lecturas', filter: 'conversacion=eq.' + SALA },
+                    (payload) => {
+                        const r = payload.new;
+                        if (r && r.usuario_id !== miUserId && r.ultima_lectura) {
+                            const t = new Date(r.ultima_lectura).getTime();
+                            if (t > otherLastRead) { otherLastRead = t; actualizarTicks(); }
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
         // Sonido corto de aviso cuando llega un mensaje
         function sonar() {
             try {
@@ -300,9 +359,17 @@
             const safeTexto = String(m.texto).replace(/</g, '&lt;');
             const autorHtml = mine ? '' :
                 `<div class="msg-author">${String(m.autor).replace(/</g, '&lt;')}</div>`;
-            row.innerHTML = `<div class="msg-bubble">${autorHtml}${safeTexto}</div>`;
+            const hora = horaDe(m.creado_en);
+            const tickHtml = mine ? ' <span class="msg-tick">✓</span>' : '';
+            row.innerHTML = `<div class="msg-bubble">${autorHtml}${safeTexto}` +
+                `<div class="msg-meta"><span class="msg-time">${hora}</span>${tickHtml}</div></div>`;
             container.appendChild(row);
             container.scrollTop = container.scrollHeight;
+            if (mine) {
+                const item = { creadoMs: new Date(m.creado_en).getTime(), el: row.querySelector('.msg-tick') };
+                misMensajes.push(item);
+                pintarTick(item);
+            }
         }
 
         function appendMessage(html, mine) {
@@ -338,6 +405,7 @@
 
             const container = document.getElementById('chatMessages');
             container.innerHTML = '';
+            misMensajes.length = 0;
             if (error) {
                 console.error(error);
                 container.innerHTML = '<div class="msg-empty">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">' +
@@ -352,7 +420,9 @@
         }
 
         function escucharEnVivo() {
-            db.channel('sala-' + SALA)
+            const keyMia = miUserId || 'anon';
+            const canal = db.channel('sala-' + SALA, { config: { presence: { key: keyMia } } });
+            canal
                 .on('postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'mensajes', filter: 'conversacion=eq.' + SALA },
                     (payload) => {
@@ -361,10 +431,20 @@
                         if (m.autor !== miNombre) { sonar(); marcarLeido(); }
                     }
                 )
-                .subscribe((status) => {
+                .on('presence', { event: 'sync' }, () => {
+                    const state = canal.presenceState();
+                    otherPresent = Object.keys(state).some(k => k !== keyMia);
+                    if (otherPresent) entregadoHasta = Date.now();
+                    actualizarTicks();
+                })
+                .subscribe(async (status) => {
                     const dot = document.getElementById('connDot');
-                    if (status === 'SUBSCRIBED') dot.classList.add('on');
-                    else dot.classList.remove('on');
+                    if (status === 'SUBSCRIBED') {
+                        dot.classList.add('on');
+                        try { await canal.track({ uid: keyMia, at: Date.now() }); } catch (e) {}
+                    } else {
+                        dot.classList.remove('on');
+                    }
                 });
         }
 
@@ -447,8 +527,10 @@
             miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
             document.getElementById('gateNombre').classList.add('hidden');
             document.getElementById('miNombreLabel').textContent = miNombre;
+            await cargarLecturaOtro();
             await cargarMensajes();
             escucharEnVivo();
+            escucharLecturas();
             marcarLeido();
         })();
     </script>
