@@ -176,24 +176,76 @@
             .modal-foto-principal { height: 44vh; }
             .modal-flecha { width: 40px; height: 40px; font-size: 1.3rem; }
         }
+
+        /* Encabezado nuevo: menú (izq) + campana (der) */
+        .hdr-btn {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            position: relative; font-size: 1.25rem;
+        }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+        .notif-badge {
+            position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 4px;
+            background: #EF4444; color: #fff; border-radius: 10px; font-size: 0.66rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; border: 2px solid #0B1120;
+        }
+        .menu-overlay {
+            position: fixed; inset: 0; z-index: 60; background: rgba(11,17,32,0.6);
+            backdrop-filter: blur(4px); display: none;
+        }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel {
+            position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px);
+            background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            transform: translateX(-100%); transition: transform 0.22s ease;
+        }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cuenta {
+            color: #93C5FD; font-size: 0.85rem; font-weight: 700;
+            padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem;
+        }
+        .menu-item {
+            display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0;
+            text-decoration: none; font-size: 0.95rem; font-weight: 500;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
     </style>
 </head>
 <body>
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <header class="flex flex-wrap items-center justify-between gap-4 mb-7">
+        <header class="flex items-center justify-between gap-3 mb-7">
+            <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú">
+                <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+            </button>
             <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
-                <svg viewBox="0 0 100 116" width="38" height="44" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <svg viewBox="0 0 100 116" width="34" height="40" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
                 <div>
-                    <h1 class="text-2xl font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                    <h1 class="text-xl font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
                     <p class="text-xs text-slate-400 font-medium">Catálogo · <span id="totalLabel">—</span></p>
                 </div>
             </a>
-            <div class="flex items-center gap-3">
-                <span id="cuentaBox" class="text-xs text-slate-300" style="display:flex; align-items:center; gap:6px;"></span>
-                <a href="plaza-market-chat-servicios.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">💬 Chat</a>
-                <a href="plaza-market-panel-carga-productos.html" class="btn-primary px-4 py-2 rounded-lg text-sm">🏪 Vender</a>
-            </div>
+            <button class="hdr-btn" onclick="window.location.href='plaza-market-panel-carga-productos.html'" aria-label="Consultas" title="Consultas">
+                🔔
+                <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+            </button>
         </header>
+
+        <!-- Menú desplegable -->
+        <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+            <nav class="menu-panel">
+                <div class="menu-cuenta" id="menuCuenta">—</div>
+                <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                <a href="plaza-market-chat-servicios.html" class="menu-item">Chat</a>
+                <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
+                <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
+            </nav>
+        </div>
 
         <div class="filtros">
             <input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros()">
@@ -293,15 +345,77 @@
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
 
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) {
+            if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto');
+        }
+
         function renderCuenta() {
-            const box = document.getElementById('cuentaBox');
-            if (!box) return;
+            const cuenta = document.getElementById('menuCuenta');
+            const admin = document.getElementById('menuAdmin');
+            const salirLink = document.getElementById('menuSalir');
             if (sesionActiva) {
-                const adminLink = esAdmin ? ` · <a href="plaza-market-super-admin.html" style="color:#C4B5FD;">⚙️ Admin</a>` : '';
-                box.innerHTML = `<span>👤 ${escaparHtml(miNombre)}</span>${adminLink} · <a href="#" onclick="salir(event)" style="color:#93C5FD;">Salir</a>`;
+                if (cuenta) cuenta.textContent = '👤 ' + (miNombre || 'Mi cuenta');
+                if (admin) admin.style.display = esAdmin ? 'block' : 'none';
+                if (salirLink) salirLink.style.display = 'block';
             } else {
-                box.innerHTML = `<a href="plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html" style="color:#93C5FD;">Ingresar</a>`;
+                if (cuenta) cuenta.innerHTML = '<a href="plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html" style="color:#93C5FD; text-decoration:none;">Ingresar / Crear cuenta</a>';
+                if (admin) admin.style.display = 'none';
+                if (salirLink) salirLink.style.display = 'none';
             }
+        }
+
+        // ---- Aviso de consultas nuevas (campana + sonido) ----
+        let misProductosIds = new Set();
+
+        function sonarNotif() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sine'; o.frequency.value = 720; g.gain.value = 0.06;
+                o.start(); o.stop(ctx.currentTime + 0.18);
+            } catch (e) {}
+        }
+        function pintarNotif(n) {
+            const b = document.getElementById('notifBadge');
+            if (!b) return;
+            if (n > 0) { b.textContent = n > 99 ? '99+' : String(n); b.style.display = 'flex'; }
+            else { b.style.display = 'none'; }
+        }
+        async function actualizarNotif() {
+            if (!sesionActiva || !miUserId) { pintarNotif(0); return; }
+            try {
+                const { data: prods } = await db.from('productos').select('id').eq('usuario_id', miUserId);
+                const ids = (prods || []).map(p => p.id);
+                misProductosIds = new Set(ids.map(x => String(x)));
+                if (!ids.length) { pintarNotif(0); return; }
+                const { data: cons } = await db.from('pm_consultas').select('producto_id, usuario_id').in('producto_id', ids);
+                const salas = (cons || []).map(c => 'prod' + c.producto_id + '_' + c.usuario_id);
+                if (!salas.length) { pintarNotif(0); return; }
+                const { data: lec } = await db.from('pm_lecturas').select('conversacion, ultima_lectura').eq('usuario_id', miUserId).in('conversacion', salas);
+                const leidoMap = {};
+                (lec || []).forEach(l => { leidoMap[l.conversacion] = new Date(l.ultima_lectura).getTime(); });
+                const { data: msgs } = await db.from('mensajes').select('conversacion, autor, creado_en').in('conversacion', salas);
+                const noLeidas = new Set();
+                (msgs || []).forEach(m => {
+                    if (m.autor === miNombre) return;
+                    const t = new Date(m.creado_en).getTime();
+                    if (t > (leidoMap[m.conversacion] || 0)) noLeidas.add(m.conversacion);
+                });
+                pintarNotif(noLeidas.size);
+            } catch (e) { pintarNotif(0); }
+        }
+        function escucharNotif() {
+            db.channel('notif-cat')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, (payload) => {
+                    const m = payload.new;
+                    if (!m || !m.conversacion || m.autor === miNombre) return;
+                    if (m.conversacion.slice(0, 4) !== 'prod') return;
+                    const pidStr = (m.conversacion.split('_')[0] || '').slice(4);
+                    if (misProductosIds.has(pidStr)) { sonarNotif(); actualizarNotif(); }
+                })
+                .subscribe();
         }
         async function salir(e) {
             if (e) e.preventDefault();
@@ -325,6 +439,8 @@
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
             renderCuenta();
+            actualizarNotif();
+            escucharNotif();
 
             const cont = document.getElementById('contenido');
             const { data, error } = await db.from('productos').select('*').order('creado_en', { ascending: false }).limit(300);
