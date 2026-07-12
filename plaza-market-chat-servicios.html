@@ -147,7 +147,7 @@
                     <p class="text-xs text-slate-400 font-medium">Chat de reserva · protegido</p>
                 </div>
             </a>
-            <a href="plaza-market-catalogo.html" style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.14); color:#E2E8F0; font-weight:600; text-decoration:none; padding:0.5rem 0.9rem; border-radius:0.7rem; font-size:0.8rem; white-space:nowrap;">← Catálogo</a>
+            <a href="plaza-market-catalogo.html" onclick="volverAtras(event)" style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.14); color:#E2E8F0; font-weight:600; text-decoration:none; padding:0.5rem 0.9rem; border-radius:0.7rem; font-size:0.8rem; white-space:nowrap;">← Atrás</a>
         </header>
 
         <div class="info-note">
@@ -226,6 +226,12 @@
         }
 
         function guardarNombre() {} // ya no se usa: la identidad viene de la cuenta
+
+        function volverAtras(e) {
+            if (e) e.preventDefault();
+            if (document.referrer && history.length > 1) history.back();
+            else window.location.href = 'plaza-market-catalogo.html';
+        }
 
         // ============================================================
         // DETECCIÓN DE NÚMEROS DE TELÉFONO — EN DÍGITOS Y EN PALABRAS
