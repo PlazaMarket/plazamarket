@@ -286,6 +286,7 @@
         let miUserId = null;
         let miNombre = '';
         let sesionActiva = false;
+        let esAdmin = false;
         let fotosModal = [];
         let idxModal = 0;
 
@@ -296,7 +297,8 @@
             const box = document.getElementById('cuentaBox');
             if (!box) return;
             if (sesionActiva) {
-                box.innerHTML = `<span>👤 ${escaparHtml(miNombre)}</span> · <a href="#" onclick="salir(event)" style="color:#93C5FD;">Salir</a>`;
+                const adminLink = esAdmin ? ` · <a href="plaza-market-super-admin.html" style="color:#C4B5FD;">⚙️ Admin</a>` : '';
+                box.innerHTML = `<span>👤 ${escaparHtml(miNombre)}</span>${adminLink} · <a href="#" onclick="salir(event)" style="color:#93C5FD;">Salir</a>`;
             } else {
                 box.innerHTML = `<a href="plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html" style="color:#93C5FD;">Ingresar</a>`;
             }
@@ -317,6 +319,8 @@
                     miUserId = session.user.id; sesionActiva = true;
                     const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
                     miNombre = (perf && perf.nombre) || session.user.email;
+                    const { data: adminRow } = await db.from('pm_admins').select('id').eq('id', miUserId).maybeSingle();
+                    esAdmin = !!adminRow;
                 }
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
