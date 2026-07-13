@@ -34,6 +34,17 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none !important; }
         .pill-admin { background: rgba(88,28,135,0.35); border:1px solid rgba(167,139,250,0.4); color:#C4B5FD; font-size:0.7rem; font-weight:700; padding:0.25rem 0.7rem; border-radius:999px; }
+        .hdr-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+        .menu-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel { position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px); background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; transform: translateX(-100%); transition: transform 0.22s ease; }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -41,19 +52,31 @@
 
     <div id="app" class="hidden">
         <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-            <header class="flex flex-wrap items-center justify-between gap-4">
+            <header class="flex items-center justify-between gap-3">
+                <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                    <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+                </button>
                 <div class="flex items-center gap-3">
                     <svg viewBox="0 0 100 116" class="brand-logo"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
                     <div>
-                        <h1 class="text-xl font-bold text-white">Panel de Administrador <span class="pill-admin">DUEÑO</span></h1>
+                        <h1 class="text-base sm:text-xl font-bold text-white">Administrador <span class="pill-admin">DUEÑO</span></h1>
                         <p class="text-xs text-slate-400 font-medium">Plaza Market · <span id="adminEmail">—</span></p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <a href="plaza-market-catalogo.html" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Catálogo</a>
-                    <button onclick="salir()" class="btn-ghost-dark px-4 py-2 rounded-lg text-sm">Salir</button>
-                </div>
+                <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
             </header>
+
+            <!-- Menú desplegable -->
+            <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+                <nav class="menu-panel">
+                    <div class="menu-cuenta" id="menuCuenta">—</div>
+                    <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                    <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                    <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                    <a href="plaza-market-super-admin.html" class="menu-item">Administrador</a>
+                    <a href="#" class="menu-item menu-salir" onclick="salir(event)">Salir</a>
+                </nav>
+            </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="stat-card"><div class="stat-num" id="stUsuarios">—</div><div class="stat-lbl">👥 Usuarios</div></div>
@@ -101,7 +124,9 @@
         let adminSet = new Set();
         let miId = null;
 
-        async function salir() { await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
+        async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
 
         async function iniciar() {
             const { data: { session } } = await db.auth.getSession();
@@ -118,6 +143,7 @@
             }
             miId = session.user.id;
             document.getElementById('adminEmail').textContent = session.user.email;
+            document.getElementById('menuCuenta').textContent = '👤 ' + session.user.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             await cargarTodo();
