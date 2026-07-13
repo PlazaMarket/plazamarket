@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plaza Market — Catálogo</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0B1120">
+    <link rel="apple-touch-icon" href="/acdae70a-03f5-43a3-ae0c-65842cec1dcb.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Plaza Market">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -808,6 +814,15 @@
         });
 
         window.addEventListener('DOMContentLoaded', cargarCatalogo);
+    </script>
+
+    <!-- PWA: registro del service worker (permite instalar la app) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW no registrado:', err));
+        });
+      }
     </script>
 </body>
 </html>
