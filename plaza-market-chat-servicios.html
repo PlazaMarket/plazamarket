@@ -166,7 +166,8 @@
             <div class="chat-header">
                 <div class="chat-avatar">💬</div>
                 <div class="flex-1">
-                    <p class="font-bold text-sm text-white">Sala: <span id="salaLabel">general</span></p>
+                    <p class="font-bold text-sm text-white" id="tituloChat">Conversación privada</p>
+                    <p class="text-xs font-semibold" style="color:#93C5FD;" id="prodChat"></p>
                     <p class="text-xs text-slate-400">
                         <span id="connDot" class="conn-dot"></span>
                         Vos: <span id="miNombreLabel" class="text-slate-300 font-semibold">—</span>
@@ -515,8 +516,26 @@
         // ============================================================
         // ARRANQUE — requiere cuenta, identidad automática
         // ============================================================
+        // Mostrar de qué producto y con quién es la conversación
+        async function cargarContexto() {
+            if (!SALA.startsWith('prod')) return;
+            const resto = SALA.slice(4);           // '<pid>_<uuidComprador>'
+            const pid = parseInt(resto.split('_')[0], 10);
+            const buyerUid = resto.split('_')[1];
+            if (!pid || !buyerUid) return;
+            try {
+                const { data: prod } = await db.from('productos').select('titulo, usuario_id').eq('id', pid).maybeSingle();
+                if (!prod) return;
+                const otherId = (miUserId === buyerUid) ? prod.usuario_id : buyerUid;
+                let otherName = 'Usuario';
+                const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', otherId).maybeSingle();
+                if (perf && perf.nombre) otherName = perf.nombre;
+                document.getElementById('tituloChat').textContent = otherName;
+                document.getElementById('prodChat').textContent = '💬 ' + prod.titulo;
+            } catch (e) {}
+        }
+
         (async () => {
-            document.getElementById('salaLabel').textContent = SALA.startsWith('prod') ? 'Conversación privada' : SALA;
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-chat-servicios.html?sala=' + SALA);
@@ -527,6 +546,7 @@
             miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
             document.getElementById('gateNombre').classList.add('hidden');
             document.getElementById('miNombreLabel').textContent = miNombre;
+            await cargarContexto();
             await cargarLecturaOtro();
             await cargarMensajes();
             escucharEnVivo();
