@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Mensajes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main { position: relative; z-index: 1; }
+
+        .hdr-btn {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none;
+        }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+
+        .menu-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel {
+            position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px);
+            background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            transform: translateX(-100%); transition: transform 0.22s ease;
+        }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
+
+        .conv {
+            display: flex; align-items: center; gap: 0.85rem; text-decoration: none;
+            background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem; padding: 0.9rem 1rem; margin-bottom: 0.7rem; transition: background 0.15s;
+        }
+        .conv:hover { background: rgba(255,255,255,0.07); }
+        .conv-avatar {
+            width: 46px; height: 46px; border-radius: 0.8rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87); color: #fff;
+            font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .conv-body { flex: 1; min-width: 0; }
+        .conv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+        .conv-name { font-weight: 700; color: #F1F5F9; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conv-time { font-size: 0.68rem; color: #64748B; flex-shrink: 0; }
+        .conv-prod { font-size: 0.74rem; color: #93C5FD; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conv-prod .rol { color: #64748B; }
+        .conv-last { font-size: 0.8rem; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conv-badge {
+            flex-shrink: 0; min-width: 22px; height: 22px; padding: 0 6px;
+            background: #EF4444; color: #fff; border-radius: 11px; font-size: 0.72rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .conv.no-leido { border-color: rgba(59,130,246,0.4); background: rgba(0,82,212,0.08); }
+        .vacio { text-align: center; color: #64748B; font-size: 0.9rem; padding: 3rem 1rem; }
+        .spinner-mini { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+        <header class="flex items-center justify-between gap-3">
+            <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+            </button>
+            <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+                <svg viewBox="0 0 100 116" width="30" height="36" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <div>
+                    <h1 class="text-lg font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                    <p class="text-xs text-slate-400 font-medium">Mensajes</p>
+                </div>
+            </a>
+            <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
+        </header>
+
+        <!-- Menú desplegable -->
+        <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+            <nav class="menu-panel">
+                <div class="menu-cuenta" id="menuCuenta">—</div>
+                <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
+                <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
+            </nav>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-bold text-white mb-1">Tus conversaciones</h2>
+            <p class="text-sm text-slate-400 mb-4">Todos los mensajes de tus productos y tus consultas, en un solo lugar. Tocá uno para responder.</p>
+        </div>
+
+        <div id="lista">
+            <div class="vacio"><span class="spinner-mini"></span> Cargando tus mensajes...</div>
+        </div>
+
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let miUserId = null;
+        let miNombre = '';
+
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
+        async function salir(e) {
+            if (e) e.preventDefault();
+            await db.auth.signOut();
+            localStorage.removeItem('pm_uid');
+            window.location.href = 'plaza-market-catalogo.html';
+        }
+
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function inicial(nombre) { const s = String(nombre || '?').trim(); return s ? s[0].toUpperCase() : '?'; }
+        function cuando(iso) {
+            if (!iso) return '';
+            const d = new Date(iso); const hoy = new Date();
+            const mismoDia = d.toDateString() === hoy.toDateString();
+            if (mismoDia) return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+        }
+
+        async function cargar() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-mensajes.html');
+                return;
+            }
+            miUserId = session.user.id;
+            const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
+            miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
+            document.getElementById('menuCuenta').textContent = '👤 ' + miNombre;
+
+            db.from('pm_admins').select('id').eq('id', miUserId).maybeSingle().then(({ data }) => {
+                if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
+            });
+
+            // Mis productos (soy vendedor)
+            const { data: prods } = await db.from('productos').select('id, titulo, usuario_id').eq('usuario_id', miUserId);
+            const myIds = (prods || []).map(p => p.id);
+            const prodMap = {}; const ownerMap = {};
+            (prods || []).forEach(p => { prodMap[p.id] = p.titulo; ownerMap[p.id] = p.usuario_id; });
+
+            // Consultas donde soy vendedor
+            let consSeller = [];
+            if (myIds.length) {
+                const { data } = await db.from('pm_consultas').select('producto_id, usuario_id, nombre').in('producto_id', myIds);
+                consSeller = data || [];
+            }
+            // Consultas donde soy comprador
+            const { data: cb } = await db.from('pm_consultas').select('producto_id, usuario_id').eq('usuario_id', miUserId);
+            const consBuyer = cb || [];
+
+            // Armar conversaciones (sin duplicar)
+            const convs = []; const vistos = new Set();
+            function agregar(c) { if (!vistos.has(c.sala)) { vistos.add(c.sala); convs.push(c); } }
+            consSeller.forEach(c => agregar({ sala: 'prod' + c.producto_id + '_' + c.usuario_id, productoId: c.producto_id, otherId: c.usuario_id, otherName: c.nombre, rol: 'Te consultó' }));
+            consBuyer.forEach(c => agregar({ sala: 'prod' + c.producto_id + '_' + miUserId, productoId: c.producto_id, otherId: null, otherName: null, rol: 'Consultaste' }));
+
+            const cont = document.getElementById('lista');
+            if (!convs.length) { cont.innerHTML = '<div class="vacio">Todavía no tenés mensajes.<br>Cuando alguien consulte tus productos, o vos consultes uno, aparece acá. 💬</div>'; return; }
+
+            // Faltan títulos y dueños de productos que no son míos (consultas como comprador)
+            const faltanPids = [...new Set(convs.map(c => c.productoId))].filter(id => !(id in prodMap));
+            if (faltanPids.length) {
+                const { data } = await db.from('productos').select('id, titulo, usuario_id').in('id', faltanPids);
+                (data || []).forEach(p => { prodMap[p.id] = p.titulo; ownerMap[p.id] = p.usuario_id; });
+            }
+            // Para las consultas como comprador, el "otro" es el dueño del producto
+            convs.forEach(c => { if (c.otherId === null) c.otherId = ownerMap[c.productoId] || null; });
+
+            // Nombres que falten (dueños de productos ajenos)
+            const faltanIds = [...new Set(convs.map(c => c.otherId).filter(Boolean))].filter(id => !convs.find(x => x.otherName && x.otherId === id));
+            if (faltanIds.length) {
+                const { data } = await db.from('pm_perfiles').select('id, nombre').in('id', faltanIds);
+                const nom = {}; (data || []).forEach(p => nom[p.id] = p.nombre);
+                convs.forEach(c => { if (!c.otherName && c.otherId) c.otherName = nom[c.otherId] || 'Usuario'; });
+            }
+
+            const salas = convs.map(c => c.sala);
+            // Últimos mensajes de todas las salas
+            const { data: msgs } = await db.from('mensajes').select('conversacion, autor, texto, creado_en').in('conversacion', salas).order('creado_en', { ascending: true });
+            const ultimo = {}; const noLeidosBase = {};
+            (msgs || []).forEach(m => { ultimo[m.conversacion] = m; });
+            // Mis lecturas
+            const { data: lec } = await db.from('pm_lecturas').select('conversacion, ultima_lectura').eq('usuario_id', miUserId).in('conversacion', salas);
+            const leidoMap = {}; (lec || []).forEach(l => leidoMap[l.conversacion] = new Date(l.ultima_lectura).getTime());
+            // No leídos por sala
+            const noLeidos = {};
+            (msgs || []).forEach(m => {
+                if (m.autor === miNombre) return;
+                const t = new Date(m.creado_en).getTime();
+                if (t > (leidoMap[m.conversacion] || 0)) noLeidos[m.conversacion] = (noLeidos[m.conversacion] || 0) + 1;
+            });
+
+            // Ordenar por último mensaje (más nuevo primero)
+            convs.sort((a, b) => {
+                const ta = ultimo[a.sala] ? new Date(ultimo[a.sala].creado_en).getTime() : 0;
+                const tb = ultimo[b.sala] ? new Date(ultimo[b.sala].creado_en).getTime() : 0;
+                return tb - ta;
+            });
+
+            cont.innerHTML = convs.map(c => {
+                const u = ultimo[c.sala];
+                const preview = u ? escaparHtml(u.texto).slice(0, 60) : 'Sin mensajes todavía';
+                const hora = u ? cuando(u.creado_en) : '';
+                const n = noLeidos[c.sala] || 0;
+                const titulo = prodMap[c.productoId] || 'Producto';
+                const badge = n > 0 ? `<div class="conv-badge">${n > 99 ? '99+' : n}</div>` : '';
+                return `<a class="conv ${n > 0 ? 'no-leido' : ''}" href="plaza-market-chat-servicios.html?sala=${encodeURIComponent(c.sala)}">
+                    <div class="conv-avatar">${inicial(c.otherName)}</div>
+                    <div class="conv-body">
+                        <div class="conv-top"><span class="conv-name">${escaparHtml(c.otherName || 'Usuario')}</span><span class="conv-time">${hora}</span></div>
+                        <div class="conv-prod"><span class="rol">${c.rol}:</span> ${escaparHtml(titulo)}</div>
+                        <div class="conv-last">${preview}</div>
+                    </div>
+                    ${badge}
+                </a>`;
+            }).join('');
+        }
+
+        cargar();
+    </script>
+</body>
+</html>
