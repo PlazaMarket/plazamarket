@@ -396,12 +396,6 @@
             </section>
 
             <section class="glass-card p-6 sm:p-7">
-                <h2 class="text-lg font-bold text-white mb-1">📨 Consultas de tus productos <span id="chatBadge" class="badge-nuevo hidden">0</span></h2>
-                <p class="text-sm text-slate-400 mb-5">Las personas que te preguntaron. Tocá para responderles en privado.</p>
-                <div id="consultasList"><p class="empty-state">Cargando...</p></div>
-            </section>
-
-            <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
                 <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
                 <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
@@ -558,8 +552,6 @@
             supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle().then(({ data }) => {
                 if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
             });
-            await cargarConsultas();
-            escucharConsultas();
         }
 
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
