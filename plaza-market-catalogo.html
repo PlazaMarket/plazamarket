@@ -234,7 +234,7 @@
                 <svg viewBox="0 0 100 116" width="34" height="40" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
                 <div>
                     <h1 class="text-xl font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
-                    <p class="text-xs text-slate-400 font-medium">Catálogo · <span id="totalLabel">—</span></p>
+                    <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Catálogo</p>
                 </div>
             </a>
             <button class="hdr-btn" onclick="window.location.href='plaza-market-mensajes.html'" aria-label="Mensajes" title="Mensajes">
@@ -362,6 +362,8 @@
         }
 
         function renderCuenta() {
+            const sub = document.getElementById('subEncabezado');
+            if (sub) sub.textContent = (sesionActiva && miNombre) ? ('Hola, ' + miNombre + ' · Catálogo') : 'Catálogo';
             const cuenta = document.getElementById('menuCuenta');
             const admin = document.getElementById('menuAdmin');
             const salirLink = document.getElementById('menuSalir');
@@ -529,7 +531,6 @@
                 return;
             }
             todos = data || [];
-            document.getElementById('totalLabel').textContent = todos.length === 1 ? '1 publicación' : `${todos.length} publicaciones`;
             renderHistorial();
             aplicarFiltros();
         }
