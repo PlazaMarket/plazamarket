@@ -20,7 +20,8 @@
         .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; }
         .pass-wrap { position: relative; }
         .pass-wrap input { padding-right: 3rem; }
-        .pass-eye { position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(226,232,240,0.6); padding: 0.3rem; line-height: 0; display: flex; align-items: center; }
+        .pass-eye { position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(226,232,240,0.85); padding: 0.3rem; line-height: 0; display: flex; align-items: center; z-index: 2; }
+        input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; }
         .pass-eye .ic-off { display: none; }
         .pass-eye.viendo .ic-open { display: none; }
         .pass-eye.viendo .ic-off { display: block; }
