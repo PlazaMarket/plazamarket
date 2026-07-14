@@ -70,6 +70,11 @@
             border: 1px solid rgba(239,68,68,0.3); border-radius: 0.7rem; padding: 0.6rem 0.85rem;
             margin-bottom: 0.85rem;
         }
+        .msg-info-note {
+            font-size: 0.72rem; color: #BFDBFE; background: rgba(0,82,212,0.1);
+            border: 1px solid rgba(0,82,212,0.3); border-radius: 0.7rem; padding: 0.6rem 0.85rem;
+            margin-bottom: 0.85rem; text-align: center;
+        }
         .chat-input-bar {
             padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08);
             display: flex; gap: 0.6rem; align-items: flex-end;
@@ -193,7 +198,7 @@
 
         <p class="text-center text-xs text-slate-600 pb-4">
             Esta es una conversación <strong>privada</strong> entre vos y la otra persona. Nadie más la ve.
-            Las fotos por ahora se ven solo de tu lado — el envío de fotos entre usuarios queda para el próximo paso.
+            El envío de fotos todavía no está disponible — por ahora, coordiná todo por texto. Lo estamos preparando.
         </p>
 
     </main>
@@ -383,6 +388,16 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        function appendInfoNote(texto) {
+            quitarVacio();
+            const container = document.getElementById('chatMessages');
+            const note = document.createElement('div');
+            note.className = 'msg-info-note';
+            note.textContent = texto;
+            container.appendChild(note);
+            container.scrollTop = container.scrollHeight;
+        }
+
         function appendBlockedNote(reason) {
             quitarVacio();
             const container = document.getElementById('chatMessages');
@@ -483,34 +498,10 @@
         async function handleImageSelected(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            const statusEl = document.getElementById('ocrStatus');
-            statusEl.classList.remove('hidden');
-
-            const imageUrl = URL.createObjectURL(file);
-
-            try {
-                const worker = await Tesseract.createWorker('spa');
-                const { data: { text } } = await worker.recognize(file);
-                await worker.terminate();
-
-                statusEl.classList.add('hidden');
-
-                const extracted = text || '';
-                const blockReason = checkTextForContactInfo(extracted);
-
-                if (blockReason) {
-                    appendBlockedNote(`${blockReason} (detectado dentro de la imagen)`);
-                } else {
-                    appendMessage(`<img src="${imageUrl}" alt="Imagen enviada">`, true);
-                }
-            } catch (err) {
-                statusEl.classList.add('hidden');
-                appendBlockedNote('No se pudo analizar la imagen. Por seguridad, no se envió.');
-                console.error(err);
-            }
-
             event.target.value = '';
+            // El envío de fotos entre usuarios todavía no está habilitado.
+            // Damos un aviso claro para que nadie crea que la foto se envió.
+            appendInfoNote('📷 Por ahora no se pueden enviar fotos por el chat (lo estamos preparando). La otra persona no la va a recibir — coordiná por texto.');
         }
 
         // ============================================================
