@@ -87,7 +87,7 @@
                 <svg viewBox="0 0 100 116" width="30" height="36" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
                 <div>
                     <h1 class="text-lg font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
-                    <p class="text-xs text-slate-400 font-medium">Mensajes</p>
+                    <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Mensajes</p>
                 </div>
             </a>
             <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
@@ -154,6 +154,8 @@
             const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
             miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
             document.getElementById('menuCuenta').textContent = '👤 ' + miNombre;
+            const sub = document.getElementById('subEncabezado');
+            if (sub) sub.textContent = 'Hola, ' + miNombre + ' · Mensajes';
 
             db.from('pm_admins').select('id').eq('id', miUserId).maybeSingle().then(({ data }) => {
                 if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
