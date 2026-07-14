@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Tenés una novedad en Plaza Market.',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    badge: '/badge-96.png',
     data: { url: data.url || '/plaza-market-mensajes.html' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
