@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Nueva contraseña</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body { background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%); min-height: 100vh; margin: 0; color: #E2E8F0; }
+        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 18% 18%, rgba(0,82,212,0.24) 0%, transparent 45%), radial-gradient(circle at 85% 12%, rgba(88,28,135,0.26) 0%, transparent 45%); pointer-events: none; z-index: 0; }
+        main { position: relative; z-index: 1; }
+        .glass-card { background: rgba(255,255,255,0.035); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.09); border-radius: 1.75rem; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+        label { color: rgba(226,232,240,0.75); font-size: 0.82rem; font-weight: 700; }
+        input { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12); color: #F1F5F9; border-radius: 0.85rem; width: 100%; padding: 0.8rem 1rem; font-size: 0.9rem; }
+        input::placeholder { color: rgba(226,232,240,0.32); }
+        input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(0,82,212,0.22); background: rgba(255,255,255,0.06); }
+        .btn-primary { background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%); color: white; font-weight: 700; box-shadow: 0 4px 24px rgba(0,82,212,0.45); border: none; cursor: pointer; }
+        .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; }
+        .pass-wrap { position: relative; }
+        .pass-wrap input { padding-right: 3rem; }
+        .pass-eye { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.15rem; color: rgba(226,232,240,0.6); padding: 0.3rem; line-height: 1; }
+        .msg { font-size: 0.78rem; margin-top: 0.5rem; min-height: 1rem; }
+        .msg.err { color: #FCA5A5; }
+        .msg.ok { color: #34D399; }
+        .spinner-mini { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <main class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-md">
+            <div class="flex items-center justify-center mb-4 gap-3">
+                <svg viewBox="0 0 100 116" width="34" height="40" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <h1 class="text-2xl font-bold"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+            </div>
+
+            <div class="glass-card p-7">
+                <h2 class="text-lg font-bold text-white mb-1">Crear contraseña nueva</h2>
+
+                <div id="cargando" class="text-sm text-slate-400 mt-4"><span class="spinner-mini"></span> Verificando el enlace...</div>
+
+                <div id="formNueva" class="hidden space-y-4 mt-3">
+                    <p class="text-sm text-slate-400">Elegí una contraseña nueva para tu cuenta.</p>
+                    <div>
+                        <label>Nueva contraseña (mín. 6 caracteres)</label>
+                        <div class="pass-wrap mt-2">
+                            <input type="password" id="p1" placeholder="••••••••">
+                            <button type="button" class="pass-eye" onclick="verClave('p1', this)" aria-label="Mostrar u ocultar">👁</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Repetir la contraseña</label>
+                        <div class="pass-wrap mt-2">
+                            <input type="password" id="p2" placeholder="••••••••">
+                            <button type="button" class="pass-eye" onclick="verClave('p2', this)" aria-label="Mostrar u ocultar">👁</button>
+                        </div>
+                    </div>
+                    <div id="msg" class="msg"></div>
+                    <button class="btn-primary w-full py-3 rounded-xl" onclick="guardar()">Guardar contraseña nueva</button>
+                </div>
+
+                <div id="invalido" class="hidden mt-4">
+                    <p class="text-sm text-slate-300">El enlace no es válido o ya venció (duran un rato corto por seguridad).</p>
+                    <a href="plaza-market-acceso-emprendedores.html" class="btn-primary inline-block w-full text-center py-3 rounded-xl mt-4" style="text-decoration:none;">Pedir un enlace nuevo</a>
+                </div>
+
+                <div id="listo" class="hidden mt-4 text-center">
+                    <div class="text-4xl mb-2">✅</div>
+                    <p class="text-sm text-slate-200 mb-4">¡Listo! Tu contraseña se cambió. Ya podés entrar con la nueva.</p>
+                    <a href="plaza-market-catalogo.html" class="btn-primary inline-block w-full text-center py-3 rounded-xl" style="text-decoration:none;">Entrar a Plaza Market</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let listo = false;
+
+        function mostrarForm() {
+            if (listo) return;
+            listo = true;
+            document.getElementById('cargando').classList.add('hidden');
+            document.getElementById('invalido').classList.add('hidden');
+            document.getElementById('formNueva').classList.remove('hidden');
+        }
+        function mostrarInvalido() {
+            if (listo) return;
+            document.getElementById('cargando').classList.add('hidden');
+            document.getElementById('invalido').classList.remove('hidden');
+        }
+
+        function verClave(id, btn) {
+            const inp = document.getElementById(id);
+            if (!inp) return;
+            if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+            else { inp.type = 'password'; btn.textContent = '👁'; }
+        }
+
+        // Cuando Supabase procesa el enlace de recuperación, habilita el formulario
+        db.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY' || (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION'))) {
+                mostrarForm();
+            }
+        });
+
+        // Respaldo: si ya hay sesión de recuperación, mostrar el form; si no, marcar inválido
+        (async () => {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) { mostrarForm(); return; }
+            setTimeout(async () => {
+                const { data: { session: s2 } } = await db.auth.getSession();
+                if (s2) mostrarForm(); else mostrarInvalido();
+            }, 2000);
+        })();
+
+        async function guardar() {
+            const p1 = document.getElementById('p1').value;
+            const p2 = document.getElementById('p2').value;
+            const msg = document.getElementById('msg');
+            msg.className = 'msg err';
+            if (p1.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            if (p1 !== p2) { msg.textContent = 'Las dos contraseñas no coinciden.'; return; }
+
+            const btn = event.target; const txt = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-mini"></span>Guardando...';
+
+            const { error } = await db.auth.updateUser({ password: p1 });
+            if (error) {
+                msg.textContent = 'No se pudo cambiar: ' + error.message;
+                btn.disabled = false; btn.innerHTML = txt;
+                return;
+            }
+            document.getElementById('formNueva').classList.add('hidden');
+            document.getElementById('listo').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
