@@ -351,6 +351,7 @@
         let esAdmin = false;
         let fotosModal = [];
         let idxModal = 0;
+        const SENA = 0.20; // seña del 20% para reservar un servicio
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
@@ -566,7 +567,7 @@
             const desc = escaparHtml(p.descripcion).slice(0, 100);
 
             let envio;
-            if (esServicio) envio = '<p class="card-envio servicio">🛠️ Servicio · se coordina por chat</p>';
+            if (esServicio) { const sena = Math.round(Number(p.precio || 0) * SENA); envio = `<p class="card-envio servicio">🔖 Seña para reservar: ${pesos(sena)}</p>`; }
             else envio = '<p class="card-envio pago">🚚 Envío a coordinar</p>';
 
             return `
@@ -648,7 +649,11 @@
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
 
             const envioEl = document.getElementById('modalEnvio');
-            if (esServicio) { envioEl.className = 'card-envio servicio'; envioEl.textContent = '🛠️ Servicio · se coordina por chat'; }
+            if (esServicio) {
+                const sena = Math.round(Number(p.precio || 0) * SENA);
+                envioEl.className = 'card-envio servicio';
+                envioEl.innerHTML = `🔖 Para reservar el turno se paga una <strong>seña de ${pesos(sena)}</strong> (20% del precio). El resto lo abonás al recibir el servicio. Se coordina por chat.`;
+            }
             else { envioEl.className = 'card-envio pago'; envioEl.textContent = '🚚 Envío a coordinar con el vendedor'; }
 
             const stockEl = document.getElementById('modalStock');
