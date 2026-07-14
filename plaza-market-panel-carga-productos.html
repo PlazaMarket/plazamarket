@@ -543,7 +543,8 @@
             }
             usuarioActual = session.user;
             localStorage.setItem('pm_uid', usuarioActual.id);
-            document.getElementById('userEmailLabel').textContent = usuarioActual.email;
+            const emailLbl = document.getElementById('userEmailLabel');
+            if (emailLbl) emailLbl.textContent = usuarioActual.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             setTipo('producto');
