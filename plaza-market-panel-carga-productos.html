@@ -258,6 +258,8 @@
             transform: translateX(-100%); transition: transform 0.22s ease;
         }
         .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
+        .menu-cerrar:hover { color: #fff; }
         .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
         .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
         .menu-item:hover { background: rgba(255,255,255,0.06); }
@@ -287,6 +289,7 @@
             <!-- Menú desplegable -->
             <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
                 <nav class="menu-panel">
+                    <button type="button" class="menu-cerrar" onclick="cerrarMenu()" aria-label="Cerrar menú">✕</button>
                     <div class="menu-cuenta" id="menuCuenta">—</div>
                     <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
                     <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
