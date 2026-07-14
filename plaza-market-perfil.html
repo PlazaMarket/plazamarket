@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Mi perfil</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0B1120">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Plaza Market">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main { position: relative; z-index: 1; }
+
+        .hdr-btn {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none;
+        }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+
+        .menu-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel {
+            position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px);
+            background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            transform: translateX(-100%); transition: transform 0.22s ease;
+        }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
+        .menu-cerrar:hover { color: #fff; }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
+
+        .card {
+            background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09); border-radius: 1.25rem;
+            padding: 1.6rem 1.4rem; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+        .campo { margin-bottom: 1.15rem; }
+        .campo label { display: block; font-size: 0.8rem; font-weight: 700; color: #93C5FD; margin-bottom: 0.4rem; }
+        .campo .ayuda { font-size: 0.72rem; color: rgba(226,232,240,0.5); margin-top: 0.35rem; }
+        .campo input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.14);
+            color: #F1F5F9; border-radius: 0.8rem; padding: 0.8rem 1rem; font-size: 0.92rem;
+        }
+        .campo input:focus { outline: none; border-color: #3B82F6; }
+        .campo input:disabled { color: rgba(226,232,240,0.55); background: rgba(255,255,255,0.02); cursor: not-allowed; }
+        .tel-wrap { display: flex; align-items: stretch; gap: 0; }
+        .tel-prefijo {
+            display: flex; align-items: center; padding: 0 0.9rem; font-weight: 700; color: #CBD5E1;
+            background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.14); border-right: none;
+            border-radius: 0.8rem 0 0 0.8rem;
+        }
+        .tel-wrap input { border-radius: 0 0.8rem 0.8rem 0; }
+        .candado { font-size: 0.72rem; color: rgba(226,232,240,0.45); font-weight: 600; }
+        .btn-guardar {
+            width: 100%; background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700; border: none; cursor: pointer; border-radius: 0.85rem;
+            padding: 0.95rem; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(0,82,212,0.4); margin-top: 0.4rem;
+        }
+        .btn-guardar:disabled { opacity: 0.55; cursor: not-allowed; }
+        .aviso { border-radius: 0.75rem; padding: 0.75rem 0.9rem; font-size: 0.83rem; font-weight: 600; margin-bottom: 1rem; display: none; }
+        .aviso.error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5; display: block; }
+        .aviso.ok { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: #6EE7B7; display: block; }
+        .spinner-mini { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .cargando { text-align: center; color: #64748B; font-size: 0.9rem; padding: 2.5rem 1rem; }
+    </style>
+</head>
+<body>
+
+    <main class="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+        <header class="flex items-center justify-between gap-3">
+            <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+            </button>
+            <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+                <svg viewBox="0 0 100 116" width="30" height="36" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <div>
+                    <h1 class="text-lg font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                    <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Mi perfil</p>
+                </div>
+            </a>
+            <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
+        </header>
+
+        <!-- Menú desplegable -->
+        <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+            <nav class="menu-panel">
+                <button type="button" class="menu-cerrar" onclick="cerrarMenu()" aria-label="Cerrar menú">✕</button>
+                <div class="menu-cuenta" id="menuCuenta">—</div>
+                <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
+                <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
+                <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
+            </nav>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-bold text-white mb-1">Mi perfil</h2>
+            <p class="text-sm text-slate-400 mb-4">Estos son tus datos. Podés cambiar tu nombre y tu celular cuando quieras. El email no se puede modificar porque es con el que iniciás sesión.</p>
+        </div>
+
+        <div id="cargando" class="cargando"><span class="spinner-mini"></span> Cargando tus datos...</div>
+
+        <div id="formCard" class="card" style="display:none;">
+            <div id="aviso" class="aviso"></div>
+
+            <div class="campo">
+                <label>Email <span class="candado">🔒 no se puede cambiar</span></label>
+                <input type="email" id="email" disabled>
+            </div>
+
+            <div class="campo">
+                <label>Nombre completo *</label>
+                <input type="text" id="nombre" placeholder="Ej: Tincho Pérez" autocomplete="name">
+            </div>
+
+            <div class="campo">
+                <label>Celular * <span class="candado">(Argentina)</span></label>
+                <div class="tel-wrap">
+                    <span class="tel-prefijo">+54</span>
+                    <input type="tel" id="telefono" placeholder="11 2345 6789" inputmode="numeric" autocomplete="tel">
+                </div>
+                <p class="ayuda">Escribí código de área + número, sin el 0 y sin el 15. Ej: <strong>11 2345 6789</strong>.</p>
+            </div>
+
+            <button id="btnGuardar" class="btn-guardar" onclick="guardar()">Guardar cambios</button>
+        </div>
+
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let miUserId = null;
+        let miEmail = '';
+        let miNombre = '';
+
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
+        async function salir(e) {
+            if (e) e.preventDefault();
+            await db.auth.signOut();
+            localStorage.removeItem('pm_uid');
+            window.location.href = 'plaza-market-catalogo.html';
+        }
+
+        function mostrarAviso(tipo, texto) {
+            const a = document.getElementById('aviso');
+            a.className = 'aviso ' + tipo;
+            a.textContent = texto;
+            if (tipo === 'ok') { a.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+        function limpiarAviso() { const a = document.getElementById('aviso'); a.className = 'aviso'; a.textContent = ''; }
+
+        // Deja solo los dígitos del número, sacando prefijos comunes de Argentina (54, 9, 0)
+        function soloNumeroNacional(valor) {
+            let d = String(valor || '').replace(/\D/g, '');
+            if (d.startsWith('54')) d = d.slice(2);
+            if (d.startsWith('9')) d = d.slice(1);
+            if (d.startsWith('0')) d = d.slice(1);
+            return d;
+        }
+        // Un celular argentino válido tiene 10 dígitos (código de área + número)
+        function celularValido(valor) {
+            return soloNumeroNacional(valor).length === 10;
+        }
+
+        async function cargar() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-perfil.html');
+                return;
+            }
+            miUserId = session.user.id;
+            miEmail = session.user.email || '';
+
+            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email').eq('id', miUserId).maybeSingle();
+            miNombre = (perf && perf.nombre) || '';
+
+            // Encabezado y menú
+            document.getElementById('menuCuenta').textContent = '👤 ' + (miNombre || miEmail || 'Mi cuenta');
+            const sub = document.getElementById('subEncabezado');
+            if (sub) sub.textContent = 'Hola, ' + (miNombre || 'vos') + ' · Mi perfil';
+
+            db.from('pm_admins').select('id').eq('id', miUserId).maybeSingle().then(({ data }) => {
+                if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
+            });
+
+            // Llenar el formulario
+            document.getElementById('email').value = (perf && perf.email) || miEmail;
+            document.getElementById('nombre').value = miNombre;
+            document.getElementById('telefono').value = (perf && perf.telefono) || '';
+
+            document.getElementById('cargando').style.display = 'none';
+            document.getElementById('formCard').style.display = 'block';
+        }
+
+        async function guardar() {
+            limpiarAviso();
+            const nombre = document.getElementById('nombre').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+
+            if (!nombre) {
+                mostrarAviso('error', 'Poné tu nombre completo para continuar.');
+                return;
+            }
+            if (!telefono) {
+                mostrarAviso('error', 'Poné tu celular para continuar. Es obligatorio.');
+                return;
+            }
+            if (!celularValido(telefono)) {
+                mostrarAviso('error', 'Revisá el celular: tiene que ser un número argentino de 10 dígitos (código de área + número, sin 0 y sin 15). Ej: 11 2345 6789.');
+                return;
+            }
+
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            const textoOriginal = btn.textContent;
+            btn.innerHTML = '<span class="spinner-mini"></span> Guardando...';
+
+            const { error } = await db.from('pm_perfiles').upsert({
+                id: miUserId,
+                nombre: nombre,
+                telefono: telefono,
+                email: miEmail
+            }, { onConflict: 'id' });
+
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+
+            if (error) {
+                mostrarAviso('error', 'No se pudo guardar: ' + (error.message || 'error') + '. Si el problema sigue, avisá.');
+                return;
+            }
+
+            miNombre = nombre;
+            document.getElementById('menuCuenta').textContent = '👤 ' + nombre;
+            const sub = document.getElementById('subEncabezado');
+            if (sub) sub.textContent = 'Hola, ' + nombre + ' · Mi perfil';
+            mostrarAviso('ok', '¡Listo! Tus datos se guardaron correctamente. ✅');
+        }
+
+        cargar();
+    </script>
+</body>
+</html>
