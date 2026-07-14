@@ -58,6 +58,12 @@
         .toast.success { border-left: 3px solid #34D399; }
         .toast.info { border-left: 3px solid #3B82F6; }
         .hidden { display: none !important; }
+        .pass-wrap { position: relative; }
+        .pass-wrap input { padding-right: 3rem; }
+        .pass-eye { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.15rem; color: rgba(226,232,240,0.6); padding: 0.3rem; line-height: 1; }
+        .pass-eye:hover { color: #93C5FD; }
+        .link-btn { background: none; border: none; cursor: pointer; color: #60A5FA; font-size: 0.75rem; padding: 0.35rem 0; }
+        .link-btn:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -85,8 +91,13 @@
                             </div>
                             <div>
                                 <label>Contraseña</label>
-                                <input type="password" id="loginPassword" placeholder="••••••••" class="mt-2">
+                                <div class="pass-wrap mt-2">
+                                    <input type="password" id="loginPassword" placeholder="••••••••">
+                                    <button type="button" class="pass-eye" onclick="verClave('loginPassword', this)" aria-label="Mostrar u ocultar contraseña">👁</button>
+                                </div>
                                 <div class="field-message" id="loginMsg"></div>
+                                <div class="text-right"><button type="button" class="link-btn" onclick="olvideClave()">¿Olvidaste tu contraseña?</button></div>
+                                <div id="recuperarHint" class="info-note hidden" style="margin-top:0.5rem;">¿Seguís sin poder entrar? Tocá <b>"¿Olvidaste tu contraseña?"</b> y te mandamos un mail para crear una nueva.</div>
                             </div>
                             <button class="btn-primary w-full py-3 rounded-xl mt-2" onclick="attemptLogin()">Acceder →</button>
                         </div>
@@ -109,7 +120,10 @@
                             </div>
                             <div>
                                 <label>Contraseña (mín. 6 caracteres)</label>
-                                <input type="password" id="regPassword" placeholder="••••••••" class="mt-2">
+                                <div class="pass-wrap mt-2">
+                                    <input type="password" id="regPassword" placeholder="••••••••">
+                                    <button type="button" class="pass-eye" onclick="verClave('regPassword', this)" aria-label="Mostrar u ocultar contraseña">👁</button>
+                                </div>
                             </div>
                             <div class="checkbox-row">
                                 <input type="checkbox" id="regTerms">
@@ -181,6 +195,27 @@
             window.location.href = destino();
         }
 
+        let intentosFallidos = 0;
+
+        // Mostrar / ocultar la contraseña
+        function verClave(id, btn) {
+            const inp = document.getElementById(id);
+            if (!inp) return;
+            if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+            else { inp.type = 'password'; btn.textContent = '👁'; }
+        }
+
+        // Recuperar contraseña por email
+        async function olvideClave() {
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email) { showToast('Primero escribí tu email arriba, y después tocá "¿Olvidaste tu contraseña?".', 'info'); return; }
+            const { error } = await db.auth.resetPasswordForEmail(email, {
+                redirectTo: 'https://plazamarket.com.ar/plaza-market-nueva-clave.html'
+            });
+            if (error) { showToast('No se pudo enviar el mail: ' + error.message, 'error'); return; }
+            showToast('Te enviamos un mail para crear una contraseña nueva. Revisá tu correo (y la carpeta de spam).', 'success');
+        }
+
         // ============================== LOGIN ==============================
         async function attemptLogin() {
             const email = document.getElementById('loginEmail').value.trim();
@@ -195,7 +230,11 @@
             const { data, error } = await db.auth.signInWithPassword({ email, password });
             if (error) {
                 if (/confirm/i.test(error.message)) msg.textContent = 'Todavía no confirmaste tu email. Revisá tu correo (y spam).';
-                else msg.textContent = 'Email o contraseña incorrectos.';
+                else {
+                    msg.textContent = 'Email o contraseña incorrectos.';
+                    intentosFallidos++;
+                    if (intentosFallidos >= 3) { const h = document.getElementById('recuperarHint'); if (h) h.classList.remove('hidden'); }
+                }
                 btn.disabled = false; btn.innerHTML = txt;
                 return;
             }
