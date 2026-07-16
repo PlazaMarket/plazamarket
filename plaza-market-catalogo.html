@@ -101,6 +101,22 @@
         .card-envio.gratis { color: #34D399; }
         .card-envio.pago { color: rgba(226,232,240,0.55); }
         .card-envio.servicio { color: #C4B5FD; }
+
+        /* Cartel de envío (ficha del producto) */
+        .envio-box {
+            background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.11);
+            border-radius: 0.9rem; padding: 0.95rem 1rem; margin-top: 0.8rem;
+        }
+        .envio-tit { font-size: 0.87rem; font-weight: 800; color: #FCD34D; margin: 0 0 0.45rem; }
+        .envio-sub { font-size: 0.8rem; color: rgba(226,232,240,0.75); line-height: 1.6; margin: 0 0 0.55rem; }
+        .envio-tip { font-size: 0.78rem; color: #6EE7B7; font-weight: 600; margin: 0 0 0.55rem; }
+        .envio-paquete { font-size: 0.72rem; color: rgba(226,232,240,0.42); margin: 0 0 0.65rem; }
+        .envio-toggle {
+            background: none; border: none; color: #93C5FD; font-size: 0.78rem; font-weight: 700;
+            cursor: pointer; padding: 0; text-decoration: underline;
+        }
+        .envio-pasos { font-size: 0.78rem; color: rgba(226,232,240,0.72); line-height: 1.65; margin: 0.7rem 0 0; padding-left: 1.2rem; }
+        .envio-pasos li { margin-bottom: 0.4rem; }
         .card-stats { display: flex; gap: 0.9rem; margin-top: 0.55rem; font-size: 0.7rem; color: rgba(226,232,240,0.45); }
         .estado { text-align: center; padding: 4rem 1rem; color: rgba(226,232,240,0.45); font-size: 0.9rem; }
         .spinner {
@@ -304,7 +320,7 @@
                 <p class="card-cat" id="modalCat"></p>
                 <h2 class="text-xl font-bold text-white mb-1" id="modalTitulo"></h2>
                 <p class="modal-precio" id="modalPrecio"></p>
-                <p id="modalEnvio" class="card-envio" style="margin-top:0.4rem;"></p>
+                <div id="modalEnvio" class="card-envio" style="margin-top:0.4rem;"></div>
                 <p id="modalStock" class="text-sm" style="margin-top:0.4rem;color:rgba(226,232,240,0.6);"></p>
                 <div class="modal-stats" id="modalStats"></div>
                 <p class="modal-desc" id="modalDesc"></p>
@@ -507,6 +523,13 @@
         }
         function agotado(p) { return p.tipo === 'producto' && p.stock !== null && p.stock !== undefined && p.stock <= 0; }
 
+        // Despliega/oculta los 3 pasos del envío en la ficha del producto
+        function toggleComoEnvio(e) {
+            if (e) e.preventDefault();
+            const pasos = document.getElementById('comoEnvio');
+            if (pasos) pasos.classList.toggle('hidden');
+        }
+
         async function cargarCatalogo() {
             // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
             try {
@@ -570,7 +593,7 @@
 
             let envio;
             if (esServicio) { const sena = Math.round(Number(p.precio || 0) * SENA); envio = `<p class="card-envio servicio">🔖 Seña para reservar: ${pesos(sena)}</p>`; }
-            else envio = '<p class="card-envio pago">🚚 Envío a coordinar</p>';
+            else envio = '<p class="card-envio pago">🚚 + envío (lo pagás vos)</p>';
 
             return `
             <article class="card-producto" onclick="abrirModal(${p.id})">
@@ -656,7 +679,26 @@
                 envioEl.className = 'card-envio servicio';
                 envioEl.innerHTML = `🔖 Para reservar el turno se paga una <strong>seña de ${pesos(sena)}</strong> (20% del precio). El resto lo abonás al recibir el servicio. Se coordina por chat.`;
             }
-            else { envioEl.className = 'card-envio pago'; envioEl.textContent = '🚚 Envío a coordinar con el vendedor'; }
+            else {
+                envioEl.className = '';
+                const tieneMedidas = p.alto_cm && p.ancho_cm && p.largo_cm && p.peso_gr;
+                const medidasHtml = tieneMedidas
+                    ? `<p class="envio-paquete">📦 Paquete: ${p.alto_cm} × ${p.ancho_cm} × ${p.largo_cm} cm · ${(Number(p.peso_gr) / 1000).toLocaleString('es-AR')} kg</p>`
+                    : '';
+                envioEl.innerHTML = `
+                    <div class="envio-box">
+                        <p class="envio-tit">🚚 El precio no incluye el envío</p>
+                        <p class="envio-sub">El envío lo pagás vos, directo a Andreani con Mercado Pago. Vos elegís si lo retirás en una sucursal o lo querés en tu casa. Se coordina con el vendedor por el chat.</p>
+                        <p class="envio-tip">💡 Tip: a sucursal te sale bastante más barato que a domicilio.</p>
+                        ${medidasHtml}
+                        <button type="button" class="envio-toggle" onclick="toggleComoEnvio(event)">¿Cómo es el envío? ▾</button>
+                        <ol id="comoEnvio" class="envio-pasos hidden">
+                            <li>Consultás al vendedor por el chat y arreglan la compra.</li>
+                            <li>El vendedor te pasa un link de Andreani. Ahí ponés tu código postal, <strong>ves el precio</strong> y elegís sucursal o domicilio.</li>
+                            <li>Pagás el envío con Mercado Pago y el vendedor despacha tu paquete.</li>
+                        </ol>
+                    </div>`;
+            }
 
             const stockEl = document.getElementById('modalStock');
             if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
