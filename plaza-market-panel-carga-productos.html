@@ -115,6 +115,7 @@
         .desglose-nota { font-size: 0.68rem; color: rgba(226,232,240,0.45); margin-top: 0.55rem; line-height: 1.5; }
 
         .envio-hint { font-size: 0.7rem; color: rgba(226,232,240,0.45); margin-top: 0.45rem; line-height: 1.5; }
+        .medida-label { display: block; font-size: 0.68rem; font-weight: 600; color: rgba(226,232,240,0.5); margin-bottom: 0.3rem; }
 
         .envio-opciones { display: grid; gap: 0.6rem; margin-top: 0.9rem; }
         .envio-opcion {
@@ -342,6 +343,29 @@
                         <p class="envio-hint">Cuando el stock llegue a 0, la publicación se muestra como <strong>“Agotado”</strong> hasta que lo repongas.</p>
                     </div>
 
+                    <div id="seccionMedidas">
+                        <label>📦 Medidas del paquete</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                            <div>
+                                <label class="medida-label">Alto (cm)</label>
+                                <input type="text" id="paqueteAlto" inputmode="numeric" placeholder="Ej: 20" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Ancho (cm)</label>
+                                <input type="text" id="paqueteAncho" inputmode="numeric" placeholder="Ej: 15" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Largo (cm)</label>
+                                <input type="text" id="paqueteLargo" inputmode="numeric" placeholder="Ej: 30" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Peso (gramos)</label>
+                                <input type="text" id="paquetePeso" inputmode="numeric" placeholder="Ej: 1500" oninput="onMedidaInput(event)">
+                            </div>
+                        </div>
+                        <p class="envio-hint">Medí la caja ya cerrada y pesala. Con los datos reales, tu comprador paga menos de la mitad de envío.</p>
+                    </div>
+
                     <div id="desgloseComision" class="desglose hidden"></div>
 
                     <div id="seccionEnvio" class="hidden">
@@ -471,6 +495,8 @@
         function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
         function valorStock() { return Number(soloDigitos(document.getElementById('productStock').value)) || 0; }
         function onStockInput(e) { e.target.value = soloDigitos(e.target.value); }
+        function onMedidaInput(e) { e.target.value = soloDigitos(e.target.value); }
+        function valorMedida(id) { return Number(soloDigitos(document.getElementById(id).value)) || 0; }
 
         // ============================================================
         // DESGLOSE EN VIVO
@@ -523,6 +549,7 @@
             document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
             document.getElementById('seccionEnvio').classList.add('hidden');
             document.getElementById('seccionStock').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionMedidas').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('labelPrecio').textContent =
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
             cargarCategorias(tipo);
@@ -837,6 +864,15 @@
             }
             const stock = esProducto ? Number(stockRaw) : null;
 
+            const altoCm = valorMedida('paqueteAlto');
+            const anchoCm = valorMedida('paqueteAncho');
+            const largoCm = valorMedida('paqueteLargo');
+            const pesoGr = valorMedida('paquetePeso');
+            if (esProducto && (!altoCm || !anchoCm || !largoCm || !pesoGr)) {
+                showToast('❌ Cargá las medidas y el peso del paquete para poder calcular el envío.', 'error');
+                return;
+            }
+
             if (checkBlockedCategory(`${title} ${description}`)) {
                 showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
                 return;
@@ -859,7 +895,9 @@
 
                 const datos = {
                     titulo: title, descripcion: description, categoria: category, precio: price,
-                    fotos: fotos, tipo: tipoActual, envio_gratis: envioGratis, costo_envio: costoEnvio, stock: stock
+                    fotos: fotos, tipo: tipoActual, envio_gratis: envioGratis, costo_envio: costoEnvio, stock: stock,
+                    alto_cm: esProducto ? altoCm : null, ancho_cm: esProducto ? anchoCm : null,
+                    largo_cm: esProducto ? largoCm : null, peso_gr: esProducto ? pesoGr : null
                 };
 
                 let error;
@@ -889,6 +927,10 @@
             document.getElementById('productCategory').value = '';
             document.getElementById('productPrice').value = '';
             document.getElementById('productStock').value = '';
+            document.getElementById('paqueteAlto').value = '';
+            document.getElementById('paqueteAncho').value = '';
+            document.getElementById('paqueteLargo').value = '';
+            document.getElementById('paquetePeso').value = '';
             document.getElementById('costoEnvio').value = '';
             document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
             document.getElementById('categoryBlockWarning').classList.add('hidden');
@@ -920,6 +962,10 @@
 
             if (p.tipo === 'producto') {
                 document.getElementById('productStock').value = (p.stock ?? '') === '' ? '' : String(p.stock);
+                document.getElementById('paqueteAlto').value = p.alto_cm ? String(p.alto_cm) : '';
+                document.getElementById('paqueteAncho').value = p.ancho_cm ? String(p.ancho_cm) : '';
+                document.getElementById('paqueteLargo').value = p.largo_cm ? String(p.largo_cm) : '';
+                document.getElementById('paquetePeso').value = p.peso_gr ? String(p.peso_gr) : '';
                 document.getElementById('costoEnvio').value = p.costo_envio ? formatearPesos(p.costo_envio) : '';
                 const quien = p.envio_gratis ? 'vendedor' : 'comprador';
                 document.querySelector(`input[name="quienPagaEnvio"][value="${quien}"]`).checked = true;
