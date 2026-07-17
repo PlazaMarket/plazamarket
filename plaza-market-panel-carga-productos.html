@@ -295,6 +295,7 @@
                     <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
                     <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
                     <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                    <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
                     <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
                     <a href="#" class="menu-item menu-salir" onclick="handleLogout(event)">Salir</a>
                 </nav>
@@ -473,7 +474,6 @@
         let editandoId = null;
         let fotosExistentes = [];
         let miNombreVendedor = '';
-        let misConvIds = [];
 
         // ============================================================
         // FORMATO DE PESOS
@@ -567,8 +567,6 @@
             }
             usuarioActual = session.user;
             localStorage.setItem('pm_uid', usuarioActual.id);
-            const emailLbl = document.getElementById('userEmailLabel');
-            if (emailLbl) emailLbl.textContent = usuarioActual.email;
             document.getElementById('authLoading').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             setTipo('producto');
@@ -590,8 +588,6 @@
 
         async function handleLogout(e) {
             if (e) e.preventDefault();
-            const btn = document.getElementById('logoutBtn');
-            if (btn) btn.disabled = true;
             localStorage.removeItem('pm_uid');
             await supabaseClient.auth.signOut();
             window.location.href = 'plaza-market-acceso-emprendedores.html';
@@ -1009,7 +1005,7 @@
                 if (p.tipo === 'servicio') {
                     envioTxt = `Servicio · seña ${formatearPesos(Math.round(Number(p.precio) * SENA))}`;
                 } else {
-                    envioTxt = 'Envío a coordinar';
+                    envioTxt = '+ envío';
                 }
 
                 let stockTxt = '';
@@ -1048,88 +1044,6 @@
         }
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-        // ============================================================
-        // BANDEJA DE CONSULTAS (mensajes de compradores)
-        // ============================================================
-        function sonarPanel() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o = ctx.createOscillator(); const g = ctx.createGain();
-                o.connect(g); g.connect(ctx.destination);
-                o.type = 'sine'; o.frequency.value = 680; g.gain.value = 0.07;
-                o.start(); o.stop(ctx.currentTime + 0.16);
-            } catch (e) {}
-        }
-
-        function actualizarBadge(n) {
-            const b = document.getElementById('chatBadge');
-            if (!b) return;
-            if (n > 0) { b.textContent = n; b.classList.remove('hidden'); } else { b.classList.add('hidden'); }
-        }
-
-        async function cargarConsultas() {
-            const cont = document.getElementById('consultasList');
-            const prodIds = misProductos.map(p => p.id);
-            if (!prodIds.length) { cont.innerHTML = '<p class="empty-state">Cuando publiques y te consulten, vas a ver acá las conversaciones.</p>'; actualizarBadge(0); return; }
-
-            const { data: cons, error } = await supabaseClient.from('pm_consultas').select('*').in('producto_id', prodIds);
-            if (error) { cont.innerHTML = `<p class="empty-state">⚠️ ${error.message}</p>`; return; }
-            if (!cons || !cons.length) { cont.innerHTML = '<p class="empty-state">Todavía nadie te consultó. Cuando lo hagan, aparece acá. 🔔</p>'; actualizarBadge(0); misConvIds = []; return; }
-
-            const convs = cons.map(c => ({ ...c, conversacion: 'prod' + c.producto_id + '_' + c.usuario_id }));
-            misConvIds = convs.map(c => c.conversacion);
-
-            const { data: lecturas } = await supabaseClient.from('pm_lecturas').select('*').eq('usuario_id', usuarioActual.id);
-            const lecturaMap = {}; (lecturas || []).forEach(l => lecturaMap[l.conversacion] = l.ultima_lectura);
-
-            const { data: md } = await supabaseClient.from('mensajes').select('*').in('conversacion', misConvIds).order('creado_en', { ascending: true });
-            const porConv = {}; (md || []).forEach(m => { (porConv[m.conversacion] = porConv[m.conversacion] || []).push(m); });
-
-            const prodMap = {}; misProductos.forEach(p => prodMap[p.id] = p);
-
-            convs.sort((a, b) => {
-                const la = (porConv[a.conversacion] || []).slice(-1)[0];
-                const lb = (porConv[b.conversacion] || []).slice(-1)[0];
-                return new Date((lb && lb.creado_en) || 0) - new Date((la && la.creado_en) || 0);
-            });
-
-            let total = 0;
-            cont.innerHTML = convs.map(c => {
-                const conv = porConv[c.conversacion] || [];
-                const last = conv.slice(-1)[0];
-                const ult = lecturaMap[c.conversacion] ? new Date(lecturaMap[c.conversacion]) : new Date(0);
-                const noLeidos = conv.filter(m => m.autor !== miNombreVendedor && new Date(m.creado_en) > ult).length;
-                total += noLeidos;
-                const prod = prodMap[c.producto_id];
-                const preview = last ? String(last.texto).slice(0, 42) : 'Te consultó — todavía sin mensajes';
-                const badge = noLeidos > 0 ? `<span class="badge-nuevo">${noLeidos}</span>` : '';
-                const inicial = ((c.nombre || '?').trim().slice(0, 1).toUpperCase()) || '?';
-                return `<a href="plaza-market-chat-servicios.html?sala=${encodeURIComponent(c.conversacion)}" class="consulta-row">
-                    <div class="consulta-avatar">${inicial}</div>
-                    <div style="flex:1; min-width:0;">
-                        <p class="consulta-nombre">${escaparHtml(c.nombre || 'Interesado')} ${badge}</p>
-                        <p class="consulta-prod">${prod ? escaparHtml(prod.titulo) : 'Producto'}</p>
-                        <p class="consulta-prev">${escaparHtml(preview)}</p>
-                    </div>
-                    <span class="consulta-flecha">›</span>
-                </a>`;
-            }).join('');
-
-            actualizarBadge(total);
-        }
-
-        function escucharConsultas() {
-            supabaseClient.channel('panel-consultas')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, (payload) => {
-                    const m = payload.new;
-                    if (misConvIds.includes(m.conversacion) && m.autor !== miNombreVendedor) {
-                        sonarPanel();
-                        cargarConsultas();
-                    }
-                })
-                .subscribe();
-        }
 
         // ============================================================
         // TOAST
