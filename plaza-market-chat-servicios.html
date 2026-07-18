@@ -180,6 +180,15 @@
                 </div>
             </div>
 
+            <div id="panelEnvioVendedor" class="hidden" style="margin:0 0 12px; padding:12px 14px; background:rgba(37,99,235,0.12); border:1px solid rgba(59,130,246,0.35); border-radius:12px; font-size:13px; color:#cbd5e1; line-height:1.5;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <strong style="color:#e2e8f0;">📦 Hacé los envíos sin dolores de cabeza</strong>
+                    <button onclick="cerrarPanelEnvio()" title="No mostrar de nuevo" style="background:none; border:none; color:#94a3b8; font-size:20px; line-height:1; cursor:pointer; padding:0;">&times;</button>
+                </div>
+                <p style="margin:6px 0 0;">Registrate gratis en <strong>Andreani</strong> (una sola vez). Después, en cada venta tocás el botón <strong>📦</strong> de abajo y le pasás al comprador un link: él pone su código postal y <strong>paga el envío directo</strong>. Así no tenés que calcular ni cobrarle el envío a nadie — te sacás de encima la parte más molesta. 🙌</p>
+                <a href="https://www.andreani.com/" target="_blank" rel="noopener" style="display:inline-block; margin-top:9px; padding:7px 12px; background:#2563eb; color:#fff; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">Crear cuenta en Andreani →</a>
+            </div>
+
             <div id="chatMessages">
                 <div class="msg-empty" id="msgEmpty">Cargando mensajes...</div>
             </div>
@@ -191,6 +200,7 @@
             <div class="chat-input-bar">
                 <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)">
                 <button class="btn-icon" onclick="document.getElementById('imageInput').click()" title="Adjuntar foto">📎</button>
+                <button class="btn-icon" onclick="insertarLinkEnvio()" title="Pegar link de envío (Andreani)">📦</button>
                 <textarea id="chatInput" placeholder="Escribí tu mensaje..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); enviarTexto();}"></textarea>
                 <button class="btn-send" onclick="enviarTexto()">Enviar</button>
             </div>
@@ -342,8 +352,13 @@
         }
 
         function checkTextForContactInfo(text) {
-            if (hasDigitPhonePattern(text)) return 'Se detectó un número de teléfono escrito en dígitos.';
-            if (hasSpelledOutPhonePattern(text)) return 'Se detectó un número de teléfono escrito con palabras.';
+            // El link de envío de Andreani tiene números largos: lo sacamos antes de
+            // buscar teléfonos para que no se confunda con uno. Un teléfono suelto se sigue detectando.
+            const limpio = text
+                .replace(/https?:\/\/\S*andreani\S*/gi, ' ')
+                .replace(/\bandreani\.[a-z0-9.\/_-]*/gi, ' ');
+            if (hasDigitPhonePattern(limpio)) return 'Se detectó un número de teléfono escrito en dígitos.';
+            if (hasSpelledOutPhonePattern(limpio)) return 'Se detectó un número de teléfono escrito con palabras.';
             if (hasSocialMediaPattern(text)) return 'Se detectó una posible referencia a una red social externa.';
             return null;
         }
@@ -464,6 +479,23 @@
                 });
         }
 
+        // Cierra el cartel de Andreani y recuerda que ya no hay que mostrarlo.
+        function cerrarPanelEnvio() {
+            const p = document.getElementById('panelEnvioVendedor');
+            if (p) p.classList.add('hidden');
+            try { localStorage.setItem('pm_panel_envio_oculto', '1'); } catch (e) {}
+        }
+
+        // Pega en el mensaje una plantilla para mandar el link de envío de Andreani.
+        function insertarLinkEnvio() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            input.value = '📦 Para el envío: entrá a este link de Andreani, poné tu código postal, elegí sucursal o domicilio y pagás el envío directo 👉 ';
+            input.focus();
+            const n = input.value.length;
+            try { input.setSelectionRange(n, n); } catch (e) {}
+        }
+
         // ============================================================
         // ENVIAR MENSAJE DE TEXTO
         // ============================================================
@@ -518,6 +550,19 @@
                 const { data: prod } = await db.from('productos').select('titulo, usuario_id').eq('id', pid).maybeSingle();
                 if (!prod) return;
                 const otherId = (miUserId === buyerUid) ? prod.usuario_id : buyerUid;
+
+                // ¿El que mira es el vendedor (dueño del producto)? Solo a él le mostramos
+                // el cartel para que se registre en Andreani. Si ya lo cerró, no lo mostramos.
+                const soyVendedor = (miUserId === prod.usuario_id);
+                if (soyVendedor) {
+                    let oculto = false;
+                    try { oculto = localStorage.getItem('pm_panel_envio_oculto') === '1'; } catch (e) {}
+                    if (!oculto) {
+                        const panel = document.getElementById('panelEnvioVendedor');
+                        if (panel) panel.classList.remove('hidden');
+                    }
+                }
+
                 let otherName = 'Usuario';
                 const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', otherId).maybeSingle();
                 if (perf && perf.nombre) otherName = perf.nombre;
