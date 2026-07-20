@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Conectando Mercado Pago</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0B1120">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+            display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+        }
+        .card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1.4rem; padding: 2.2rem 1.8rem; max-width: 440px; width: 100%;
+            text-align: center; box-shadow: 0 25px 70px rgba(0,0,0,0.45);
+        }
+        .logo { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1.4rem; }
+        h1 { font-size: 1.15rem; margin: 0; }
+        .spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 1.4rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .icono { font-size: 3rem; margin: 0.6rem 0 0.4rem; }
+        .msg { font-size: 0.95rem; color: rgba(226,232,240,0.8); line-height: 1.6; margin: 0.6rem 0 1.4rem; }
+        .btn {
+            display: inline-block; background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: #fff; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+            padding: 0.85rem 1.6rem; border-radius: 0.85rem; font-size: 0.95rem;
+            box-shadow: 0 4px 20px rgba(0,82,212,0.4);
+        }
+        .detalle { font-size: 0.72rem; color: rgba(226,232,240,0.4); margin-top: 1rem; word-break: break-word; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">
+            <svg viewBox="0 0 100 116" width="26" height="30"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+            <h1><span style="color:#60A5FA;">Plaza</span> <span style="color:#fff;">Market</span></h1>
+        </div>
+        <div id="contenido">
+            <div class="spinner"></div>
+            <p class="msg">Conectando tu Mercado Pago...<br>Esperá unos segundos, no cierres la página.</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function mostrarOk() {
+            document.getElementById('contenido').innerHTML =
+                '<div class="icono">✅</div>' +
+                '<p class="msg"><strong>¡Listo!</strong> Tu Mercado Pago quedó conectado a Plaza Market. Ya vas a poder cobrar tus ventas.</p>' +
+                '<a class="btn" href="plaza-market-panel-carga-productos.html">Volver a Vender</a>';
+        }
+        function mostrarError(texto, detalle) {
+            document.getElementById('contenido').innerHTML =
+                '<div class="icono">⚠️</div>' +
+                '<p class="msg">No se pudo conectar tu Mercado Pago.<br>' + (texto || '') + '</p>' +
+                '<a class="btn" href="plaza-market-panel-carga-productos.html">Volver a Vender</a>' +
+                (detalle ? ('<p class="detalle">' + detalle + '</p>') : '');
+        }
+
+        async function conectar() {
+            // 1) Sacar el "code" que puso Mercado Pago en la dirección
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const errorMp = params.get('error');
+            if (errorMp) { mostrarError('Mercado Pago devolvió: ' + errorMp); return; }
+            if (!code) { mostrarError('No llegó el código de Mercado Pago. Probá conectar de nuevo desde Vender.'); return; }
+
+            // 2) Confirmar que hay sesión iniciada en Plaza Market
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                mostrarError('Se cerró tu sesión de Plaza Market. Iniciá sesión y volvé a conectar.');
+                return;
+            }
+
+            // 3) Llamar al programita seguro que guarda las llaves
+            try {
+                const { data, error } = await db.functions.invoke('mp-conectar', { body: { code } });
+                if (error) { mostrarError('Hubo un problema al conectar.', error.message); return; }
+                if (data && data.ok) { mostrarOk(); }
+                else { mostrarError(data && data.error ? data.error : 'No se pudo completar la conexión.'); }
+            } catch (e) {
+                mostrarError('Error inesperado.', String(e && e.message ? e.message : e));
+            }
+        }
+
+        conectar();
+    </script>
+</body>
+</html>
