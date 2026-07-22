@@ -324,6 +324,7 @@
                 <p id="modalStock" class="text-sm" style="margin-top:0.4rem;color:rgba(226,232,240,0.6);"></p>
                 <div class="modal-stats" id="modalStats"></div>
                 <p class="modal-desc" id="modalDesc"></p>
+                <a id="modalBtnComprar" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.85rem;border-radius:0.75rem;margin-bottom:0.6rem;background:linear-gradient(135deg,#059669 0%,#10B981 100%);box-shadow:0 4px 20px rgba(16,185,129,0.35);">🛒 Comprar ahora</a>
                 <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
                 <div id="modalAgotado" class="agotado-cartel hidden">Este producto está agotado por ahora.</div>
 
@@ -713,8 +714,9 @@
 
             // Botón consultar — según el caso
             const btn = document.getElementById('modalBtnChat');
+            const btnComprar = document.getElementById('modalBtnComprar');
             const cartel = document.getElementById('modalAgotado');
-            btn.classList.add('hidden'); cartel.classList.add('hidden');
+            btn.classList.add('hidden'); btnComprar.classList.add('hidden'); cartel.classList.add('hidden');
             if (agot) {
                 cartel.textContent = 'Este producto está agotado por ahora.';
                 cartel.style.cssText = 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#FCA5A5;';
@@ -724,6 +726,10 @@
                 cartel.style.cssText = 'background:rgba(0,82,212,0.12); border:1px solid rgba(59,130,246,0.4); color:#BFDBFE;';
                 cartel.classList.remove('hidden');
             } else {
+                btnComprar.classList.remove('hidden');
+                btnComprar.textContent = esServicio ? '🔖 Pagar seña y reservar' : '🛒 Comprar ahora';
+                btnComprar.onclick = (e) => { e.preventDefault(); comprar(p); };
+
                 btn.classList.remove('hidden');
                 btn.textContent = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
                 btn.onclick = (e) => { e.preventDefault(); consultar(p); };
@@ -806,6 +812,40 @@
                 touchX0 = null;
             }, { passive: true });
         });
+
+        // ============================================================
+        // COMPRAR / PAGAR SEÑA (Mercado Pago)
+        // ============================================================
+        async function comprar(p) {
+            if (!sesionActiva) {
+                alert('Para comprar necesitás tener una cuenta (es gratis). Te llevamos al registro.');
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
+                return;
+            }
+            const b = document.getElementById('modalBtnComprar');
+            const textoOriginal = b.textContent;
+            b.textContent = 'Preparando el pago...';
+            b.style.pointerEvents = 'none';
+            b.style.opacity = '0.7';
+            try {
+                const { data, error } = await db.functions.invoke('mp-crear-pago', {
+                    body: { producto_id: p.id, tipo: (p.tipo === 'servicio' ? 'sena' : 'producto') }
+                });
+                if (error) {
+                    alert('No se pudo preparar el pago. ' + (error.message || ''));
+                } else if (data && data.ok && data.url) {
+                    window.location.href = data.url;
+                    return;
+                } else {
+                    alert((data && data.error) ? data.error : 'No se pudo preparar el pago.');
+                }
+            } catch (e) {
+                alert('Error inesperado: ' + (e && e.message ? e.message : e));
+            }
+            b.textContent = textoOriginal;
+            b.style.pointerEvents = '';
+            b.style.opacity = '';
+        }
 
         async function consultar(p) {
             // La vidriera es abierta, pero para consultar/reservar hay que tener cuenta.
