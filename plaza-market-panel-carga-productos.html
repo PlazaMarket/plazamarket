@@ -303,6 +303,12 @@
 
             <div class="status-pill" style="align-self:flex-start;"><span class="pulse-dot"></span> IA de Moderación Activa 24hs</div>
 
+            <section class="glass-card p-6 sm:p-7" id="seccionCobros">
+                <h2 class="text-lg font-bold text-white mb-1">💳 Cobros con Mercado Pago</h2>
+                <p class="text-sm text-slate-400 mb-4">Para poder cobrar tus ventas por Plaza Market, conectá tu cuenta de Mercado Pago. Se hace una sola vez.</p>
+                <div id="cobrosEstado"><p class="empty-state">Verificando...</p></div>
+            </section>
+
             <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">Cargar Nueva Publicación</h2>
                 <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro en el momento (no se permiten rubros prohibidos) — no hace falta esperar una aprobación manual.</p>
@@ -455,6 +461,11 @@
         // 10 días = 4,60% | 18 días = 3,55% | 35 días = 1,56% (siempre + IVA).
         const COSTO_MP = 0.0799;
 
+        // Datos para conectar la cuenta de Mercado Pago del vendedor.
+        // OJO: este es el Client ID de PRODUCCION (el de pruebas es otro y no funciona).
+        const MP_CLIENT_ID_PUBLICO = '4939099177024519';
+        const MP_REDIRECT = 'https://plazamarket.com.ar/plaza-market-mp-conectado.html';
+
         // Las categorías cambian según lo que se publique.
         const CATEGORIAS = {
             producto: [
@@ -605,13 +616,48 @@
             renderPhotoSlots();
             await cargarMisProductos();
 
-            const { data: perf } = await supabaseClient.from('pm_perfiles').select('nombre').eq('id', usuarioActual.id).maybeSingle();
+            const { data: perf } = await supabaseClient.from('pm_perfiles').select('nombre, mp_conectado').eq('id', usuarioActual.id).maybeSingle();
             miNombreVendedor = (perf && perf.nombre) || usuarioActual.email;
             document.getElementById('menuCuenta').textContent = '👤 ' + miNombreVendedor;
             const sub = document.getElementById('subEncabezado'); if (sub) sub.textContent = 'Hola, ' + miNombreVendedor + ' · Vender';
+            renderCobros(!!(perf && perf.mp_conectado));
             supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle().then(({ data }) => {
                 if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
             });
+        }
+
+        // ============================================================
+        // CONECTAR MERCADO PAGO (para poder cobrar)
+        // ============================================================
+        function urlConectarMp() {
+            return 'https://auth.mercadopago.com/authorization'
+                + '?client_id=' + MP_CLIENT_ID_PUBLICO
+                + '&response_type=code&platform_id=mp'
+                + '&state=pm' + Date.now()
+                + '&redirect_uri=' + encodeURIComponent(MP_REDIRECT);
+        }
+
+        function conectarMercadoPago(e) {
+            if (e) e.preventDefault();
+            window.location.href = urlConectarMp();
+        }
+
+        function renderCobros(conectado) {
+            const c = document.getElementById('cobrosEstado');
+            if (!c) return;
+            if (conectado) {
+                c.innerHTML = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.85rem;padding:0.9rem 1rem;">'
+                    + '<p style="margin:0;color:#6EE7B7;font-weight:700;font-size:0.88rem;">✅ Tu Mercado Pago está conectado</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Listo, no tenés que hacer nada más. Cuando el cobro esté activo, vas a poder recibir la plata de tus ventas.</p>'
+                    + '<button type="button" onclick="conectarMercadoPago(event)" style="background:none;border:none;color:rgba(226,232,240,0.45);font-size:0.72rem;cursor:pointer;padding:0.6rem 0 0;text-decoration:underline;">Volver a conectar</button>'
+                    + '</div>';
+            } else {
+                c.innerHTML = '<div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.9rem;">'
+                    + '<p style="margin:0;color:#FCD34D;font-weight:700;font-size:0.88rem;">Todavía no conectaste tu Mercado Pago</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Es un solo paso. Te lleva a Mercado Pago, iniciás sesión con tu cuenta y le das permiso a Plaza Market. <strong>No se mueve ni un peso</strong>: solo queda enlazada tu cuenta para poder cobrar.</p>'
+                    + '</div>'
+                    + '<button type="button" onclick="conectarMercadoPago(event)" class="btn-primary w-full py-3 rounded-xl text-sm">Conectar mi Mercado Pago</button>';
+            }
         }
 
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
