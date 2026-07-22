@@ -447,6 +447,14 @@
         // SIEMPRE mayor que la comisión, si no la plataforma queda en rojo.
         const SENA = 0.20;
 
+        // Lo que cobra Mercado Pago por procesar el cobro con Checkout.
+        // Dato oficial del panel de MP: 6,60% con acreditación AL INSTANTE,
+        // igual para débito, crédito y dinero en cuenta. Ese 6,60% NO incluye
+        // IVA, así que se le suma el 21%: 6,60 × 1,21 = 7,986%.
+        // Si algún día se cambia el plazo de acreditación, cambiar este número:
+        // 10 días = 4,60% | 18 días = 3,55% | 35 días = 1,56% (siempre + IVA).
+        const COSTO_MP = 0.0799;
+
         // Las categorías cambian según lo que se publique.
         const CATEGORIAS = {
             producto: [
@@ -514,20 +522,43 @@
             if (!precio) { caja.classList.add('hidden'); return; }
 
             const comision = Math.round(precio * COMISION);
-            const neto = precio - comision;
-            let filas = `
-                <div class="desglose-fila"><span>${esServicio ? 'Precio del servicio' : 'Precio publicado'}</span><span>${formatearPesos(precio)}</span></div>
-                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
-                <div class="desglose-fila total"><span><strong>Neto a cobrar</strong></span><span>${formatearPesos(neto)}</span></div>`;
+            const notaMp = `El costo de Mercado Pago es el <strong>mismo</strong> con débito, crédito o dinero en cuenta (6,60% + IVA, cobrando al instante).
+                    <br><br>Aparte, Mercado Pago retiene <strong>Ingresos Brutos (SIRTAC)</strong>. Esa retención <strong>no está descontada acá</strong> porque es distinta para cada vendedor:
+                    va de <strong>0,01% a 5%</strong> según tu provincia y tu actividad (3% si no estás en el padrón). Y no es plata perdida: <strong>se recupera</strong> en tu declaración.
+                    <br><br>Si el comprador paga con una tarjeta <strong>extranjera</strong>, el costo sube un 3%.`;
 
+            let filas = '';
             let nota = '';
+
             if (esServicio) {
+                // En servicios, por la plataforma pasa SOLO la seña.
+                // Por eso Mercado Pago cobra sobre la seña, no sobre el precio total.
                 const sena = Math.round(precio * SENA);
-                filas += `<div class="desglose-fila" style="margin-top:0.5rem;"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>`;
+                const costoMp = Math.round(sena * COSTO_MP);
+                const netoSena = sena - costoMp - comision;
+                const alEntregar = precio - sena;
+                filas = `
+                <div class="desglose-fila"><span>Precio del servicio</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>
+                <div class="desglose-fila"><span>Mercado Pago sobre la seña (${(COSTO_MP * 100).toFixed(2)}%)</span><span>−${formatearPesos(costoMp)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila"><span>Te queda de la seña</span><span>${formatearPesos(netoSena)}</span></div>
+                <div class="desglose-fila"><span>Cobrás al dar el servicio</span><span>${formatearPesos(alEntregar)}</span></div>
+                <div class="desglose-fila total"><span><strong>Te quedan en total</strong></span><span>${formatearPesos(netoSena + alEntregar)}</span></div>`;
                 nota = `La reserva con seña es <strong>obligatoria</strong>: es la única forma de cobrar la comisión sin manejar efectivo. De esa seña sale la comisión, y el resto lo cobrás vos al dar el servicio.
+                    <br><br>${notaMp}
                     <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat.`;
             } else {
-                nota = `La comisión se calcula sobre el precio. <strong>El envío se coordina con el comprador por chat</strong> (hasta que integremos el correo y se pueda calcular por provincia).`;
+                const costoMp = Math.round(precio * COSTO_MP);
+                const neto = precio - costoMp - comision;
+                filas = `
+                <div class="desglose-fila"><span>Precio publicado</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Mercado Pago (${(COSTO_MP * 100).toFixed(2)}%)</span><span>−${formatearPesos(costoMp)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila total"><span><strong>Te quedan</strong></span><span>${formatearPesos(neto)}</span></div>`;
+                nota = `La comisión de Plaza Market se calcula <strong>solo sobre el precio, nunca sobre el envío</strong>.
+                    <br><br>${notaMp}
+                    <br><br><strong>El envío se coordina con el comprador por chat</strong> (hasta que integremos el correo y se pueda calcular por provincia).`;
             }
 
             caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
@@ -999,7 +1030,15 @@
                     : `<div class="product-row-icon">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
                 const fecha = new Date(p.creado_en).toLocaleString('es-AR');
                 const comision = Math.round(Number(p.precio) * COMISION);
-                let recibis = Number(p.precio) - comision;
+                // Mismo criterio que el desglose de arriba: en servicios Mercado Pago
+                // cobra solo sobre la seña; en productos, sobre el precio completo.
+                let recibis;
+                if (p.tipo === 'servicio') {
+                    const senaP = Math.round(Number(p.precio) * SENA);
+                    recibis = Number(p.precio) - comision - Math.round(senaP * COSTO_MP);
+                } else {
+                    recibis = Number(p.precio) - comision - Math.round(Number(p.precio) * COSTO_MP);
+                }
 
                 let envioTxt = '';
                 if (p.tipo === 'servicio') {
