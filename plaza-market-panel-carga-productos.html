@@ -634,7 +634,7 @@
                 + '?client_id=' + MP_CLIENT_ID_PUBLICO
                 + '&response_type=code&platform_id=mp'
                 + '&state=pm' + Date.now()
-                + '&redirect_uri=' + encodeURIComponent(MP_REDIRECT);
+                + '&redirect_uri=' + MP_REDIRECT;
         }
 
         function conectarMercadoPago(e) {
@@ -649,7 +649,6 @@
                 c.innerHTML = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.85rem;padding:0.9rem 1rem;">'
                     + '<p style="margin:0;color:#6EE7B7;font-weight:700;font-size:0.88rem;">✅ Tu Mercado Pago está conectado</p>'
                     + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Listo, no tenés que hacer nada más. Cuando el cobro esté activo, vas a poder recibir la plata de tus ventas.</p>'
-                    + '<button type="button" onclick="conectarMercadoPago(event)" style="background:none;border:none;color:rgba(226,232,240,0.45);font-size:0.72rem;cursor:pointer;padding:0.6rem 0 0;text-decoration:underline;">Volver a conectar</button>'
                     + '</div>';
             } else {
                 c.innerHTML = '<div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.9rem;">'
