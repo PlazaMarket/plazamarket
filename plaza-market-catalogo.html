@@ -594,7 +594,7 @@
 
             let envio;
             if (esServicio) { const sena = Math.round(Number(p.precio || 0) * SENA); envio = `<p class="card-envio servicio">🔖 Seña para reservar: ${pesos(sena)}</p>`; }
-            else envio = '<p class="card-envio pago">🚚 + envío (lo pagás vos)</p>';
+            else envio = '<p class="card-envio pago" style="letter-spacing:0.03em;font-weight:700;">ENVÍO APARTE</p>';
 
             return `
             <article class="card-producto" onclick="abrirModal(${p.id})">
@@ -688,9 +688,9 @@
                     : '';
                 envioEl.innerHTML = `
                     <div class="envio-box">
-                        <p class="envio-tit">🚚 El precio no incluye el envío</p>
-                        <p class="envio-sub">El envío lo pagás vos, directo a Andreani con Mercado Pago. Vos elegís si lo retirás en una sucursal o lo querés en tu casa. Se coordina con el vendedor por el chat.</p>
-                        <p class="envio-tip">💡 Tip: a sucursal te sale bastante más barato que a domicilio.</p>
+                        <p class="envio-tit">🚚 SOBRE EL ENVÍO</p>
+                        <p class="envio-sub">El precio es solo del producto; el envío va aparte. Para saber tu costo, consultá al vendedor por el chat y te pasa un link de Andreani. Ahí cargás tus datos y ves el precio.</p>
+                        <p class="envio-tip">💡 Consejo: a sucursal gastás menos que a domicilio.</p>
                         ${medidasHtml}
                         <button type="button" class="envio-toggle" onclick="toggleComoEnvio(event)">¿Cómo es el envío? ▾</button>
                         <ol id="comoEnvio" class="envio-pasos hidden">
