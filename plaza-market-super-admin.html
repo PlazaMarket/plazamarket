@@ -16,10 +16,12 @@
         .btn-ghost-dark { background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14); font-weight: 600; cursor: pointer; text-decoration:none; }
         .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
         .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.1rem; padding: 1.1rem 1.25rem; }
-        .stat-num { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; }
-        .stat-lbl { font-size: 0.78rem; color: rgba(226,232,240,0.55); margin-top: 0.35rem; }
+        .stat-card.dorada { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(5,150,105,0.08)); border-color: rgba(16,185,129,0.3); }
+        .stat-num { font-size: 1.7rem; font-weight: 800; color: #fff; line-height: 1.05; }
+        .stat-card.dorada .stat-num { color: #6EE7B7; }
+        .stat-lbl { font-size: 0.75rem; color: rgba(226,232,240,0.55); margin-top: 0.35rem; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(226,232,240,0.5); padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(226,232,240,0.5); padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
         td { font-size: 0.82rem; padding: 0.7rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); color: #E2E8F0; vertical-align: middle; }
         .row-img { width: 40px; height: 40px; object-fit: cover; border-radius: 0.5rem; background:#0B1120; }
         .row-ph { width: 40px; height: 40px; border-radius: 0.5rem; background: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -33,6 +35,8 @@
         .spinner-mini { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#3B82F6; border-radius:50%; animation:spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none !important; }
+        .badge { display:inline-block; font-size:0.68rem; font-weight:800; padding:0.2rem 0.55rem; border-radius:999px; white-space:nowrap; }
+        .si { color:#6EE7B7; font-weight:800; } .no { color:rgba(226,232,240,0.35); }
         .pill-admin { background: rgba(88,28,135,0.35); border:1px solid rgba(167,139,250,0.4); color:#C4B5FD; font-size:0.7rem; font-weight:700; padding:0.25rem 0.7rem; border-radius:999px; }
         .hdr-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
         .hdr-btn:hover { background: rgba(255,255,255,0.1); }
@@ -76,17 +80,38 @@
                     <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
                     <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
                     <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                    <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
+                    <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
                     <a href="plaza-market-super-admin.html" class="menu-item">Administrador</a>
                     <a href="#" class="menu-item menu-salir" onclick="salir(event)">Salir</a>
                 </nav>
             </div>
 
+            <!-- KPIs de plata (lo más importante para el dueño) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card dorada"><div class="stat-num" id="stComision">—</div><div class="stat-lbl">💰 Comisión juntada (12%)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stFacturado">—</div><div class="stat-lbl">🧾 Total facturado (pagado)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVentasPag">—</div><div class="stat-lbl">✅ Ventas pagadas</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPendientes">—</div><div class="stat-lbl">⏳ Órdenes pendientes</div></div>
+            </div>
+
+            <!-- KPIs de actividad -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="stat-card"><div class="stat-num" id="stUsuarios">—</div><div class="stat-lbl">👥 Usuarios</div></div>
+                <div class="stat-card"><div class="stat-num" id="stConMp">—</div><div class="stat-lbl">💳 Con Mercado Pago</div></div>
                 <div class="stat-card"><div class="stat-num" id="stProductos">—</div><div class="stat-lbl">📦 Publicaciones</div></div>
-                <div class="stat-card"><div class="stat-num" id="stConsultas">—</div><div class="stat-lbl">💬 Consultas</div></div>
                 <div class="stat-card"><div class="stat-num" id="stVistas">—</div><div class="stat-lbl">👁 Vistas totales</div></div>
             </div>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">🛒 Todas las ventas</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Tipo</th><th>Comprador</th><th>Vendedor</th><th>Monto</th><th>Tu comisión</th><th>Estado</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaVentas"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
 
             <section class="glass-card p-5 sm:p-6">
                 <h2 class="text-lg font-bold text-white mb-4">📦 Todas las publicaciones</h2>
@@ -102,8 +127,8 @@
                 <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
                 <div class="tabla-scroll">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Registrado</th><th>Rol</th></tr></thead>
-                        <tbody id="tablaUsuarios"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Rol</th><th></th></tr></thead>
+                        <tbody id="tablaUsuarios"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -120,12 +145,22 @@
             construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas y refacciones',
             servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza', masajes: 'Masajes y Bienestar'
         };
+        const ESTADOS = {
+            pendiente: ['#FCD34D', 'rgba(250,204,21,0.14)', 'Pendiente'],
+            pagado:    ['#6EE7B7', 'rgba(16,185,129,0.15)', 'Pagado'],
+            rechazado: ['#FCA5A5', 'rgba(239,68,68,0.15)', 'Rechazado'],
+            devuelto:  ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Devuelto'],
+            cancelado: ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Cancelado']
+        };
+        function badgeEstado(e) {
+            const x = ESTADOS[e] || ['#CBD5E1','rgba(255,255,255,0.1)', e || '—'];
+            return '<span class="badge" style="color:' + x[0] + ';background:' + x[1] + ';">' + x[2] + '</span>';
+        }
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
-        let perfilMap = {};
-        let adminSet = new Set();
-        let miId = null;
+        function fechaCorta(iso) { return iso ? new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—'; }
+        let perfilMap = {}, prodMap = {}, adminSet = new Set(), miId = null;
 
         async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
@@ -137,7 +172,6 @@
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-super-admin.html';
                 return;
             }
-            // ¿Es admin?
             const { data: adminRow } = await db.from('pm_admins').select('id').eq('id', session.user.id).maybeSingle();
             if (!adminRow) {
                 alert('Esta sección es solo para el administrador de Plaza Market.');
@@ -153,63 +187,105 @@
         }
 
         async function cargarTodo() {
-            const [perfiles, productos, consultas, admins] = await Promise.all([
+            const [perfiles, productos, consultas, admins, ordenes] = await Promise.all([
                 db.from('pm_perfiles').select('*').order('creado_en', { ascending: false }),
                 db.from('productos').select('*').order('creado_en', { ascending: false }),
                 db.from('pm_consultas').select('*', { count: 'exact', head: true }),
-                db.from('pm_admins').select('id')
+                db.from('pm_admins').select('id'),
+                db.from('pm_ordenes').select('*').order('creado_en', { ascending: false })
             ]);
 
             const us = perfiles.data || [];
             const ps = productos.data || [];
+            const ords = ordenes.data || [];
             perfilMap = {}; us.forEach(u => perfilMap[u.id] = u);
+            prodMap = {}; ps.forEach(p => prodMap[p.id] = p);
             adminSet = new Set((admins.data || []).map(a => a.id));
 
+            // KPIs de plata
+            const pagadas = ords.filter(o => o.estado === 'pagado');
+            document.getElementById('stComision').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.comision || 0), 0));
+            document.getElementById('stFacturado').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.monto || 0), 0));
+            document.getElementById('stVentasPag').textContent = pagadas.length;
+            document.getElementById('stPendientes').textContent = ords.filter(o => o.estado === 'pendiente').length;
+
+            // KPIs de actividad
             document.getElementById('stUsuarios').textContent = us.length;
+            document.getElementById('stConMp').textContent = us.filter(u => u.mp_conectado).length;
             document.getElementById('stProductos').textContent = ps.length;
-            document.getElementById('stConsultas').textContent = consultas.count || 0;
             document.getElementById('stVistas').textContent = ps.reduce((a, p) => a + (p.vistas || 0), 0);
 
+            renderVentas(ords);
             renderProductos(ps);
             renderUsuarios(us);
+        }
+
+        function nombreDe(id) { const u = perfilMap[id]; return u ? escaparHtml(u.nombre || u.email || '—') : '<span style="color:rgba(226,232,240,0.4);">—</span>'; }
+
+        function renderVentas(ords) {
+            const tb = document.getElementById('tablaVentas');
+            if (!ords.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Todavía no hay ventas. Cuando alguien compre, aparecen acá.</td></tr>'; return; }
+            tb.innerHTML = ords.map(o => {
+                const prod = prodMap[o.producto_id];
+                const tit = prod ? escaparHtml(prod.titulo) : '<span style="color:rgba(226,232,240,0.4);">Publicación borrada</span>';
+                const tipo = o.tipo === 'sena' ? 'Seña' : 'Producto';
+                return '<tr>' +
+                    '<td>' + tit + '</td>' +
+                    '<td>' + tipo + '</td>' +
+                    '<td>' + nombreDe(o.comprador_id) + '</td>' +
+                    '<td>' + nombreDe(o.vendedor_id) + '</td>' +
+                    '<td>' + pesos(o.monto) + '</td>' +
+                    '<td style="color:#6EE7B7;font-weight:700;">' + pesos(o.comision) + '</td>' +
+                    '<td>' + badgeEstado(o.estado) + '</td>' +
+                    '<td style="white-space:nowrap;color:rgba(226,232,240,0.5);">' + fechaCorta(o.creado_en) + '</td>' +
+                '</tr>';
+            }).join('');
         }
 
         function renderProductos(ps) {
             const tb = document.getElementById('tablaProductos');
             if (!ps.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">Todavía no hay publicaciones.</td></tr>'; return; }
             tb.innerHTML = ps.map(p => {
-                const foto = (p.fotos && p.fotos[0]) ? `<img src="${p.fotos[0]}" class="row-img">` : `<div class="row-ph">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
+                const foto = (p.fotos && p.fotos[0]) ? '<img src="' + p.fotos[0] + '" class="row-img">' : '<div class="row-ph">' + (p.tipo === 'servicio' ? '🛠️' : '📦') + '</div>';
                 const vend = perfilMap[p.usuario_id];
                 const vendTxt = vend
-                    ? `${escaparHtml(vend.nombre || '—')}<br><span style="color:rgba(226,232,240,0.45);font-size:0.72rem;">${escaparHtml(vend.email || '')}</span>`
+                    ? escaparHtml(vend.nombre || '—') + '<br><span style="color:rgba(226,232,240,0.45);font-size:0.72rem;">' + escaparHtml(vend.email || '') + '</span>'
                     : '<span style="color:rgba(226,232,240,0.4);">Sin perfil</span>';
-                return `<tr>
-                    <td>${foto}</td>
-                    <td>${escaparHtml(p.titulo)}</td>
-                    <td>${CATEGORY_LABELS[p.categoria] || p.categoria}</td>
-                    <td>${pesos(p.precio)}</td>
-                    <td>${vendTxt}</td>
-                    <td>👁 ${p.vistas || 0} · 💬 ${p.consultas || 0}</td>
-                    <td><button class="btn-del" onclick="borrar(${p.id}, this)">🗑 Bajar</button></td>
-                </tr>`;
+                return '<tr>' +
+                    '<td>' + foto + '</td>' +
+                    '<td>' + escaparHtml(p.titulo) + '</td>' +
+                    '<td>' + (CATEGORY_LABELS[p.categoria] || p.categoria) + '</td>' +
+                    '<td>' + pesos(p.precio) + '</td>' +
+                    '<td>' + vendTxt + '</td>' +
+                    '<td>👁 ' + (p.vistas || 0) + ' · 💬 ' + (p.consultas || 0) + '</td>' +
+                    '<td><button class="btn-del" onclick="borrar(' + p.id + ', this)">🗑 Bajar</button></td>' +
+                '</tr>';
             }).join('');
         }
 
         function renderUsuarios(us) {
             const tb = document.getElementById('tablaUsuarios');
-            if (!us.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             tb.innerHTML = us.map(u => {
-                const fecha = u.creado_en ? new Date(u.creado_en).toLocaleDateString('es-AR') : '—';
-                const rol = adminSet.has(u.id)
-                    ? '<span class="pill-admin">Dueño</span>'
-                    : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
-                return `<tr>
-                    <td>${escaparHtml(u.nombre || '—')}</td>
-                    <td>${escaparHtml(u.email || '—')}</td>
-                    <td>${escaparHtml(u.telefono || '—')}</td>
-                    <td>${fecha}</td>
-                    <td>${rol}</td>
-                </tr>`;
+                const esAdmin = adminSet.has(u.id);
+                const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
+                const mp = u.mp_conectado ? '<span class="si">✓ Conectado</span>' : '<span class="no">— No</span>';
+                let accion = '';
+                if (u.id !== miId) {
+                    accion = esAdmin
+                        ? '<button class="btn-del" onclick="quitarAdmin(\'' + u.id + '\', this)">Quitar admin</button>'
+                        : '<button class="btn-admin" onclick="hacerAdmin(\'' + u.id + '\', this)">Hacer admin</button>';
+                }
+                return '<tr>' +
+                    '<td>' + escaparHtml(u.nombre || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.email || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.telefono || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.cp_origen || '—') + '</td>' +
+                    '<td>' + mp + '</td>' +
+                    '<td style="white-space:nowrap;">' + fechaCorta(u.creado_en) + '</td>' +
+                    '<td>' + rol + '</td>' +
+                    '<td>' + accion + '</td>' +
+                '</tr>';
             }).join('');
         }
 
@@ -227,7 +303,6 @@
             if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Quitar admin'; return; }
             await cargarTodo();
         }
-
         async function borrar(id, btn) {
             if (!confirm('¿Seguro que querés BAJAR esta publicación? Se elimina para siempre.')) return;
             btn.disabled = true; btn.textContent = '...';
