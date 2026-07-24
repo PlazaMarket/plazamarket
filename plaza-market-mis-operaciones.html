@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Mis ventas y compras</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0B1120">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Plaza Market">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main { position: relative; z-index: 1; }
+
+        .hdr-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+        .menu-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel { position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px); background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; transform: translateX(-100%); transition: transform 0.22s ease; }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
+        .menu-cerrar:hover { color: #fff; }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
+
+        .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: rgba(255,255,255,0.03); padding: 0.35rem; border-radius: 1rem; margin-bottom: 1.2rem; }
+        .tab-btn { padding: 0.65rem; border-radius: 0.75rem; border: none; cursor: pointer; background: transparent; color: rgba(226,232,240,0.55); font-weight: 700; font-size: 0.85rem; }
+        .tab-btn.activo { background: linear-gradient(135deg, #0052D4 0%, #3949AB 100%); color: white; }
+
+        .op { display: flex; align-items: center; gap: 0.85rem; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; padding: 0.9rem 1rem; margin-bottom: 0.7rem; }
+        .op-img { width: 52px; height: 52px; object-fit: cover; border-radius: 0.6rem; flex-shrink: 0; background: #0B1120; }
+        .op-icon { width: 52px; height: 52px; border-radius: 0.6rem; flex-shrink: 0; font-size: 1.5rem; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; }
+        .op-body { flex: 1; min-width: 0; }
+        .op-tit { font-weight: 700; color: #F1F5F9; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .op-meta { font-size: 0.76rem; color: rgba(226,232,240,0.6); margin-top: 0.15rem; }
+        .op-monto { font-size: 0.82rem; font-weight: 700; color: #93C5FD; margin-top: 0.2rem; }
+        .op-fecha { font-size: 0.68rem; color: #64748B; margin-top: 0.2rem; }
+        .badge { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; }
+        .vacio { text-align: center; color: #64748B; font-size: 0.9rem; padding: 3rem 1rem; }
+        .spinner-mini { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+        <header class="flex items-center justify-between gap-3">
+            <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+            </button>
+            <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+                <svg viewBox="0 0 100 116" width="30" height="36" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <div>
+                    <h1 class="text-lg font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                    <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Mis ventas y compras</p>
+                </div>
+            </a>
+            <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
+        </header>
+
+        <!-- Menú desplegable -->
+        <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+            <nav class="menu-panel">
+                <button type="button" class="menu-cerrar" onclick="cerrarMenu()" aria-label="Cerrar menú">✕</button>
+                <div class="menu-cuenta" id="menuCuenta">—</div>
+                <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
+                <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
+                <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
+                <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
+            </nav>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-bold text-white mb-1">Mis ventas y compras</h2>
+            <p class="text-sm text-slate-400 mb-1">Acá ves todo lo que vendiste y lo que compraste, con su estado.</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn activo" id="tabVentas" onclick="verTab('ventas')">🏷️ Mis ventas</button>
+            <button class="tab-btn" id="tabCompras" onclick="verTab('compras')">🛒 Mis compras</button>
+        </div>
+
+        <div id="lista">
+            <div class="vacio"><span class="spinner-mini"></span> Cargando...</div>
+        </div>
+
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let miUserId = null;
+        let ventas = [];
+        let compras = [];
+        let tabActual = 'ventas';
+
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
+        async function salir(e) {
+            if (e) e.preventDefault();
+            await db.auth.signOut();
+            localStorage.removeItem('pm_uid');
+            window.location.href = 'plaza-market-catalogo.html';
+        }
+
+        function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function cuando(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const ESTADOS = {
+            pendiente: ['#FCD34D', 'rgba(250,204,21,0.14)', 'Pendiente de pago'],
+            pagado:    ['#6EE7B7', 'rgba(16,185,129,0.15)', 'Pagado'],
+            rechazado: ['#FCA5A5', 'rgba(239,68,68,0.15)', 'Rechazado'],
+            devuelto:  ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Devuelto'],
+            cancelado: ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Cancelado']
+        };
+        function badgeEstado(estado) {
+            const e = ESTADOS[estado] || ['#CBD5E1', 'rgba(255,255,255,0.1)', estado || '—'];
+            return '<span class="badge" style="color:' + e[0] + ';background:' + e[1] + ';">' + e[2] + '</span>';
+        }
+
+        function verTab(tab) {
+            tabActual = tab;
+            document.getElementById('tabVentas').classList.toggle('activo', tab === 'ventas');
+            document.getElementById('tabCompras').classList.toggle('activo', tab === 'compras');
+            render();
+        }
+
+        async function cargar() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-mis-operaciones.html');
+                return;
+            }
+            miUserId = session.user.id;
+
+            const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
+            const miNombre = (perf && perf.nombre) || session.user.email || 'Mi cuenta';
+            document.getElementById('menuCuenta').textContent = '👤 ' + miNombre;
+            const sub = document.getElementById('subEncabezado');
+            if (sub) sub.textContent = 'Hola, ' + miNombre + ' · Mis operaciones';
+            db.from('pm_admins').select('id').eq('id', miUserId).maybeSingle().then(({ data }) => {
+                if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
+            });
+
+            // Traer mis órdenes (la base solo me deja ver las mías)
+            const { data: ventaData } = await db.from('pm_ordenes').select('*').eq('vendedor_id', miUserId).order('creado_en', { ascending: false });
+            const { data: compraData } = await db.from('pm_ordenes').select('*').eq('comprador_id', miUserId).order('creado_en', { ascending: false });
+            ventas = ventaData || [];
+            compras = compraData || [];
+
+            // Datos de productos y de las otras personas
+            const todasIdsProd = [...new Set([...ventas, ...compras].map(o => o.producto_id).filter(Boolean))];
+            const todasIdsPers = [...new Set([...ventas.map(o => o.comprador_id), ...compras.map(o => o.vendedor_id)].filter(Boolean))];
+
+            const prodMap = {}, persMap = {};
+            if (todasIdsProd.length) {
+                const { data } = await db.from('productos').select('id, titulo, fotos, tipo').in('id', todasIdsProd);
+                (data || []).forEach(p => prodMap[p.id] = p);
+            }
+            if (todasIdsPers.length) {
+                const { data } = await db.from('pm_perfiles').select('id, nombre').in('id', todasIdsPers);
+                (data || []).forEach(p => persMap[p.id] = p.nombre);
+            }
+            window._prodMap = prodMap;
+            window._persMap = persMap;
+
+            render();
+        }
+
+        function filaHTML(o, esVenta) {
+            const prod = (window._prodMap || {})[o.producto_id] || {};
+            const foto = (prod.fotos && prod.fotos[0])
+                ? '<img src="' + prod.fotos[0] + '" class="op-img" alt="">'
+                : '<div class="op-icon">' + (prod.tipo === 'servicio' ? '🛠️' : '📦') + '</div>';
+            const titulo = escaparHtml(prod.titulo || 'Publicación');
+            const otro = esVenta
+                ? escaparHtml((window._persMap || {})[o.comprador_id] || 'Comprador')
+                : escaparHtml((window._persMap || {})[o.vendedor_id] || 'Vendedor');
+            const rolTxt = esVenta ? ('Comprador: ' + otro) : ('Vendedor: ' + otro);
+            const tipoTxt = o.tipo === 'sena' ? 'Seña de servicio' : 'Producto';
+
+            let montoLinea;
+            if (esVenta) {
+                montoLinea = 'Te pagan ' + pesos(o.monto) + ' · comisión Plaza Market ' + pesos(o.comision);
+            } else {
+                montoLinea = 'Pagaste ' + pesos(o.monto);
+            }
+
+            return '<div class="op">' +
+                foto +
+                '<div class="op-body">' +
+                    '<p class="op-tit">' + titulo + ' <span style="font-weight:500;color:rgba(226,232,240,0.4);font-size:0.72rem;">· ' + tipoTxt + '</span></p>' +
+                    '<p class="op-meta">' + rolTxt + '</p>' +
+                    '<p class="op-monto">' + montoLinea + '</p>' +
+                    '<p class="op-fecha">' + cuando(o.creado_en) + '</p>' +
+                '</div>' +
+                '<div style="flex-shrink:0;">' + badgeEstado(o.estado) + '</div>' +
+            '</div>';
+        }
+
+        function render() {
+            const cont = document.getElementById('lista');
+            const lista = tabActual === 'ventas' ? ventas : compras;
+            const esVenta = tabActual === 'ventas';
+            if (!lista.length) {
+                cont.innerHTML = esVenta
+                    ? '<div class="vacio">Todavía no vendiste nada.<br>Cuando alguien te compre, va a aparecer acá. 🏷️</div>'
+                    : '<div class="vacio">Todavía no compraste nada.<br>Cuando compres algo, lo vas a ver acá. 🛒</div>';
+                return;
+            }
+            cont.innerHTML = lista.map(o => filaHTML(o, esVenta)).join('');
+        }
+
+        cargar();
+    </script>
+</body>
+</html>
