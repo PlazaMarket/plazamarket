@@ -122,7 +122,7 @@
 
         <div>
             <h2 class="text-xl font-bold text-white mb-1">Mi perfil</h2>
-            <p class="text-sm text-slate-400 mb-4">Estos son tus datos. Podés cambiar tu nombre y tu celular cuando quieras. El email no se puede modificar porque es con el que iniciás sesión.</p>
+            <p class="text-sm text-slate-400 mb-4">Estos son tus datos. Podés cambiar tu nombre, tu celular y tu código postal de envío cuando quieras. El email no se puede modificar porque es con el que iniciás sesión.</p>
         </div>
 
         <div id="cargando" class="cargando"><span class="spinner-mini"></span> Cargando tus datos...</div>
@@ -147,6 +147,12 @@
                     <input type="tel" id="telefono" placeholder="11 2345 6789" inputmode="numeric" autocomplete="tel">
                 </div>
                 <p class="ayuda">Escribí código de área + número, sin el 0 y sin el 15. Ej: <strong>11 2345 6789</strong>.</p>
+            </div>
+
+            <div class="campo">
+                <label>Código postal de origen <span class="candado">(desde dónde enviás)</span></label>
+                <input type="text" id="cpOrigen" placeholder="Ej: 1824" inputmode="numeric" maxlength="4" autocomplete="postal-code">
+                <p class="ayuda">El código postal de tu localidad, de donde salen tus envíos. Sirve para calcular el costo del envío de tus productos. Si por ahora solo ofrecés servicios (sin envío), podés dejarlo vacío.</p>
             </div>
 
             <button id="btnGuardar" class="btn-guardar" onclick="guardar()">Guardar cambios</button>
@@ -202,7 +208,7 @@
             miUserId = session.user.id;
             miEmail = session.user.email || '';
 
-            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email').eq('id', miUserId).maybeSingle();
+            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email, cp_origen').eq('id', miUserId).maybeSingle();
             miNombre = (perf && perf.nombre) || '';
 
             // Encabezado y menú
@@ -218,6 +224,7 @@
             document.getElementById('email').value = (perf && perf.email) || miEmail;
             document.getElementById('nombre').value = miNombre;
             document.getElementById('telefono').value = (perf && perf.telefono) || '';
+            document.getElementById('cpOrigen').value = (perf && perf.cp_origen) || '';
 
             document.getElementById('cargando').style.display = 'none';
             document.getElementById('formCard').style.display = 'block';
@@ -227,6 +234,7 @@
             limpiarAviso();
             const nombre = document.getElementById('nombre').value.trim();
             const telefono = document.getElementById('telefono').value.trim();
+            const cpOrigen = document.getElementById('cpOrigen').value.replace(/\D/g, '');
 
             if (!nombre) {
                 mostrarAviso('error', 'Poné tu nombre completo para continuar.');
@@ -240,6 +248,10 @@
                 mostrarAviso('error', 'Revisá el celular: tiene que ser un número argentino de 10 dígitos (código de área + número, sin 0 y sin 15). Ej: 11 2345 6789.');
                 return;
             }
+            if (cpOrigen && cpOrigen.length !== 4) {
+                mostrarAviso('error', 'El código postal de origen tiene que ser de 4 números. Ej: 1824. (Si no lo sabés, dejalo vacío por ahora.)');
+                return;
+            }
 
             const btn = document.getElementById('btnGuardar');
             btn.disabled = true;
@@ -250,7 +262,8 @@
                 id: miUserId,
                 nombre: nombre,
                 telefono: telefono,
-                email: miEmail
+                email: miEmail,
+                cp_origen: cpOrigen || null
             }, { onConflict: 'id' });
 
             btn.disabled = false;
