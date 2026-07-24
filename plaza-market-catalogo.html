@@ -183,6 +183,23 @@
         }
         .hidden { display: none !important; }
 
+        /* Globito discreto para instalar la app */
+        .install-pill {
+            position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%) translateY(200%);
+            z-index: 90; display: flex; align-items: center; gap: 0.35rem;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 55%, #583C87 100%);
+            color: #fff; border-radius: 999px; padding: 0.5rem 0.55rem 0.5rem 1.05rem;
+            box-shadow: 0 12px 34px rgba(0,82,212,0.5); font-size: 0.85rem; font-weight: 700;
+            max-width: calc(100vw - 1.6rem);
+            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .install-pill.visible { transform: translateX(-50%) translateY(0); }
+        .install-main { background: none; border: none; color: #fff; font: inherit; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; padding: 0.15rem 0.2rem; }
+        .install-emoji { display: inline-block; animation: wiggle 2.4s ease-in-out infinite; }
+        @keyframes wiggle { 0%,86%,100% { transform: rotate(0); } 90% { transform: rotate(-13deg); } 93% { transform: rotate(11deg); } 96% { transform: rotate(-5deg); } }
+        .install-x { background: rgba(255,255,255,0.22); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 0.78rem; flex-shrink: 0; line-height: 1; }
+        .install-x:hover { background: rgba(255,255,255,0.4); }
+
         .lb { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; overflow:hidden; touch-action:none; }
         .lb.on { display:flex; }
         .lb-stage { width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; }
@@ -349,6 +366,11 @@
         </div>
         <button class="lb-arrow lb-right" id="lbRight" onclick="lbSiguiente(event)">›</button>
         <span class="lb-counter" id="lbCounter"></span>
+    </div>
+
+    <div id="installPill" class="install-pill" role="dialog" aria-label="Instalar la app">
+        <button class="install-main" onclick="instalarApp()"><span class="install-emoji">📲</span> <span id="installText">Llevate Plaza Market a tu celu</span></button>
+        <button class="install-x" onclick="cerrarInstall()" aria-label="Cerrar">✕</button>
     </div>
 
     <script>
@@ -974,6 +996,44 @@
             }
             if (e.key === 'Escape') cerrarModal();
         });
+
+        // ============================================================
+        // GLOBITO "INSTALAR APP" (discreto, se cierra, con onda)
+        // ============================================================
+        let pmDeferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pmDeferredPrompt = e; });
+
+        function pmAppInstalada() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+        function pmEsMobile() { return /android|iphone|ipad|ipod|mobile|windows phone/i.test(navigator.userAgent); }
+        function pmEsIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+
+        function mostrarInstallPill() {
+            if (!pmEsMobile()) return;                       // el globito habla del "celu"
+            if (pmAppInstalada()) return;                    // ya la tiene
+            if (localStorage.getItem('pm_install_off') === '1') return;  // ya lo cerró antes
+            const p = document.getElementById('installPill');
+            if (p) setTimeout(() => p.classList.add('visible'), 2600);
+        }
+        function cerrarInstall() {
+            const p = document.getElementById('installPill');
+            if (p) p.classList.remove('visible');
+            localStorage.setItem('pm_install_off', '1');
+        }
+        async function instalarApp() {
+            if (pmDeferredPrompt) {
+                pmDeferredPrompt.prompt();
+                try { await pmDeferredPrompt.userChoice; } catch (e) {}
+                pmDeferredPrompt = null;
+                cerrarInstall();
+                return;
+            }
+            // Donde el navegador no deja instalar, guiamos con onda
+            const t = document.getElementById('installText');
+            if (t) t.textContent = pmEsIOS() ? 'Tocá Compartir y "Agregar a inicio" 😊' : 'Abrila en Chrome para instalarla 😊';
+        }
+        window.addEventListener('load', mostrarInstallPill);
 
         window.addEventListener('DOMContentLoaded', cargarCatalogo);
     </script>
