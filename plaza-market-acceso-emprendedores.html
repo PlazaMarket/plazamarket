@@ -34,7 +34,7 @@
             background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12); color: #F1F5F9;
             border-radius: 0.85rem; width: 100%; padding: 0.8rem 1rem; font-size: 0.9rem;
         }
-        input::placeholder { color: rgba(226,232,240,0.32); }
+        input::placeholder { color: rgba(226,232,240,0.32); font-style: italic; }
         input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(0,82,212,0.22); background: rgba(255,255,255,0.06); }
         .field-message { font-size: 0.72rem; margin-top: 0.4rem; min-height: 0.9rem; color: #FCA5A5; }
         .btn-primary {
@@ -91,7 +91,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label>Email</label>
-                                <input type="email" id="loginEmail" placeholder="tu@email.com" class="mt-2">
+                                <input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" class="mt-2">
                             </div>
                             <div>
                                 <label>Contraseña</label>
@@ -110,22 +110,23 @@
                     <!-- REGISTRO -->
                     <div id="registerTab" class="hidden">
                         <div id="regStepDatos" class="space-y-4">
+                            <p class="info-note" style="margin-bottom:0.25rem;">👇 Completá tus datos para crear tu cuenta. Los textos en gris son solo una ayuda; escribí los tuyos.</p>
                             <div>
                                 <label>Nombre y apellido</label>
-                                <input type="text" id="regNombre" placeholder="Ej: Tincho Pérez" class="mt-2">
+                                <input type="text" id="regNombre" placeholder="Escribí tu nombre y apellido" class="mt-2">
                             </div>
                             <div>
                                 <label>Teléfono / WhatsApp</label>
-                                <input type="tel" id="regTelefono" inputmode="numeric" placeholder="Ej: 1155667788" class="mt-2">
+                                <input type="tel" id="regTelefono" inputmode="numeric" placeholder="Escribí tu celular (solo números)" class="mt-2">
                             </div>
                             <div>
                                 <label>Email</label>
-                                <input type="email" id="regEmail" placeholder="tu@email.com" class="mt-2">
+                                <input type="email" id="regEmail" placeholder="Escribí tu email" class="mt-2">
                             </div>
                             <div>
                                 <label>Contraseña (mín. 6 caracteres)</label>
                                 <div class="pass-wrap mt-2">
-                                    <input type="password" id="regPassword" placeholder="••••••••">
+                                    <input type="password" id="regPassword" placeholder="Creá una contraseña">
                                     <button type="button" class="pass-eye" onclick="verClave('regPassword', this)" aria-label="Mostrar u ocultar contraseña"><svg class="ic-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg><svg class="ic-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
                                 </div>
                             </div>
