@@ -90,18 +90,38 @@
             <!-- KPIs de plata (lo más importante para el dueño) -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="stat-card dorada"><div class="stat-num" id="stComision">—</div><div class="stat-lbl">💰 Comisión juntada (12%)</div></div>
+                <div class="stat-card dorada"><div class="stat-num" id="stComisionMes">—</div><div class="stat-lbl">📅 Comisión este mes</div></div>
                 <div class="stat-card"><div class="stat-num" id="stFacturado">—</div><div class="stat-lbl">🧾 Total facturado (pagado)</div></div>
                 <div class="stat-card"><div class="stat-num" id="stVentasPag">—</div><div class="stat-lbl">✅ Ventas pagadas</div></div>
-                <div class="stat-card"><div class="stat-num" id="stPendientes">—</div><div class="stat-lbl">⏳ Órdenes pendientes</div></div>
             </div>
 
             <!-- KPIs de actividad -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div class="stat-card"><div class="stat-num" id="stUsuarios">—</div><div class="stat-lbl">👥 Usuarios</div></div>
+                <div class="stat-card"><div class="stat-num" id="stUsuarios">—</div><div class="stat-lbl">👥 Usuarios registrados</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPublicaron">—</div><div class="stat-lbl">🧑‍💼 Publicaron (vendedores)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stCompradores">—</div><div class="stat-lbl">🛒 Compraron (compradores)</div></div>
                 <div class="stat-card"><div class="stat-num" id="stConMp">—</div><div class="stat-lbl">💳 Con Mercado Pago</div></div>
+            </div>
+
+            <!-- KPIs extra -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="stat-card"><div class="stat-num" id="stProductos">—</div><div class="stat-lbl">📦 Publicaciones</div></div>
                 <div class="stat-card"><div class="stat-num" id="stVistas">—</div><div class="stat-lbl">👁 Vistas totales</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPendientes">—</div><div class="stat-lbl">⏳ Órdenes pendientes</div></div>
+                <div class="stat-card"><div class="stat-num" id="stOrdenes">—</div><div class="stat-lbl">🧾 Órdenes totales</div></div>
             </div>
+
+            <!-- De dónde son (por código de área del celular) -->
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-1">📍 De dónde son</h2>
+                <p class="text-xs text-slate-400 mb-4">Según el código de área del celular de cada persona. Un mismo usuario puede ser vendedor y comprador a la vez.</p>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Zona</th><th>Área</th><th>Usuarios</th><th>Vendedores</th><th>Compradores</th></tr></thead>
+                        <tbody id="tablaZonas"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
 
             <section class="glass-card p-5 sm:p-6">
                 <h2 class="text-lg font-bold text-white mb-4">🛒 Todas las ventas</h2>
@@ -127,8 +147,8 @@
                 <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
                 <div class="tabla-scroll">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Rol</th><th></th></tr></thead>
-                        <tbody id="tablaUsuarios"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Zona</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Rol</th><th></th></tr></thead>
+                        <tbody id="tablaUsuarios"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -161,6 +181,41 @@
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
         function fechaCorta(iso) { return iso ? new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—'; }
         let perfilMap = {}, prodMap = {}, adminSet = new Set(), miId = null;
+
+        // Códigos de área de Argentina → zona (para saber de dónde son, por el celular)
+        const AREAS = {
+            '11': 'CABA / Gran Buenos Aires',
+            '220': 'Merlo (Bs. As.)', '221': 'La Plata', '223': 'Mar del Plata', '236': 'Junín',
+            '237': 'Moreno (Bs. As.)', '249': 'Tandil', '260': 'San Rafael (Mendoza)', '261': 'Mendoza',
+            '263': 'San Martín (Mendoza)', '264': 'San Juan', '266': 'San Luis', '280': 'Chubut (costa)',
+            '291': 'Bahía Blanca', '297': 'Comodoro Rivadavia', '299': 'Neuquén',
+            '336': 'San Nicolás', '341': 'Rosario', '342': 'Santa Fe', '343': 'Paraná',
+            '345': 'Concordia (E. Ríos)', '348': 'Escobar/Pilar (Bs. As.)', '351': 'Córdoba',
+            '353': 'Villa María', '358': 'Río Cuarto', '362': 'Resistencia (Chaco)', '364': 'Chaco (interior)',
+            '370': 'Formosa', '376': 'Posadas (Misiones)', '379': 'Corrientes', '380': 'La Rioja',
+            '381': 'Tucumán', '383': 'Catamarca', '385': 'Santiago del Estero', '387': 'Salta', '388': 'Jujuy',
+            '2202': 'Bs. As. (interior)', '2494': 'Bs. As. (interior)', '2604': 'San Rafael (Mendoza)',
+            '2901': 'Ushuaia (T. del Fuego)', '2920': 'Viedma (Río Negro)', '2944': 'Bariloche',
+            '2954': 'Santa Rosa (La Pampa)', '2966': 'Río Gallegos (Santa Cruz)', '2984': 'Río Negro'
+        };
+        function soloNumeroNacional(valor) {
+            let d = String(valor || '').replace(/\D/g, '');
+            if (d.startsWith('54')) d = d.slice(2);
+            if (d.startsWith('9')) d = d.slice(1);
+            while (d.startsWith('0')) d = d.slice(1);
+            return d;
+        }
+        // Devuelve { area, zona } a partir del celular
+        function zonaDeTel(tel) {
+            const d = soloNumeroNacional(tel);
+            if (!d || d.length < 6) return { area: '—', zona: 'Sin dato' };
+            for (const len of [4, 3, 2]) {
+                const pref = d.slice(0, len);
+                if (AREAS[pref]) return { area: pref, zona: AREAS[pref] };
+            }
+            const pref = d.slice(0, 3);
+            return { area: pref, zona: 'Otra zona' };
+        }
 
         async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
@@ -202,22 +257,61 @@
             prodMap = {}; ps.forEach(p => prodMap[p.id] = p);
             adminSet = new Set((admins.data || []).map(a => a.id));
 
-            // KPIs de plata
+            // Conjuntos de actividad
             const pagadas = ords.filter(o => o.estado === 'pagado');
+            const publicaronSet = new Set(ps.map(p => p.usuario_id).filter(Boolean));
+            const compradoresSet = new Set(pagadas.map(o => o.comprador_id).filter(Boolean));
+
+            // KPIs de plata
+            const ahora = new Date();
+            const comisionMes = pagadas
+                .filter(o => { const d = new Date(o.creado_en); return d.getMonth() === ahora.getMonth() && d.getFullYear() === ahora.getFullYear(); })
+                .reduce((a, o) => a + Number(o.comision || 0), 0);
             document.getElementById('stComision').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.comision || 0), 0));
+            document.getElementById('stComisionMes').textContent = pesos(comisionMes);
             document.getElementById('stFacturado').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.monto || 0), 0));
             document.getElementById('stVentasPag').textContent = pagadas.length;
-            document.getElementById('stPendientes').textContent = ords.filter(o => o.estado === 'pendiente').length;
 
             // KPIs de actividad
             document.getElementById('stUsuarios').textContent = us.length;
+            document.getElementById('stPublicaron').textContent = publicaronSet.size;
+            document.getElementById('stCompradores').textContent = compradoresSet.size;
             document.getElementById('stConMp').textContent = us.filter(u => u.mp_conectado).length;
+
+            // KPIs extra
             document.getElementById('stProductos').textContent = ps.length;
             document.getElementById('stVistas').textContent = ps.reduce((a, p) => a + (p.vistas || 0), 0);
+            document.getElementById('stPendientes').textContent = ords.filter(o => o.estado === 'pendiente').length;
+            document.getElementById('stOrdenes').textContent = ords.length;
 
             renderVentas(ords);
+            renderZonas(us, publicaronSet, compradoresSet);
             renderProductos(ps);
             renderUsuarios(us);
+        }
+
+        function renderZonas(us, publicaronSet, compradoresSet) {
+            const tb = document.getElementById('tablaZonas');
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            const mapa = {};
+            us.forEach(u => {
+                const z = zonaDeTel(u.telefono);
+                const clave = z.zona + '|' + z.area;
+                if (!mapa[clave]) mapa[clave] = { zona: z.zona, area: z.area, usuarios: 0, vendedores: 0, compradores: 0 };
+                mapa[clave].usuarios++;
+                if (publicaronSet.has(u.id)) mapa[clave].vendedores++;
+                if (compradoresSet.has(u.id)) mapa[clave].compradores++;
+            });
+            const filas = Object.values(mapa).sort((a, b) => b.usuarios - a.usuarios);
+            tb.innerHTML = filas.map(f =>
+                '<tr>' +
+                    '<td>' + escaparHtml(f.zona) + '</td>' +
+                    '<td style="color:rgba(226,232,240,0.5);">' + escaparHtml(f.area) + '</td>' +
+                    '<td style="font-weight:700;">' + f.usuarios + '</td>' +
+                    '<td>' + f.vendedores + '</td>' +
+                    '<td>' + f.compradores + '</td>' +
+                '</tr>'
+            ).join('');
         }
 
         function nombreDe(id) { const u = perfilMap[id]; return u ? escaparHtml(u.nombre || u.email || '—') : '<span style="color:rgba(226,232,240,0.4);">—</span>'; }
@@ -265,11 +359,12 @@
 
         function renderUsuarios(us) {
             const tb = document.getElementById('tablaUsuarios');
-            if (!us.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             tb.innerHTML = us.map(u => {
                 const esAdmin = adminSet.has(u.id);
                 const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
                 const mp = u.mp_conectado ? '<span class="si">✓ Conectado</span>' : '<span class="no">— No</span>';
+                const z = zonaDeTel(u.telefono);
                 let accion = '';
                 if (u.id !== miId) {
                     accion = esAdmin
@@ -280,6 +375,7 @@
                     '<td>' + escaparHtml(u.nombre || '—') + '</td>' +
                     '<td>' + escaparHtml(u.email || '—') + '</td>' +
                     '<td>' + escaparHtml(u.telefono || '—') + '</td>' +
+                    '<td style="font-size:0.76rem;">' + escaparHtml(z.zona) + '</td>' +
                     '<td>' + escaparHtml(u.cp_origen || '—') + '</td>' +
                     '<td>' + mp + '</td>' +
                     '<td style="white-space:nowrap;">' + fechaCorta(u.creado_en) + '</td>' +
