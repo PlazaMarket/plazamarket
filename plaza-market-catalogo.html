@@ -117,6 +117,39 @@
         }
         .envio-pasos { font-size: 0.78rem; color: rgba(226,232,240,0.72); line-height: 1.65; margin: 0.7rem 0 0; padding-left: 1.2rem; }
         .envio-pasos li { margin-bottom: 0.4rem; }
+        /* Calculadora de envío (ficha del producto) */
+        .cotiz-fila { display: flex; gap: 0.5rem; margin: 0.55rem 0 0.35rem; }
+        .cotiz-cp { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border-radius: 0.6rem; border: 1px solid rgba(148,163,184,0.35); background: rgba(15,23,42,0.6); color: #E2E8F0; font-size: 0.9rem; }
+        .cotiz-cp::placeholder { color: rgba(148,163,184,0.6); }
+        .cotiz-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; background: linear-gradient(135deg,#0052D4,#4364F7); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+        .cotiz-res { margin-top: 0.3rem; }
+        .cotiz-cargando { font-size: 0.8rem; color: #93C5FD; margin: 0.3rem 0; }
+        .cotiz-error { font-size: 0.8rem; color: #FCA5A5; margin: 0.3rem 0; }
+        .cotiz-op { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.6rem; width: 100%; text-align: left; margin: 0.35rem 0; padding: 0.6rem 0.7rem; border-radius: 0.7rem; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.5); color: #E2E8F0; cursor: pointer; }
+        .cotiz-op.sel { border-color: #34D399; background: rgba(16,185,129,0.14); box-shadow: 0 0 0 1px rgba(52,211,153,0.5) inset; }
+        .cotiz-op-nom { font-weight: 700; font-size: 0.85rem; flex: 1; }
+        .cotiz-op-info { font-size: 0.72rem; color: rgba(226,232,240,0.6); width: 100%; }
+        .cotiz-op-precio { font-weight: 800; color: #6EE7B7; font-size: 0.92rem; }
+        .cotiz-total { margin-top: 0.55rem; font-size: 0.85rem; color: #E2E8F0; }
+        .cotiz-total strong { color: #FCD34D; font-size: 0.95rem; }
+        .cotiz-fallback p { font-size: 0.8rem; color: rgba(226,232,240,0.75); line-height: 1.55; margin: 0.4rem 0 0; }
+        /* Preguntas y respuestas públicas */
+        .preg-tit { font-size: 0.95rem; font-weight: 800; color: #fff; margin: 0 0 0.2rem; }
+        .preg-sub { font-size: 0.75rem; color: rgba(226,232,240,0.5); margin: 0 0 0.5rem; line-height: 1.45; }
+        .preg-item { border-top: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 0; }
+        .preg-q { font-size: 0.84rem; color: #E2E8F0; font-weight: 600; margin: 0; }
+        .preg-a { font-size: 0.82rem; color: #6EE7B7; margin: 0.25rem 0 0; padding-left: 0.9rem; }
+        .preg-a::before { content: '↳ '; color: rgba(226,232,240,0.5); }
+        .preg-fecha { font-size: 0.66rem; color: rgba(226,232,240,0.35); margin: 0.2rem 0 0; }
+        .preg-pend { border-left: 2px solid #FCD34D; padding-left: 0.6rem; margin: 0.5rem 0; }
+        .preg-caja { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+        .preg-input { flex: 1; min-width: 0; padding: 0.6rem 0.7rem; border-radius: 0.6rem; border: 1px solid rgba(148,163,184,0.35); background: rgba(15,23,42,0.6); color: #E2E8F0; font-size: 0.85rem; }
+        .preg-input::placeholder { color: rgba(148,163,184,0.6); }
+        .preg-btn { padding: 0.6rem 1rem; border-radius: 0.6rem; border: none; background: linear-gradient(135deg,#0052D4,#4364F7); color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap; }
+        .preg-aviso { font-size: 0.76rem; margin-top: 0.4rem; line-height: 1.4; }
+        .preg-aviso.err { color: #FCA5A5; }
+        .preg-aviso.ok { color: #6EE7B7; }
+        .preg-vacio { font-size: 0.78rem; color: rgba(226,232,240,0.45); padding: 0.3rem 0 0; }
         .card-stats { display: flex; gap: 0.9rem; margin-top: 0.55rem; font-size: 0.7rem; color: rgba(226,232,240,0.45); }
         .estado { text-align: center; padding: 4rem 1rem; color: rgba(226,232,240,0.45); font-size: 0.9rem; }
         .spinner {
@@ -346,6 +379,8 @@
                 <div class="modal-stats" id="modalStats"></div>
                 <p class="modal-desc" id="modalDesc"></p>
 
+                <div id="modalPreguntas" class="modal-seccion"></div>
+
                 <div id="modalDelVendedor" class="modal-seccion hidden">
                     <p class="modal-seccion-tit">Más publicaciones de este vendedor</p>
                     <div id="gridDelVendedor" class="mini-grid"></div>
@@ -393,6 +428,9 @@
         let fotosModal = [];
         let idxModal = 0;
         const SENA = 0.20; // seña del 20% para reservar un servicio
+        // ⚙️ Calculadora de envío de Correo. Dejar en FALSE hasta tener las credenciales de Correo (Fase B).
+        //    Cuando estén cargadas en Supabase, poner true y el comprador ve el envío en la ficha.
+        const ENVIO_ACTIVO = false;
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
@@ -698,6 +736,7 @@
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
 
             const envioEl = document.getElementById('modalEnvio');
+            fichaProd = p; envioElegido = null; envioModo = 'ninguno';
             if (esServicio) {
                 const sena = Math.round(Number(p.precio || 0) * SENA);
                 envioEl.className = 'card-envio servicio';
@@ -709,19 +748,34 @@
                 const medidasHtml = tieneMedidas
                     ? `<p class="envio-paquete">📦 Paquete: ${p.alto_cm} × ${p.ancho_cm} × ${p.largo_cm} cm · ${(Number(p.peso_gr) / 1000).toLocaleString('es-AR')} kg</p>`
                     : '';
-                envioEl.innerHTML = `
+                if (ENVIO_ACTIVO) {
+                    envioEl.innerHTML = `
                     <div class="envio-box">
-                        <p class="envio-tit">🚚 SOBRE EL ENVÍO</p>
-                        <p class="envio-sub">El precio es solo del producto; el envío va aparte. Para saber tu costo, consultá al vendedor por el chat y te pasa un link de Andreani. Ahí cargás tus datos y ves el precio.</p>
-                        <p class="envio-tip">💡 Consejo: a sucursal gastás menos que a domicilio.</p>
+                        <p class="envio-tit">🚚 CALCULÁ TU ENVÍO</p>
+                        <p class="envio-sub">Poné tu código postal y calculá cuánto sale el envío. Después pagás el producto y el envío juntos, en un solo pago.</p>
+                        <p class="envio-tip">📦 El vendedor despacha dentro de las 48 a 72 hs de tu compra.</p>
                         ${medidasHtml}
-                        <button type="button" class="envio-toggle" onclick="toggleComoEnvio(event)">¿Cómo es el envío? ▾</button>
+                        <div class="cotiz-fila">
+                            <input id="cotizCP" class="cotiz-cp" type="text" inputmode="numeric" maxlength="8" placeholder="Tu código postal" onkeydown="if(event.key==='Enter'){event.preventDefault();cotizarEnvioUI();}">
+                            <button type="button" class="cotiz-btn" onclick="cotizarEnvioUI()">Calcular</button>
+                        </div>
+                        <div id="envioResultado" class="cotiz-res"></div>
+                        <button type="button" class="envio-toggle" onclick="toggleComoEnvio(event)">¿Cómo funciona? ▾</button>
                         <ol id="comoEnvio" class="envio-pasos hidden">
-                            <li>Consultás al vendedor por el chat y arreglan la compra.</li>
-                            <li>El vendedor te pasa un link de Andreani. Ahí ponés tu código postal, <strong>ves el precio</strong> y elegís sucursal o domicilio.</li>
-                            <li>Pagás el envío con Mercado Pago y el vendedor despacha tu paquete.</li>
+                            <li>Poné tu código postal y tocá <strong>Calcular</strong>.</li>
+                            <li>Elegí <strong>a sucursal</strong> (más barato) o <strong>a domicilio</strong>.</li>
+                            <li>Pagás el producto y el envío juntos. El vendedor despacha tu paquete.</li>
                         </ol>
                     </div>`;
+                } else {
+                    envioEl.innerHTML = `
+                    <div class="envio-box">
+                        <p class="envio-tit">🚚 SOBRE EL ENVÍO</p>
+                        <p class="envio-sub">El precio es solo del producto. El envío lo coordinás con el vendedor por el chat.</p>
+                        <p class="envio-tip">📦 El vendedor despacha dentro de las 48 a 72 hs de tu compra.</p>
+                        ${medidasHtml}
+                    </div>`;
+                }
             }
 
             const stockEl = document.getElementById('modalStock');
@@ -775,6 +829,7 @@
             document.body.style.overflow = 'hidden';
 
             guardarEnHistorial(p.id);
+            cargarPreguntas(p);
 
             // Contar la vista — salvo que sea el propio vendedor mirando lo suyo
             if (miUserId && miUserId === p.usuario_id) return;
@@ -837,6 +892,192 @@
         });
 
         // ============================================================
+        // CALCULAR ENVÍO (Correo Argentino - MiCorreo)
+        // ============================================================
+        let fichaProd = null;      // producto abierto en la ficha
+        let envioElegido = null;   // { tipo:'S'|'D', precio, nombre } que eligió el comprador
+        let envioModo = 'ninguno'; // 'ninguno' | 'ok' (hay opciones) | 'fallback' (no se pudo cotizar)
+
+        function fallbackEnvioHTML() {
+            return `<div class="cotiz-fallback"><p>No pudimos calcular el envío automático en este momento. El envío va aparte: coordinás con el vendedor por el chat. Igual podés comprar el producto ahora.</p></div>`;
+        }
+
+        function actualizarBotonComprar() {
+            const b = document.getElementById('modalBtnComprar');
+            if (!b || !fichaProd || fichaProd.tipo === 'servicio') return;
+            if (envioElegido) {
+                b.textContent = '🛒 Comprar — Total ' + pesos((Number(fichaProd.precio) || 0) + envioElegido.precio);
+            } else {
+                b.textContent = '🛒 Comprar ahora';
+            }
+        }
+
+        async function cotizarEnvioUI() {
+            const p = fichaProd; if (!p) return;
+            const cont = document.getElementById('envioResultado');
+            const cp = ((document.getElementById('cotizCP') || {}).value || '').replace(/\D/g, '');
+            if (cp.length < 4) { cont.innerHTML = '<p class="cotiz-error">Poné un código postal válido (4 números).</p>'; return; }
+            cont.innerHTML = '<p class="cotiz-cargando">Consultando el correo…</p>';
+            envioElegido = null; envioModo = 'ninguno'; actualizarBotonComprar();
+            try {
+                const { data, error } = await db.functions.invoke('cc-cotizar-envio', { body: { producto_id: p.id, cp_destino: cp } });
+                if (error) throw error;
+                if (data && data.ok && data.opciones && data.opciones.length) {
+                    pintarOpcionesEnvio(p, data.opciones);
+                } else {
+                    envioModo = 'fallback';
+                    cont.innerHTML = fallbackEnvioHTML();
+                }
+            } catch (e) {
+                console.error('cotizar envío:', e);
+                envioModo = 'fallback';
+                cont.innerHTML = fallbackEnvioHTML();
+            }
+        }
+
+        function pintarOpcionesEnvio(p, opciones) {
+            opciones.sort((a, b) => a.precio - b.precio);
+            envioModo = 'ok';
+            const cont = document.getElementById('envioResultado');
+            cont.innerHTML = opciones.map(o => {
+                const dias = (o.dias_min && o.dias_max) ? (o.dias_min + ' a ' + o.dias_max + ' días hábiles') : 'Correo Argentino';
+                const nombre = String(o.nombre || '').replace(/'/g, '');
+                return `<button type="button" class="cotiz-op" onclick="elegirEnvio(this, '${o.tipo}', ${o.precio}, '${nombre}')">
+                        <span class="cotiz-op-nom">${o.tipo === 'S' ? '🏢' : '🏠'} ${o.nombre}</span>
+                        <span class="cotiz-op-info">${dias}</span>
+                        <span class="cotiz-op-precio">${pesos(o.precio)}</span>
+                    </button>`;
+            }).join('') + '<div id="cotizTotal" class="cotiz-total"></div>';
+        }
+
+        function elegirEnvio(btn, tipo, precio, nombre) {
+            envioElegido = { tipo: tipo, precio: precio, nombre: nombre };
+            document.querySelectorAll('.cotiz-op').forEach(b => b.classList.remove('sel'));
+            btn.classList.add('sel');
+            const prodPrecio = Number(fichaProd.precio) || 0;
+            document.getElementById('cotizTotal').innerHTML =
+                'Producto ' + pesos(prodPrecio) + ' + Envío ' + pesos(precio) + ' = <strong>Total ' + pesos(prodPrecio + precio) + '</strong>';
+            actualizarBotonComprar();
+        }
+
+        // ============================================================
+        // PREGUNTAS PÚBLICAS (mismo filtro anti-contacto que el chat)
+        // ============================================================
+        const PREG_NUM_WORDS = new Set(['cero','uno','una','dos','tres','cuatro','cinco','seis','siete','ocho','nueve']);
+        const PREG_FILLER = new Set(['y','el','mi','numero','es','de','nro','tel']);
+        function pregNormaliza(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+        function pregTelDigitos(t) {
+            const ms = t.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of ms) { if (m.replace(/\D/g, '').length >= 7) return true; }
+            return (t.match(/\d{7,}/g) || []).length > 0;
+        }
+        function pregTelPalabras(t) {
+            const ws = pregNormaliza(t).match(/[a-z]+/g) || [];
+            let run = 0, max = 0;
+            for (const w of ws) { if (PREG_NUM_WORDS.has(w)) { run++; max = Math.max(max, run); } else if (PREG_FILLER.has(w)) { /* no rompe */ } else { run = 0; } }
+            return max >= 5;
+        }
+        function pregRedSocial(t) { return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(t); }
+        function pregDatoContacto(t) {
+            if (pregTelDigitos(t)) return 'Se detectó un número de teléfono en dígitos.';
+            if (pregTelPalabras(t)) return 'Se detectó un número de teléfono escrito con palabras.';
+            if (pregRedSocial(t)) return 'Se detectó una referencia a una red social externa.';
+            return null;
+        }
+        function fechaPreg(iso) { try { return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }); } catch (e) { return ''; } }
+
+        async function cargarPreguntas(p) {
+            const cont = document.getElementById('modalPreguntas');
+            if (!cont) return;
+            cont.innerHTML = '<p class="preg-tit">❓ Preguntas y respuestas</p><p class="preg-vacio">Cargando…</p>';
+            const esDueno = sesionActiva && miUserId === p.usuario_id;
+            let filas = [];
+            try {
+                const { data } = await db.from('pm_preguntas').select('*').eq('producto_id', p.id).order('creado_en', { ascending: false });
+                filas = data || [];
+            } catch (e) { console.error('preguntas', e); }
+            const respondidas = filas.filter(x => x.respuesta);
+            const pendientes = filas.filter(x => !x.respuesta);
+
+            let html = '<p class="preg-tit">❓ Preguntas y respuestas</p>';
+            if (!esDueno) {
+                html += '<p class="preg-sub">Preguntá lo que quieras. Cuando el vendedor responda, tu pregunta se muestra acá para todos.</p>' +
+                    '<div class="preg-caja">' +
+                        '<input id="pregInput" class="preg-input" maxlength="280" placeholder="Escribí tu pregunta...">' +
+                        '<button type="button" class="preg-btn" onclick="enviarPregunta(' + p.id + ')">Preguntar</button>' +
+                    '</div><div id="pregAviso"></div>';
+            }
+            if (esDueno && pendientes.length) {
+                html += '<p class="preg-sub" style="margin-top:0.7rem;">Preguntas sin responder (solo las ves vos hasta que contestás):</p>';
+                pendientes.forEach(q => {
+                    html += '<div class="preg-pend">' +
+                        '<p class="preg-q">' + escaparHtml(q.pregunta) + '</p>' +
+                        '<div class="preg-caja">' +
+                            '<input id="resp' + q.id + '" class="preg-input" maxlength="280" placeholder="Tu respuesta (se hace pública)...">' +
+                            '<button type="button" class="preg-btn" onclick="responderPregunta(' + q.id + ',' + p.id + ')">Responder</button>' +
+                        '</div><div id="respAviso' + q.id + '"></div>' +
+                    '</div>';
+                });
+            }
+            if (respondidas.length) {
+                respondidas.forEach(q => {
+                    html += '<div class="preg-item">' +
+                        '<p class="preg-q">' + escaparHtml(q.pregunta) + '</p>' +
+                        '<p class="preg-a">' + escaparHtml(q.respuesta) + '</p>' +
+                        '<p class="preg-fecha">' + fechaPreg(q.respondido_en || q.creado_en) + '</p>' +
+                    '</div>';
+                });
+            } else if (!esDueno) {
+                html += '<p class="preg-vacio">Todavía no hay preguntas. ¡Hacé la primera!</p>';
+            }
+            cont.innerHTML = html;
+        }
+
+        async function enviarPregunta(pid) {
+            if (!sesionActiva) {
+                alert('Para preguntar necesitás una cuenta (es gratis). Te llevamos al registro.');
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
+                return;
+            }
+            const input = document.getElementById('pregInput');
+            const aviso = document.getElementById('pregAviso');
+            const txt = (input.value || '').trim();
+            if (txt.length < 3) { aviso.className = 'preg-aviso err'; aviso.textContent = 'Escribí tu pregunta.'; return; }
+            const motivo = pregDatoContacto(txt);
+            if (motivo) { aviso.className = 'preg-aviso err'; aviso.textContent = '🚫 ' + motivo + ' Por seguridad, todo se coordina dentro de Plaza Market.'; return; }
+            const prod = todos.find(x => x.id === pid) || fichaProd;
+            try {
+                const { error } = await db.from('pm_preguntas').insert({ producto_id: pid, autor_id: miUserId, autor_nombre: (miNombre || 'Alguien'), pregunta: txt });
+                if (error) throw error;
+                // Avisar al vendedor reusando el chat (push + email), como en una venta
+                try {
+                    const vendId = prod ? prod.usuario_id : null;
+                    if (vendId && vendId !== miUserId) {
+                        const sala = 'prod' + pid + '_' + miUserId;
+                        try { await db.rpc('registrar_consulta', { pid: pid }); } catch (e) {}
+                        await db.from('mensajes').insert({ conversacion: sala, autor: (miNombre || 'Alguien'), texto: '❓ Te hice una pregunta pública. Respondela desde la publicación así la ven todos. 👍' });
+                    }
+                } catch (e) { console.error('aviso pregunta', e); }
+                input.value = ''; aviso.className = 'preg-aviso ok'; aviso.textContent = '✅ ¡Pregunta enviada! Cuando el vendedor responda, va a aparecer acá.';
+            } catch (e) { aviso.className = 'preg-aviso err'; aviso.textContent = 'No se pudo enviar: ' + (e.message || e); }
+        }
+
+        async function responderPregunta(qid, pid) {
+            const input = document.getElementById('resp' + qid);
+            const aviso = document.getElementById('respAviso' + qid);
+            const txt = (input.value || '').trim();
+            if (txt.length < 1) { aviso.className = 'preg-aviso err'; aviso.textContent = 'Escribí la respuesta.'; return; }
+            const motivo = pregDatoContacto(txt);
+            if (motivo) { aviso.className = 'preg-aviso err'; aviso.textContent = '🚫 ' + motivo + ' No se pueden dejar datos de contacto.'; return; }
+            try {
+                const { error } = await db.from('pm_preguntas').update({ respuesta: txt, respondido_en: new Date().toISOString() }).eq('id', qid);
+                if (error) throw error;
+                const p = fichaProd || todos.find(x => x.id === pid);
+                if (p) cargarPreguntas(p);
+            } catch (e) { aviso.className = 'preg-aviso err'; aviso.textContent = 'No se pudo guardar: ' + (e.message || e); }
+        }
+
+        // ============================================================
         // COMPRAR / PAGAR SEÑA (Mercado Pago)
         // ============================================================
         async function comprar(p) {
@@ -845,15 +1086,23 @@
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
                 return;
             }
+            // Si es un producto y hay opciones de envío en pantalla, tiene que elegir una.
+            if (p.tipo !== 'servicio' && envioModo === 'ok' && !envioElegido) {
+                alert('Elegí una opción de envío (a sucursal o a domicilio) para continuar.');
+                return;
+            }
             const b = document.getElementById('modalBtnComprar');
             const textoOriginal = b.textContent;
             b.textContent = 'Preparando el pago...';
             b.style.pointerEvents = 'none';
             b.style.opacity = '0.7';
             try {
-                const { data, error } = await db.functions.invoke('mp-crear-pago', {
-                    body: { producto_id: p.id, tipo: (p.tipo === 'servicio' ? 'sena' : 'producto') }
-                });
+                const cuerpo = { producto_id: p.id, tipo: (p.tipo === 'servicio' ? 'sena' : 'producto') };
+                if (p.tipo !== 'servicio' && envioElegido) {
+                    cuerpo.cp_destino = ((document.getElementById('cotizCP') || {}).value || '').replace(/\D/g, '');
+                    cuerpo.envio_tipo = envioElegido.tipo;
+                }
+                const { data, error } = await db.functions.invoke('mp-crear-pago', { body: cuerpo });
                 if (error) {
                     alert('No se pudo preparar el pago. ' + (error.message || ''));
                 } else if (data && data.ok && data.url) {
