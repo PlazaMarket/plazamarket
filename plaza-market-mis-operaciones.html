@@ -52,6 +52,9 @@
         .op-meta { font-size: 0.76rem; color: rgba(226,232,240,0.6); margin-top: 0.15rem; }
         .op-monto { font-size: 0.82rem; font-weight: 700; color: #93C5FD; margin-top: 0.2rem; }
         .op-fecha { font-size: 0.68rem; color: #64748B; margin-top: 0.2rem; }
+        .op-despacho { font-size: 0.72rem; color: #FCD34D; font-weight: 600; margin-top: 0.28rem; }
+        .op-despacho.vencido { color: #FCA5A5; }
+        .op-despacho.hecho { color: #6EE7B7; }
         .badge { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; }
         .vacio { text-align: center; color: #64748B; font-size: 0.9rem; padding: 3rem 1rem; }
         .spinner-mini { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; }
@@ -135,6 +138,33 @@
             return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
         }
 
+        // Plazo de despacho: 48 horas CORRIDAS desde la compra, sin contar los domingos.
+        function deadlineDespacho(iso) {
+            if (!iso) return null;
+            let d = new Date(iso);
+            let horas = 48;
+            while (horas > 0) {
+                d = new Date(d.getTime() + 3600000); // avanzo 1 hora
+                if (d.getDay() !== 0) horas--;        // el domingo (0) no consume el plazo
+            }
+            return d;
+        }
+        // Línea de despacho para el VENDEDOR (solo productos ya pagados)
+        function lineaDespacho(o) {
+            if (o.tipo === 'sena' || o.estado !== 'pagado') return '';
+            const dl = deadlineDespacho(o.creado_en);
+            if (!dl) return '';
+            const fmt = dl.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) + ' ' + dl.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs';
+            const ahora = new Date();
+            if (ahora > dl) {
+                return '<p class="op-despacho vencido">⚠️ Plazo de despacho vencido (vencía el ' + fmt + ')</p>';
+            }
+            let min = Math.floor((dl - ahora) / 60000);
+            const hs = Math.floor(min / 60); min = min % 60;
+            const rest = hs > 0 ? (hs + ' h ' + min + ' min') : (min + ' min');
+            return '<p class="op-despacho">📦 Despachá antes del ' + fmt + ' · te quedan ' + rest + '</p>';
+        }
+
         const ESTADOS = {
             pendiente: ['#FCD34D', 'rgba(250,204,21,0.14)', 'Pendiente de pago'],
             pagado:    ['#6EE7B7', 'rgba(16,185,129,0.15)', 'Pagado'],
@@ -208,12 +238,17 @@
             const rolTxt = esVenta ? ('Comprador: ' + otro) : ('Vendedor: ' + otro);
             const tipoTxt = o.tipo === 'sena' ? 'Seña de servicio' : 'Producto';
 
+            const tieneEnvio = o.envio_monto && Number(o.envio_monto) > 0;
             let montoLinea;
             if (esVenta) {
-                montoLinea = 'Te pagan ' + pesos(o.monto) + ' · comisión Plaza Market ' + pesos(o.comision);
+                montoLinea = 'Te pagan ' + pesos(o.monto);
+                if (tieneEnvio) montoLinea += ' + envío ' + pesos(o.envio_monto);
+                montoLinea += ' · comisión Plaza Market ' + pesos(o.comision);
             } else {
                 montoLinea = 'Pagaste ' + pesos(o.monto);
+                if (tieneEnvio) montoLinea += ' + envío ' + pesos(o.envio_monto) + ' = ' + pesos(Number(o.monto) + Number(o.envio_monto));
             }
+            const despachoLinea = esVenta ? lineaDespacho(o) : '';
 
             return '<div class="op">' +
                 foto +
@@ -221,6 +256,7 @@
                     '<p class="op-tit">' + titulo + ' <span style="font-weight:500;color:rgba(226,232,240,0.4);font-size:0.72rem;">· ' + tipoTxt + '</span></p>' +
                     '<p class="op-meta">' + rolTxt + '</p>' +
                     '<p class="op-monto">' + montoLinea + '</p>' +
+                    despachoLinea +
                     '<p class="op-fecha">' + cuando(o.creado_en) + '</p>' +
                 '</div>' +
                 '<div style="flex-shrink:0;">' + badgeEstado(o.estado) + '</div>' +
