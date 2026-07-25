@@ -114,6 +114,7 @@
                 <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
                 <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
                 <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
                 <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
                 <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
                 <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
@@ -158,6 +159,12 @@
             <button id="btnGuardar" class="btn-guardar" onclick="guardar()">Guardar cambios</button>
         </div>
 
+        <div id="mpCard" class="card" style="display:none;margin-top:1rem;">
+            <h3 style="color:#fff;font-weight:700;font-size:1rem;margin:0 0 0.3rem;">💳 Cobros con Mercado Pago</h3>
+            <p class="text-sm text-slate-400" style="margin:0 0 0.9rem;">La cuenta de Mercado Pago donde recibís la plata de tus ventas.</p>
+            <div id="mpEstado"></div>
+        </div>
+
     </main>
 
     <script>
@@ -168,6 +175,36 @@
         let miUserId = null;
         let miEmail = '';
         let miNombre = '';
+
+        // --- Conexión con Mercado Pago (mismo Client ID de PRODUCCIÓN del panel Vender) ---
+        const MP_CLIENT_ID_PUBLICO = '4939099177024519';
+        const MP_REDIRECT = 'https://plazamarket.com.ar/plaza-market-mp-conectado.html';
+        function urlConectarMp() {
+            return 'https://auth.mercadopago.com/authorization'
+                + '?client_id=' + MP_CLIENT_ID_PUBLICO
+                + '&response_type=code&platform_id=mp'
+                + '&state=pm' + Date.now()
+                + '&redirect_uri=' + MP_REDIRECT;
+        }
+        function irAConectarMp(e) { if (e) e.preventDefault(); window.location.href = urlConectarMp(); }
+        function renderMP(conectado) {
+            const c = document.getElementById('mpEstado');
+            if (!c) return;
+            if (conectado) {
+                c.innerHTML = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.9rem;">'
+                    + '<p style="margin:0;color:#6EE7B7;font-weight:700;font-size:0.88rem;">✅ Tenés tu Mercado Pago conectado</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Es la cuenta donde recibís la plata de tus ventas.</p>'
+                    + '</div>'
+                    + '<button type="button" onclick="irAConectarMp(event)" class="btn-guardar" style="background:#334155;">Cambiar mi cuenta de Mercado Pago</button>'
+                    + '<p style="margin:0.55rem 0 0;color:rgba(226,232,240,0.5);font-size:0.72rem;line-height:1.5;">Para enlazar OTRA cuenta, primero cerrá tu sesión en Mercado Pago (o elegí la otra cuenta cuando te lo pida). La cuenta que tenías queda reemplazada por la nueva.</p>';
+            } else {
+                c.innerHTML = '<div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.9rem;">'
+                    + '<p style="margin:0;color:#FCD34D;font-weight:700;font-size:0.88rem;">Todavía no conectaste tu Mercado Pago</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Sin esto no podés cobrar tus ventas. Es un solo paso y no se mueve ni un peso.</p>'
+                    + '</div>'
+                    + '<button type="button" onclick="irAConectarMp(event)" class="btn-guardar">Conectar mi Mercado Pago</button>';
+            }
+        }
 
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
         function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
@@ -208,7 +245,7 @@
             miUserId = session.user.id;
             miEmail = session.user.email || '';
 
-            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email, cp_origen').eq('id', miUserId).maybeSingle();
+            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email, cp_origen, mp_conectado').eq('id', miUserId).maybeSingle();
             miNombre = (perf && perf.nombre) || '';
 
             // Encabezado y menú
@@ -228,6 +265,10 @@
 
             document.getElementById('cargando').style.display = 'none';
             document.getElementById('formCard').style.display = 'block';
+
+            // Sección de Mercado Pago
+            renderMP(!!(perf && perf.mp_conectado));
+            document.getElementById('mpCard').style.display = 'block';
         }
 
         async function guardar() {
