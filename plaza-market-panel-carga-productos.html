@@ -352,7 +352,7 @@
                     </div>
 
                     <div id="seccionMedidas">
-                        <label>📦 Medidas del paquete</label>
+                        <div class="mb-4"><label>🔖 Código de barras (opcional)</label><input type="text" id="productoEan" inputmode="numeric" placeholder="Ej: 7791234567890" class="mt-2"><p class="text-xs text-gray-400 mt-1">¿Tu producto tiene código de barras? Cargalo y aparecés en más búsquedas. Si es hecho a mano o no tiene, dejalo vacío.</p></div><label>📦 Medidas del paquete</label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
                             <div>
                                 <label class="medida-label">Alto (cm)</label>
@@ -972,6 +972,7 @@
                     alto_cm: esProducto ? altoCm : null, ancho_cm: esProducto ? anchoCm : null,
                     largo_cm: esProducto ? largoCm : null, peso_gr: esProducto ? pesoGr : null
                 };
+                if (esProducto) { try { const _e=(document.getElementById('productoEan')?.value||'').trim(); if(_e) datos.ean=_e; } catch(e){} }
 
                 let error;
                 if (editandoId) {
