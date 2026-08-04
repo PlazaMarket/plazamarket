@@ -1005,6 +1005,7 @@
             document.getElementById('paqueteAncho').value = '';
             document.getElementById('paqueteLargo').value = '';
             document.getElementById('paquetePeso').value = '';
+            document.getElementById('productoEan').value = '';
             document.getElementById('costoEnvio').value = '';
             document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
             document.getElementById('categoryBlockWarning').classList.add('hidden');
@@ -1040,6 +1041,7 @@
                 document.getElementById('paqueteAncho').value = p.ancho_cm ? String(p.ancho_cm) : '';
                 document.getElementById('paqueteLargo').value = p.largo_cm ? String(p.largo_cm) : '';
                 document.getElementById('paquetePeso').value = p.peso_gr ? String(p.peso_gr) : '';
+                document.getElementById('productoEan').value = p.ean || '';
                 document.getElementById('costoEnvio').value = p.costo_envio ? formatearPesos(p.costo_envio) : '';
                 const quien = p.envio_gratis ? 'vendedor' : 'comprador';
                 document.querySelector(`input[name="quienPagaEnvio"][value="${quien}"]`).checked = true;
