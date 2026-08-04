@@ -373,6 +373,7 @@
                 <p class="modal-precio" id="modalPrecio"></p>
                 <a id="modalBtnComprar" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.85rem;border-radius:0.75rem;margin-bottom:0.6rem;background:linear-gradient(135deg,#059669 0%,#10B981 100%);box-shadow:0 4px 20px rgba(16,185,129,0.35);">🛒 Comprar ahora</a>
                 <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
+                <a id="modalBtnReportar" href="#" onclick="reportarPublicacion();return false;" style="display:block;text-align:center;padding:0.5rem;margin-top:0.4rem;font-size:0.78rem;color:#9CA3AF;text-decoration:underline;">🚩 Reportar esta publicación</a>
                 <div id="modalAgotado" class="agotado-cartel hidden">Este producto está agotado por ahora.</div>
                 <div id="modalEnvio" class="card-envio" style="margin-top:0.4rem;"></div>
                 <p id="modalStock" class="text-sm" style="margin-top:0.4rem;color:rgba(226,232,240,0.6);"></p>
@@ -1031,6 +1032,20 @@
                 html += '<p class="preg-vacio">Todavía no hay preguntas. ¡Hacé la primera!</p>';
             }
             cont.innerHTML = html;
+        }
+
+        async function reportarPublicacion(){
+            if(!sesionActiva){ alert('Para reportar necesitás una cuenta (es gratis). Te llevamos al registro.'); window.location.href='plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html'; return; }
+            const prod = fichaProd; if(!prod) return;
+            const motivo = prompt('¿Por qué reportás esta publicación? Ej: producto falsificado, precio engañoso, contenido prohibido, estafa.');
+            if(motivo===null) return;
+            const m=(motivo||'').trim();
+            if(m.length<3){ alert('Contanos brevemente el motivo para poder revisarlo.'); return; }
+            try{
+                const { error } = await db.from('pm_reportes').insert({ producto_id: prod.id, autor_id: miUserId, autor_nombre: (miNombre||'Alguien'), motivo: m.slice(0,500) });
+                if(error) throw error;
+                alert('✅ Gracias. Recibimos tu reporte y nuestro equipo lo va a revisar.');
+            }catch(e){ console.error('reporte', e); alert('No se pudo enviar el reporte. Proba de nuevo en un momento.'); }
         }
 
         async function enviarPregunta(pid) {
