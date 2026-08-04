@@ -184,6 +184,35 @@
             render();
         }
 
+        let _calif = { orden:null, prod:null, vend:null, ep:0, ev:0 };
+        function pintarEstrellas(id, n){
+            const cont=document.getElementById(id); let h='';
+            for(let i=1;i<=5;i++){ h+='<span data-n="'+i+'" style="color:'+(i<=n?'#FBBF24':'#475569')+';">★</span>'; }
+            cont.innerHTML=h;
+            cont.querySelectorAll('span').forEach(s=>s.onclick=()=>{ const v=+s.dataset.n; if(id==='starsProd'){ _calif.ep=v; pintarEstrellas('starsProd',v);} else { _calif.ev=v; pintarEstrellas('starsVend',v);} });
+        }
+        function abrirCalificar(ordenId, prodId, vendId){
+            _calif={orden:ordenId, prod:(prodId||null), vend:vendId, ep:0, ev:0};
+            document.getElementById('califComentario').value='';
+            document.getElementById('califAviso').textContent='';
+            pintarEstrellas('starsProd',0); pintarEstrellas('starsVend',0);
+            document.getElementById('califOverlay').style.display='flex';
+        }
+        function cerrarCalificar(){ document.getElementById('califOverlay').style.display='none'; }
+        async function enviarCalificacion(){
+            const av=document.getElementById('califAviso');
+            if(!_calif.ep || !_calif.ev){ av.textContent='Poné las estrellas al producto y al vendedor.'; return; }
+            const com=(document.getElementById('califComentario').value||'').trim().slice(0,600);
+            try{
+                const { error } = await db.from('pm_reviews').insert({ orden_id:_calif.orden, producto_id:_calif.prod, vendedor_id:_calif.vend, autor_id:miUserId, autor_nombre:(window._miNombre||'Alguien'), estrellas_producto:_calif.ep, estrellas_vendedor:_calif.ev, comentario:com||null });
+                if(error) throw error;
+                if(!window._reviewed) window._reviewed=new Set();
+                window._reviewed.add(_calif.orden);
+                cerrarCalificar(); render();
+                alert('✅ ¡Gracias por tu calificación!');
+            }catch(e){ console.error('review',e); av.textContent='No se pudo enviar (¿quizás ya calificaste esta compra?).'; }
+        }
+
         async function cargar() {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
@@ -222,6 +251,9 @@
             }
             window._prodMap = prodMap;
             window._persMap = persMap;
+            window._miNombre = miNombre;
+            const { data: revData } = await db.from('pm_reviews').select('orden_id').eq('autor_id', miUserId);
+            window._reviewed = new Set((revData||[]).map(r => r.orden_id));
 
             render();
         }
@@ -249,6 +281,11 @@
                 if (tieneEnvio) montoLinea += ' + envío ' + pesos(o.envio_monto) + ' = ' + pesos(Number(o.monto) + Number(o.envio_monto));
             }
             const despachoLinea = esVenta ? lineaDespacho(o) : '';
+            const calificarLinea = (!esVenta && o.estado === 'pagado')
+                ? ((window._reviewed && window._reviewed.has(o.id))
+                    ? '<p class="op-fecha" style="color:#6EE7B7;">✅ Ya calificaste esta compra</p>'
+                    : '<button type="button" onclick="abrirCalificar(' + o.id + ',' + (o.producto_id || 'null') + ',\'' + o.vendedor_id + '\')" style="margin-top:.45rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#FBBF24;border-radius:.5rem;padding:.35rem .7rem;font-size:.8rem;cursor:pointer;">⭐ Calificar compra</button>')
+                : '';
 
             return '<div class="op">' +
                 foto +
@@ -257,6 +294,7 @@
                     '<p class="op-meta">' + rolTxt + '</p>' +
                     '<p class="op-monto">' + montoLinea + '</p>' +
                     despachoLinea +
+                    calificarLinea +
                     '<p class="op-fecha">' + cuando(o.creado_en) + '</p>' +
                 '</div>' +
                 '<div style="flex-shrink:0;">' + badgeEstado(o.estado) + '</div>' +
@@ -278,5 +316,21 @@
 
         cargar();
     </script>
+    <div id="califOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:1rem;max-width:420px;width:100%;padding:1.25rem;color:#e2e8f0;">
+        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:.2rem;">Calificá tu compra</h3>
+        <p style="font-size:.8rem;color:#94a3b8;margin-bottom:.9rem;">Tu opinión ayuda a otros compradores.</p>
+        <p style="font-size:.85rem;margin-bottom:.25rem;">Producto</p>
+        <div id="starsProd" style="font-size:1.7rem;letter-spacing:.2rem;cursor:pointer;margin-bottom:.7rem;"></div>
+        <p style="font-size:.85rem;margin-bottom:.25rem;">Vendedor</p>
+        <div id="starsVend" style="font-size:1.7rem;letter-spacing:.2rem;cursor:pointer;margin-bottom:.7rem;"></div>
+        <textarea id="califComentario" rows="3" placeholder="Contá tu experiencia (opcional)" style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:.6rem;color:#e2e8f0;padding:.5rem;font-size:.85rem;"></textarea>
+        <p id="califAviso" style="font-size:.8rem;color:#fca5a5;min-height:1rem;margin:.4rem 0;"></p>
+        <div style="display:flex;gap:.6rem;margin-top:.3rem;">
+          <button type="button" onclick="cerrarCalificar()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,.2);color:#e2e8f0;border-radius:.6rem;padding:.55rem;cursor:pointer;">Cancelar</button>
+          <button type="button" onclick="enviarCalificacion()" style="flex:2;background:linear-gradient(135deg,#059669,#10B981);border:none;color:#fff;border-radius:.6rem;padding:.55rem;font-weight:600;cursor:pointer;">Enviar</button>
+        </div>
+      </div>
+    </div>
 </body>
 </html>
