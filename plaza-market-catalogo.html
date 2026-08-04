@@ -371,6 +371,7 @@
                 <p class="card-cat" id="modalCat"></p>
                 <h2 class="text-xl font-bold text-white mb-1" id="modalTitulo"></h2>
                 <p class="modal-precio" id="modalPrecio"></p>
+                <div id="modalRating" style="font-size:.85rem;margin:.15rem 0 .35rem;"></div>
                 <a id="modalBtnComprar" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.85rem;border-radius:0.75rem;margin-bottom:0.6rem;background:linear-gradient(135deg,#059669 0%,#10B981 100%);box-shadow:0 4px 20px rgba(16,185,129,0.35);">🛒 Comprar ahora</a>
                 <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
                 <a id="modalBtnReportar" href="#" onclick="reportarPublicacion();return false;" style="display:block;text-align:center;padding:0.5rem;margin-top:0.4rem;font-size:0.78rem;color:#9CA3AF;text-decoration:underline;">🚩 Reportar esta publicación</a>
@@ -723,6 +724,25 @@
             </div>`;
         }
 
+        async function cargarRating(p){
+            const cont = document.getElementById('modalRating');
+            if(!cont) return;
+            cont.innerHTML = '';
+            try{
+                const [rp, rv] = await Promise.all([
+                    db.from('pm_reviews').select('estrellas_producto').eq('producto_id', p.id),
+                    db.from('pm_reviews').select('estrellas_vendedor').eq('vendedor_id', p.usuario_id)
+                ]);
+                const dp = rp.data||[], dv = rv.data||[];
+                const prom = (arr,c)=> arr.length ? (arr.reduce((s,x)=>s+(x[c]||0),0)/arr.length) : null;
+                const ap = prom(dp,'estrellas_producto'), av = prom(dv,'estrellas_vendedor');
+                let h='';
+                if(ap!==null) h += '<span style="color:#FBBF24;">★</span> '+ap.toFixed(1)+' <span style="color:#94a3b8;">('+dp.length+') producto</span>';
+                if(av!==null) h += (h?' · ':'')+'<span style="color:#FBBF24;">★</span> '+av.toFixed(1)+' <span style="color:#94a3b8;">('+dv.length+') vendedor</span>';
+                cont.innerHTML = h || '<span style="color:#64748b;">Sin calificaciones todavía</span>';
+            }catch(e){ cont.innerHTML=''; }
+        }
+
         async function abrirModal(id) {
             const p = todos.find(x => x.id === id);
             if (!p) return;
@@ -737,7 +757,7 @@
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
 
             const envioEl = document.getElementById('modalEnvio');
-            fichaProd = p; envioElegido = null; envioModo = 'ninguno';
+            fichaProd = p; envioElegido = null; envioModo = 'ninguno'; cargarRating(p);
             if (esServicio) {
                 const sena = Math.round(Number(p.precio || 0) * SENA);
                 envioEl.className = 'card-envio servicio';
