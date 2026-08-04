@@ -284,7 +284,7 @@
             const calificarLinea = (!esVenta && o.estado === 'pagado')
                 ? ((window._reviewed && window._reviewed.has(o.id))
                     ? '<p class="op-fecha" style="color:#6EE7B7;">✅ Ya calificaste esta compra</p>'
-                    : '<button type="button" onclick="abrirCalificar(' + o.id + ',' + (o.producto_id || 'null') + ',\'' + o.vendedor_id + '\')" style="margin-top:.45rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#FBBF24;border-radius:.5rem;padding:.35rem .7rem;font-size:.8rem;cursor:pointer;">⭐ Calificar compra</button>')
+                    : '<button type="button" onclick="abrirCalificar(\'' + o.id + '\',' + (o.producto_id || 'null') + ',\'' + o.vendedor_id + '\')" style="margin-top:.45rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#FBBF24;border-radius:.5rem;padding:.35rem .7rem;font-size:.8rem;cursor:pointer;">⭐ Calificar compra</button>')
                 : '';
 
             return '<div class="op">' +
