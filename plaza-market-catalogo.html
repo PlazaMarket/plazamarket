@@ -372,6 +372,7 @@
                 <h2 class="text-xl font-bold text-white mb-1" id="modalTitulo"></h2>
                 <p class="modal-precio" id="modalPrecio"></p>
                 <div id="modalRating" style="font-size:.85rem;margin:.15rem 0 .35rem;"></div>
+                <div id="modalResenas" style="margin-top:.2rem;"></div>
                 <a id="modalBtnComprar" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.85rem;border-radius:0.75rem;margin-bottom:0.6rem;background:linear-gradient(135deg,#059669 0%,#10B981 100%);box-shadow:0 4px 20px rgba(16,185,129,0.35);">🛒 Comprar ahora</a>
                 <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
                 <a id="modalBtnReportar" href="#" onclick="reportarPublicacion();return false;" style="display:block;text-align:center;padding:0.5rem;margin-top:0.4rem;font-size:0.78rem;color:#9CA3AF;text-decoration:underline;">🚩 Reportar esta publicación</a>
@@ -724,7 +725,23 @@
             </div>`;
         }
 
-        async function cargarRating(p){
+        async function cargarResenas(p){
+            const cont=document.getElementById('modalResenas');
+            if(!cont) return;
+            cont.innerHTML='';
+            try{
+                const { data } = await db.from('pm_reviews').select('estrellas_producto,comentario,autor_nombre,creado_en').eq('producto_id', p.id).not('comentario','is',null).order('creado_en',{ascending:false}).limit(8);
+                const rows=(data||[]).filter(r=>(r.comentario||'').trim());
+                if(!rows.length) return;
+                const est=n=>'★'.repeat(Number(n)||0)+'☆'.repeat(5-(Number(n)||0));
+                const limpio=s=>String(s||'').replace(/[<>]/g,'');
+                let h='<p style="font-size:.8rem;color:#94a3b8;margin:.6rem 0 .3rem;">Opiniones de compradores</p>';
+                h+=rows.map(r=>'<div style="border-top:1px solid rgba(255,255,255,.08);padding:.4rem 0;"><span style="color:#FBBF24;font-size:.8rem;">'+est(r.estrellas_producto)+'</span> <strong style="font-size:.8rem;">'+limpio(r.autor_nombre||'Comprador')+'</strong><br><span style="font-size:.82rem;color:#cbd5e1;">'+limpio(r.comentario)+'</span></div>').join('');
+                cont.innerHTML=h;
+            }catch(e){ cont.innerHTML=''; }
+        }
+
+                async function cargarRating(p){
             const cont = document.getElementById('modalRating');
             if(!cont) return;
             cont.innerHTML = '';
@@ -757,7 +774,7 @@
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
 
             const envioEl = document.getElementById('modalEnvio');
-            fichaProd = p; envioElegido = null; envioModo = 'ninguno'; cargarRating(p);
+            fichaProd = p; envioElegido = null; envioModo = 'ninguno'; cargarRating(p); cargarResenas(p);
             if (esServicio) {
                 const sena = Math.round(Number(p.precio || 0) * SENA);
                 envioEl.className = 'card-envio servicio';
