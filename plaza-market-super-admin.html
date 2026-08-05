@@ -152,6 +152,26 @@
                     </table>
                 </div>
             </section>
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">🚩 Reportes de publicaciones</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Motivo</th><th>Reportó</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaReportes"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">⭐ Reseñas</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Producto</th><th>Vendedor</th><th>Comentario</th><th>Autor</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaResenas"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -242,12 +262,14 @@
         }
 
         async function cargarTodo() {
-            const [perfiles, productos, consultas, admins, ordenes] = await Promise.all([
+            const [perfiles, productos, consultas, admins, ordenes, reportes, reviews] = await Promise.all([
                 db.from('pm_perfiles').select('*').order('creado_en', { ascending: false }),
                 db.from('productos').select('*').order('creado_en', { ascending: false }),
                 db.from('pm_consultas').select('*', { count: 'exact', head: true }),
                 db.from('pm_admins').select('id'),
-                db.from('pm_ordenes').select('*').order('creado_en', { ascending: false })
+                db.from('pm_ordenes').select('*').order('creado_en', { ascending: false }),
+                db.from('pm_reportes').select('*').order('creado_en', { ascending: false }),
+                db.from('pm_reviews').select('*').order('creado_en', { ascending: false })
             ]);
 
             const us = perfiles.data || [];
@@ -288,8 +310,31 @@
             renderZonas(us, publicaronSet, compradoresSet);
             renderProductos(ps);
             renderUsuarios(us);
+            renderReportes(reportes.data || []);
+            renderResenas(reviews.data || []);
         }
 
+        function fechaCorta(x){ try{ return new Date(x).toLocaleDateString('es-AR'); }catch(e){ return ''; } }
+        function estrellas(n){ n=Number(n)||0; return '★'.repeat(n)+'☆'.repeat(5-n); }
+        function renderReportes(rows){
+            const tb=document.getElementById('tablaReportes');
+            if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="empty">No hay reportes. 👍</td></tr>'; return; }
+            tb.innerHTML=rows.map(r=>{
+                const pr=(prodMap[r.producto_id]||{});
+                const quien=((perfilMap[r.autor_id]||{}).nombre)||r.autor_nombre||'Alguien';
+                return '<tr><td>'+escaparHtml(pr.titulo||('#'+r.producto_id))+'</td><td>'+escaparHtml(r.motivo||'')+'</td><td>'+escaparHtml(quien)+'</td><td>'+fechaCorta(r.creado_en)+'</td></tr>';
+            }).join('');
+        }
+        function renderResenas(rows){
+            const tb=document.getElementById('tablaResenas');
+            if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="empty">Todavía no hay reseñas.</td></tr>'; return; }
+            tb.innerHTML=rows.map(r=>{
+                const pr=(prodMap[r.producto_id]||{});
+                const vend=((perfilMap[r.vendedor_id]||{}).nombre)||'Vendedor';
+                const autor=((perfilMap[r.autor_id]||{}).nombre)||r.autor_nombre||'Alguien';
+                return '<tr><td>'+escaparHtml(pr.titulo||('#'+r.producto_id))+'</td><td>'+estrellas(r.estrellas_producto)+'</td><td>'+escaparHtml(vend)+' '+estrellas(r.estrellas_vendedor)+'</td><td>'+escaparHtml(r.comentario||'')+'</td><td>'+escaparHtml(autor)+'</td><td>'+fechaCorta(r.creado_en)+'</td></tr>';
+            }).join('');
+        }
         function renderZonas(us, publicaronSet, compradoresSet) {
             const tb = document.getElementById('tablaZonas');
             if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
