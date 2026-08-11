@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B1120">
+<title>Plaza Market — Botón de Arrepentimiento</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0B1120; color:#E2E8F0; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; line-height:1.65; padding:2.5rem 1.25rem 4rem; }
+  .wrap { max-width:640px; margin:0 auto; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:.4rem; }
+  .pin { width:34px; height:34px; background:linear-gradient(160deg,#60a5fa,#6366f1); border-radius:50% 50% 50% 6px; transform:rotate(-45deg); position:relative; }
+  .pin::after { content:''; position:absolute; top:9px; left:9px; width:12px; height:12px; background:#0B1120; border-radius:50%; }
+  h1 { font-size:1.7rem; font-weight:800; color:#fff; }
+  h1 span { background:linear-gradient(90deg,#7dd3fc,#a78bfa); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:#fff; font-size:1.1rem; font-weight:700; margin-top:.5rem; }
+  p.info { color:#cbd5e1; margin:.7rem 0; }
+  .legal { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:12px; padding:1rem 1.2rem; margin:1.2rem 0 1.6rem; color:#cbd5e1; font-size:.92rem; }
+  label { display:block; color:#e2e8f0; font-weight:600; font-size:.92rem; margin:.9rem 0 .35rem; }
+  input, textarea { width:100%; background:#0f172a; border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:.7rem .8rem; color:#e2e8f0; font-size:1rem; font-family:inherit; }
+  input:focus, textarea:focus { outline:none; border-color:#7dd3fc; }
+  textarea { min-height:80px; resize:vertical; }
+  .req { color:#f87171; }
+  button { width:100%; margin-top:1.3rem; background:linear-gradient(160deg,#60a5fa,#6366f1); border:none; color:#fff; font-weight:800; font-size:1rem; padding:.85rem; border-radius:11px; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  .aviso { margin-top:1rem; padding:.9rem 1.1rem; border-radius:11px; font-size:.93rem; display:none; }
+  .aviso.ok { background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.4); color:#bbf7d0; display:block; }
+  .aviso.err { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fca5a5; display:block; }
+  a { color:#7dd3fc; }
+  .foot { margin-top:2.2rem; color:#64748b; font-size:.85rem; border-top:1px solid rgba(255,255,255,.08); padding-top:1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="pin"></div><h1>Plaza <span>Market</span></h1></div>
+  <p class="sub">🔘 Botón de Arrepentimiento</p>
+
+  <p class="info">¿Te arrepentiste de una compra? Es tu derecho y no tenés que dar explicaciones. Completá este formulario y nos ponemos en contacto para gestionar la devolución.</p>
+
+  <div class="legal">
+    Según la <strong>Ley 24.240 de Defensa del Consumidor</strong> (art. 34) y la <strong>Resolución 424/2020</strong>, tenés <strong>10 días corridos desde que recibiste el producto</strong> para revocar la compra, sin costo ni justificación. Dentro de las <strong>24 horas</strong> de tu solicitud te enviaremos un <strong>código de revocación</strong> por correo.
+  </div>
+
+  <form id="formArrep" onsubmit="enviarArrep(event)">
+    <label>Nombre y apellido <span class="req">*</span></label>
+    <input id="aNombre" type="text" maxlength="80" required placeholder="Tu nombre completo">
+
+    <label>Tu correo electrónico <span class="req">*</span></label>
+    <input id="aEmail" type="email" maxlength="120" required placeholder="Para enviarte el código de revocación">
+
+    <label>N° de operación o compra <span style="color:#94a3b8;font-weight:400;">(si lo tenés a mano)</span></label>
+    <input id="aOperacion" type="text" maxlength="60" placeholder="Opcional">
+
+    <label>¿Qué producto compraste? <span class="req">*</span></label>
+    <input id="aProducto" type="text" maxlength="120" required placeholder="Nombre del producto y, si sabés, el vendedor">
+
+    <label>Comentario <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+    <textarea id="aMotivo" maxlength="500" placeholder="No es obligatorio dar un motivo. Si querés contarnos algo, escribilo acá."></textarea>
+
+    <button type="submit" id="btnArrep">Enviar solicitud de arrepentimiento</button>
+  </form>
+
+  <div id="avisoArrep" class="aviso"></div>
+
+  <div class="foot">
+    Plaza Market — plazamarket.com.ar · <a href="plaza-market-catalogo.html">Volver al catálogo</a><br>
+    Cualquier duda: <a href="mailto:plaza.market26@gmail.com">plaza.market26@gmail.com</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function enviarArrep(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnArrep');
+    const aviso = document.getElementById('avisoArrep');
+    const datos = {
+      nombre: (document.getElementById('aNombre').value || '').trim().slice(0, 80),
+      email: (document.getElementById('aEmail').value || '').trim().slice(0, 120),
+      operacion: (document.getElementById('aOperacion').value || '').trim().slice(0, 60),
+      producto: (document.getElementById('aProducto').value || '').trim().slice(0, 120),
+      motivo: (document.getElementById('aMotivo').value || '').trim().slice(0, 500)
+    };
+    if (!datos.nombre || !datos.email || !datos.producto) {
+      aviso.className = 'aviso err';
+      aviso.textContent = 'Completá tu nombre, tu email y el producto.';
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    aviso.className = 'aviso'; aviso.textContent = '';
+    const codigo = 'ARR-' + Date.now().toString(36).toUpperCase();
+    try {
+      const { error } = await db.from('pm_arrepentimientos').insert({ ...datos, codigo: codigo });
+      if (error) throw error;
+      document.getElementById('formArrep').style.display = 'none';
+      aviso.className = 'aviso ok';
+      aviso.innerHTML = '✅ <strong>¡Recibimos tu solicitud!</strong><br>Tu código de solicitud es <strong>' + codigo + '</strong>. Dentro de las 24 hs te enviamos por correo el código de revocación y los pasos para la devolución. Gracias por avisarnos. 💙';
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Enviar solicitud de arrepentimiento';
+      aviso.className = 'aviso err';
+      aviso.innerHTML = 'No pudimos registrar la solicitud automáticamente. Escribinos directo a <a href="mailto:plaza.market26@gmail.com?subject=Arrepentimiento%20de%20compra">plaza.market26@gmail.com</a> con tu nombre, email y el producto — vale igual como notificación.';
+      console.error(err);
+    }
+  }
+</script>
+</body>
+</html>
