@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ar.com.plazamarket.twa",
+    "sha256_cert_fingerprints": ["91:7A:D2:13:A9:48:40:64:19:F0:9A:76:61:03:FD:78:D3:35:F7:79:AB:7A:23:FB:C3:EA:9C:07:8C:17:7C:10"]
+  }
+}]
