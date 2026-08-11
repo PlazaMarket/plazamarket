@@ -445,7 +445,7 @@
         const SENA = 0.20; // seña del 20% para reservar un servicio
         // ⚙️ Calculadora de envío de Correo. Dejar en FALSE hasta tener las credenciales de Correo (Fase B).
         //    Cuando estén cargadas en Supabase, poner true y el comprador ve el envío en la ficha.
-        const ENVIO_ACTIVO = false;
+        const ENVIO_ACTIVO = true;
 
         function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
@@ -798,7 +798,15 @@
                 const medidasHtml = tieneMedidas
                     ? `<p class="envio-paquete">📦 Paquete: ${p.alto_cm} × ${p.ancho_cm} × ${p.largo_cm} cm · ${(Number(p.peso_gr) / 1000).toLocaleString('es-AR')} kg</p>`
                     : '';
-                if (ENVIO_ACTIVO) {
+                if (p.envio_gratis) {
+                    envioEl.innerHTML = `
+                    <div class="envio-box">
+                        <p class="envio-tit">🚚 ¡ENVÍO GRATIS!</p>
+                        <p class="envio-sub">Este vendedor se hace cargo del envío. Vos pagás solo el producto. 🎉</p>
+                        <p class="envio-tip">📦 El vendedor despacha dentro de las 48 a 72 hs de tu compra.</p>
+                        ${medidasHtml}
+                    </div>`;
+                } else if (ENVIO_ACTIVO && tieneMedidas) {
                     envioEl.innerHTML = `
                     <div class="envio-box">
                         <p class="envio-tit">🚚 CALCULÁ TU ENVÍO</p>
@@ -967,7 +975,7 @@
             const cont = document.getElementById('envioResultado');
             const cp = ((document.getElementById('cotizCP') || {}).value || '').replace(/\D/g, '');
             if (cp.length < 4) { cont.innerHTML = '<p class="cotiz-error">Poné un código postal válido (4 números).</p>'; return; }
-            cont.innerHTML = '<p class="cotiz-cargando">Consultando el correo…</p>';
+            cont.innerHTML = '<p class="cotiz-cargando">Calculando el envío…</p>';
             envioElegido = null; envioModo = 'ninguno'; actualizarBotonComprar();
             try {
                 const { data, error } = await db.functions.invoke('cc-cotizar-envio', { body: { producto_id: p.id, cp_destino: cp } });
@@ -990,7 +998,7 @@
             envioModo = 'ok';
             const cont = document.getElementById('envioResultado');
             cont.innerHTML = opciones.map(o => {
-                const dias = (o.dias_min && o.dias_max) ? (o.dias_min + ' a ' + o.dias_max + ' días hábiles') : 'Correo Argentino';
+                const dias = (o.dias_min && o.dias_max) ? (o.dias_min + ' a ' + o.dias_max + ' días hábiles') : 'Pickit';
                 const nombre = String(o.nombre || '').replace(/'/g, '');
                 return `<button type="button" class="cotiz-op" onclick="elegirEnvio(this, '${o.tipo}', ${o.precio}, '${nombre}')">
                         <span class="cotiz-op-nom">${o.tipo === 'S' ? '🏢' : '🏠'} ${o.nombre}</span>
