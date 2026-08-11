@@ -376,18 +376,18 @@
 
                     <div id="desgloseComision" class="desglose hidden"></div>
 
-                    <div id="seccionEnvio" class="hidden">
-                        <label>¿Cuánto sale mandar este producto?</label>
+                    <div id="seccionEnvio">
+                        <label>🚚 Envío del producto</label>
                         <div class="mt-2">
-                            <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)">
-                            <p class="envio-hint">Lo que te cobra el correo. Plaza Market <strong>no cobra comisión sobre el envío</strong>: ese dinero va entero al correo.</p>
+                            <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)" style="display:none">
+                            <p class="envio-hint">El costo del envío lo calcula <strong>automáticamente Pickit</strong> según el código postal del comprador. Plaza Market <strong>no cobra comisión sobre el envío</strong>.</p>
 
                             <div class="envio-opciones">
                                 <label class="envio-opcion elegida" id="opcionComprador">
                                     <input type="radio" name="quienPagaEnvio" value="comprador" checked onchange="actualizarDesglose()">
                                     <div>
                                         <span class="opcion-titulo">El envío lo paga el comprador</span>
-                                        <span class="opcion-detalle" id="txtOpcionComprador">Completá el precio y el costo del envío para ver las cuentas.</span>
+                                        <span class="opcion-detalle" id="txtOpcionComprador">El costo de Pickit se suma al total que paga el comprador.</span>
                                     </div>
                                 </label>
 
@@ -395,7 +395,7 @@
                                     <input type="radio" name="quienPagaEnvio" value="vendedor" onchange="actualizarDesglose()">
                                     <div>
                                         <span class="opcion-titulo">Envío gratis (el envío lo pagás vos)</span>
-                                        <span class="opcion-detalle" id="txtOpcionVendedor">Completá el precio y el costo del envío para ver las cuentas.</span>
+                                        <span class="opcion-detalle" id="txtOpcionVendedor">Vos te hacés cargo del envío; el comprador no paga envío.</span>
                                     </div>
                                 </label>
                             </div>
@@ -570,7 +570,7 @@
                 <div class="desglose-fila total"><span><strong>Te quedan</strong></span><span>${formatearPesos(neto)}</span></div>`;
                 nota = `La comisión de Plaza Market se calcula <strong>solo sobre el precio, nunca sobre el envío</strong>.
                     <br><br>${notaMp}
-                    <br><br><strong>El envío se coordina con el comprador por chat</strong> (hasta que integremos el correo y se pueda calcular por provincia).`;
+                    <br><br>El <strong>envío se calcula automáticamente con Pickit</strong> según el código postal del comprador y se suma al total.`;
             }
 
             caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
@@ -593,6 +593,7 @@
             document.getElementById('seccionEnvio').classList.add('hidden');
             document.getElementById('seccionStock').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('seccionMedidas').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
             document.getElementById('labelPrecio').textContent =
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
             cargarCategorias(tipo);
@@ -923,7 +924,7 @@
             const category = document.getElementById('productCategory').value;
             const price = valorPrecio();
             const esProducto = tipoActual === 'producto';
-            const envioGratis = false;   // el envío se coordina por chat hasta integrar el correo
+            const envioGratis = envioLoPagaVendedor();   // el envío se coordina por chat hasta integrar el correo
             const costoEnvio = 0;
 
             if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
