@@ -319,6 +319,7 @@
                 <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
                 <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
                 <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
+                <a href="plaza-market-preguntas-frecuentes.html" class="menu-item">❓ Preguntas frecuentes</a>
                 <a href="#" class="menu-item" onclick="activarNotificaciones(event)">🔔 Activar notificaciones</a>
                 <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
                 <a href="#" class="menu-item menu-salir" id="menuSalir" onclick="salir(event)">Salir</a>
@@ -411,6 +412,17 @@
         <button class="install-main" onclick="instalarApp()"><span class="install-emoji">📲</span> <span id="installText">Llevate Plaza Market a tu celu</span></button>
         <button class="install-x" onclick="cerrarInstall()" aria-label="Cerrar">✕</button>
     </div>
+
+    <footer style="max-width:760px;margin:2.5rem auto 5.5rem;padding:1.4rem 1.25rem 0;border-top:1px solid rgba(255,255,255,.08);text-align:center;font-size:.82rem;color:#64748b;line-height:1.9;">
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem 1.1rem;justify-content:center;margin-bottom:.6rem;">
+        <a href="plaza-market-preguntas-frecuentes.html" style="color:#7dd3fc;text-decoration:none;">Preguntas frecuentes</a>
+        <a href="plaza-market-terminos-condiciones.html" style="color:#7dd3fc;text-decoration:none;">Términos y Condiciones</a>
+        <a href="plaza-market-privacidad.html" style="color:#7dd3fc;text-decoration:none;">Política de Privacidad</a>
+        <a href="plaza-market-arrepentimiento.html" style="color:#7dd3fc;text-decoration:none;">🔘 Botón de Arrepentimiento</a>
+        <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener" style="color:#7dd3fc;text-decoration:none;">Defensa del Consumidor</a>
+      </div>
+      <div>Plaza Market · Hecho por y para emprendedores argentinos 🇦🇷</div>
+    </footer>
 
     <script>
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
