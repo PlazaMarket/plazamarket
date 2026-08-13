@@ -433,6 +433,29 @@
             <section class="glass-card p-6 sm:p-7">
                 <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
                 <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
+                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1rem 1.1rem;margin-bottom:1.3rem;">
+                    <p style="color:#fff;font-weight:700;font-size:.98rem;margin-bottom:.15rem;">💲 Ajustá tus precios</p>
+                    <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.85rem;">Aumentá o cambiá precios en masa. <strong style="color:#cbd5e1;">Solo se modifica el precio</strong> — el resto queda intacto.</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.7rem;">
+                        <select id="apTipo" style="background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                            <option value="pct">Porcentaje %</option>
+                            <option value="monto">Monto $</option>
+                        </select>
+                        <input id="apValor" type="number" placeholder="Ej: 10" style="width:110px;background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                        <select id="apAlcance" onfocus="poblarAlcancePrecios()" style="background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                            <option value="todos">Todos mis productos</option>
+                        </select>
+                        <button type="button" onclick="ajusteRapido()" style="background:linear-gradient(160deg,#60a5fa,#6366f1);border:none;color:#fff;font-weight:700;border-radius:9px;padding:.5rem 1.1rem;font-size:.88rem;cursor:pointer;">Aplicar</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;">
+                        <button type="button" onclick="descargarPlanilla()" style="background:#1e293b;border:1px solid rgba(255,255,255,.14);color:#7dd3fc;font-weight:600;border-radius:9px;padding:.5rem .9rem;font-size:.85rem;cursor:pointer;">⬇️ Descargar planilla (Excel)</button>
+                        <input type="file" id="planillaInput" accept=".xlsx,.xls" style="display:none" onchange="subirPlanilla(event)">
+                        <button type="button" onclick="document.getElementById('planillaInput').click()" style="background:#1e293b;border:1px solid rgba(255,255,255,.14);color:#a78bfa;font-weight:600;border-radius:9px;padding:.5rem .9rem;font-size:.85rem;cursor:pointer;">⬆️ Subir planilla con precios nuevos</button>
+                    </div>
+                    <p style="color:#64748b;font-size:.75rem;margin-top:.55rem;">En la planilla, editá <strong style="color:#94a3b8;">solo la columna "Precio"</strong>. Las demás no se tocan (aunque las cambies, el sistema las ignora).</p>
+                    <div id="preciosAviso" style="margin-top:.5rem;font-size:.85rem;"></div>
+                </div>
+                
                 <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
             </section>
 
@@ -1161,5 +1184,98 @@
 <!-- Tour guiado Plaza Market -->
 <script>window.PM_TOUR={"key":"pm_tour_vender_v1","steps":[{"sel":null,"title":"🛒 Publicá tu primer producto","text":"Te muestro los pasos para cargar una publicación. Podés saltarlo cuando quieras."},{"sel":"#seccionCobros","title":"💳 Cobrá con Mercado Pago","text":"Conectá tu Mercado Pago (una sola vez) para cobrar tus ventas directo en tu cuenta."},{"sel":"#btnTipoProducto","title":"📦 ¿Producto o Servicio?","text":"Elegí qué vas a publicar: un producto físico o un servicio."},{"sel":"#productTitle","title":"📝 Título y descripción","text":"Poné un título claro y contá bien qué vendés."},{"sel":"#productCategory","title":"🏷️ Rubro, precio y stock","text":"Elegí el rubro y cargá el precio y cuántas unidades tenés."},{"sel":"#seccionMedidas","title":"📏 Medidas y peso","text":"Si es producto físico, cargá alto, ancho, largo y peso del paquete. Es obligatorio: sirve para calcular el envío. El código de barras es opcional."},{"sel":"#dropzone","title":"📸 Subí buenas fotos","text":"Fotos con luz y fondo limpio. ¡Las fotos venden!"},{"sel":"#publishBtn","title":"✅ Publicá","text":"Tocá Publicar. La revisión es automática, no tenés que esperar aprobación. ¿Volver a ver esto? Tocá el botón ❓ Ayuda."}]};</script>
 <script src="pm-tour.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ===== Gestion de precios en masa - Plaza Market (solo cambia el PRECIO) ===== */
+function _pmProds(){ return (typeof misProductos!=='undefined' && misProductos ? misProductos : []).filter(function(p){ return p && p.id!=null && p.precio!=null; }); }
+function poblarAlcancePrecios(){
+  var sel=document.getElementById('apAlcance'); if(!sel) return;
+  var vistas={}, cats=[];
+  _pmProds().forEach(function(p){ if(!vistas[p.categoria]){ vistas[p.categoria]=1; cats.push(p.categoria); } });
+  var opts='<option value="todos">Todos mis productos</option>';
+  cats.forEach(function(c){ var nom=(typeof CATEGORY_LABELS!=='undefined' && CATEGORY_LABELS[c])?CATEGORY_LABELS[c]:c; opts+='<option value="cat:'+c+'">'+nom+'</option>'; });
+  var actual=sel.value; sel.innerHTML=opts; if(actual) sel.value=actual;
+}
+async function ajusteRapido(){
+  var aviso=document.getElementById('preciosAviso');
+  var tipo=document.getElementById('apTipo').value;
+  var valor=Number(document.getElementById('apValor').value);
+  var alcance=document.getElementById('apAlcance').value;
+  if(typeof usuarioActual==='undefined' || !usuarioActual){ aviso.style.color='#fca5a5'; aviso.textContent='Iniciá sesión para ajustar precios.'; return; }
+  if(!valor || isNaN(valor)){ aviso.style.color='#fca5a5'; aviso.textContent='Poné un número (por ejemplo 10).'; return; }
+  var objetivo=_pmProds();
+  if(alcance.indexOf('cat:')===0){ var c=alcance.slice(4); objetivo=objetivo.filter(function(p){ return p.categoria===c; }); }
+  if(!objetivo.length){ aviso.style.color='#fca5a5'; aviso.textContent='No hay productos en ese alcance.'; return; }
+  function nuevo(p){ var np = (tipo==='pct') ? Math.round(Number(p.precio)*(1+valor/100)) : Math.round(Number(p.precio)+valor); return np>0?np:1; }
+  var signo=valor>=0?'+':'';
+  var detalle=(tipo==='pct') ? (signo+valor+'%') : (signo+'$'+Math.abs(valor));
+  if(!confirm('Vas a ajustar el precio de '+objetivo.length+' producto(s) ('+detalle+'). Solo se cambia el precio. ¿Confirmás?')) return;
+  aviso.style.color='#93c5fd'; aviso.textContent='Actualizando precios...';
+  var ok=0, err=0;
+  for(var i=0;i<objetivo.length;i++){
+    var p=objetivo[i], np=nuevo(p);
+    var res=await supabaseClient.from('productos').update({ precio: np }).eq('id', p.id).eq('usuario_id', usuarioActual.id);
+    if(res.error) err++; else { ok++; p.precio=np; }
+  }
+  aviso.style.color= err ? '#fca5a5' : '#86efac';
+  aviso.textContent='✅ '+ok+' precio(s) actualizados'+(err?(' · '+err+' con error'):'')+'.';
+  if(typeof cargarMisProductos==='function') cargarMisProductos();
+}
+function descargarPlanilla(){
+  var aviso=document.getElementById('preciosAviso');
+  if(typeof XLSX==='undefined'){ aviso.style.color='#fca5a5'; aviso.textContent='Esperá unos segundos y probá de nuevo (cargando Excel).'; return; }
+  var prods=_pmProds();
+  if(!prods.length){ aviso.style.color='#fca5a5'; aviso.textContent='No tenés productos para exportar.'; return; }
+  var rows=prods.map(function(p){
+    var nom=(typeof CATEGORY_LABELS!=='undefined' && CATEGORY_LABELS[p.categoria])?CATEGORY_LABELS[p.categoria]:p.categoria;
+    return { 'ID (NO EDITAR)': p.id, 'Producto (no editar)': p.titulo, 'Categoria (no editar)': nom, 'Precio': Number(p.precio)||0, 'Stock (no editar)': (p.stock==null?'':p.stock) };
+  });
+  var ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:34},{wch:20},{wch:12},{wch:14}];
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Precios');
+  XLSX.writeFile(wb, 'precios-plaza-market.xlsx');
+  aviso.style.color='#93c5fd'; aviso.textContent='Planilla descargada. Editá SOLO la columna "Precio" y volvé a subirla.';
+}
+async function subirPlanilla(ev){
+  var aviso=document.getElementById('preciosAviso');
+  var file=ev.target.files && ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  if(typeof usuarioActual==='undefined' || !usuarioActual){ aviso.style.color='#fca5a5'; aviso.textContent='Iniciá sesión para subir precios.'; return; }
+  aviso.style.color='#93c5fd'; aviso.textContent='Leyendo la planilla...';
+  try{
+    var buf=await file.arrayBuffer();
+    var wb=XLSX.read(buf,{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    var mios={}; _pmProds().forEach(function(p){ mios[String(p.id)]=Number(p.precio); });
+    var cambios=[];
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i], keys=Object.keys(r);
+      var idKey=keys.find(function(k){ return /^\s*id/i.test(k); });
+      var precioKey=keys.find(function(k){ return /precio/i.test(k); });
+      if(!idKey || !precioKey) continue;
+      var id=String(r[idKey]).trim();
+      var precio=Math.round(Number(String(r[precioKey]).replace(/[^0-9.-]/g,'')));
+      if(!(id in mios)) continue;
+      if(!(precio>0)) continue;
+      if(mios[id]===precio) continue;
+      cambios.push({ id: Number(id), precio: precio });
+    }
+    if(!cambios.length){ aviso.style.color='#fca5a5'; aviso.textContent='No encontré precios nuevos válidos (revisá que hayas cambiado la columna "Precio").'; return; }
+    if(!confirm('Vas a actualizar el precio de '+cambios.length+' producto(s). Solo se cambia el precio. ¿Confirmás?')){ aviso.textContent=''; return; }
+    aviso.style.color='#93c5fd'; aviso.textContent='Actualizando precios...';
+    var ok=0, err=0;
+    for(var j=0;j<cambios.length;j++){
+      var c=cambios[j];
+      var res=await supabaseClient.from('productos').update({ precio: c.precio }).eq('id', c.id).eq('usuario_id', usuarioActual.id);
+      if(res.error) err++; else ok++;
+    }
+    aviso.style.color= err ? '#fca5a5' : '#86efac';
+    aviso.textContent='✅ '+ok+' precio(s) actualizados desde la planilla'+(err?(' · '+err+' con error'):'')+'.';
+    if(typeof cargarMisProductos==='function') cargarMisProductos();
+  }catch(e){ aviso.style.color='#fca5a5'; aviso.textContent='No pude leer la planilla. Subí el .xlsx que descargaste de acá.'; }
+}
+</script>
+
 </body>
 </html>
