@@ -456,6 +456,18 @@
                     <div id="preciosAviso" style="margin-top:.5rem;font-size:.85rem;"></div>
                 </div>
                 
+                <div id="panelImportAdmin" style="display:none; margin:0 0 1.25rem; padding:1rem 1.1rem; border:1px solid rgba(96,165,250,.35); border-radius:14px; background:rgba(30,58,138,.12);">
+  <h3 style="font-weight:800;color:#fff;margin-bottom:.2rem;font-size:1rem;">&#128229; Importar cat&aacute;logo <span style="font-size:.7rem;font-weight:600;color:#93c5fd;">&middot; solo ArPerfum/admin</span></h3>
+  <p style="font-size:.85rem;color:#cbd5e1;margin-bottom:.7rem;">Sub&iacute; tu planilla de perfumes (export&aacute; tu Google Sheet: Archivo &rarr; Descargar &rarr; Microsoft Excel .xlsx). Detecto solo las columnas por su nombre. Ves un <b>preview</b> antes de crear nada. Consejo: prob&aacute; primero con 2-3 filas.</p>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+    <label style="background:#1e40af;color:#fff;padding:.5rem .8rem;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700;">&#128196; Elegir archivo (.xlsx/.csv)
+      <input id="importFile" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importLeerArchivo(event)">
+    </label>
+    <button type="button" onclick="importDescargarPlantilla()" style="background:transparent;border:1px solid rgba(255,255,255,.25);color:#cbd5e1;padding:.5rem .8rem;border-radius:9px;font-size:.85rem;cursor:pointer;">Descargar plantilla vac&iacute;a</button>
+  </div>
+  <div id="importPreview" style="margin-top:.8rem;"></div>
+</div>
+
                 <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
             </section>
 
@@ -1295,6 +1307,148 @@ async function subirPlanilla(ev){
     if(typeof cargarMisProductos==='function') cargarMisProductos();
   }catch(e){ aviso.style.color='#fca5a5'; aviso.textContent='No pude leer la planilla. Subí el .xlsx que descargaste de acá.'; }
 }
+</script>
+
+<script>
+/* ============================================================
+   IMPORTADOR DE CATALOGO (solo ArPerfum / admin via pm_admins)
+   Sube Excel/CSV -> preview -> crea productos en masa.
+   Reusa el mismo insert que publishProduct + medidasPorCategoria.
+   ============================================================ */
+(function(){
+  var CATS_VALIDAS = ['perfumeria','cosmetica','indumentaria','construccion','pintura','calzado'];
+  window.__importRows = [];
+  window.__esAdmin = false;
+
+  // Mostrar el panel solo si el usuario esta en pm_admins
+  var _tries = 0;
+  var _iv = setInterval(async function(){
+    _tries++;
+    try {
+      if (typeof usuarioActual !== 'undefined' && usuarioActual && usuarioActual.id && typeof supabaseClient !== 'undefined') {
+        clearInterval(_iv);
+        var r = await supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle();
+        if (r && r.data) {
+          window.__esAdmin = true;
+          var p = document.getElementById('panelImportAdmin');
+          if (p) p.style.display = 'block';
+        }
+      }
+    } catch (e) {}
+    if (_tries > 40) clearInterval(_iv);
+  }, 500);
+
+  function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+
+  function _mapCols(headers){
+    var map = {};
+    headers.forEach(function(h,i){
+      var n = _norm(h);
+      if (map.titulo==null && /(titulo|nombre|producto|articulo|perfume)/.test(n)) map.titulo=i;
+      else if (map.precio==null && /(precio|valor|importe|monto)/.test(n)) map.precio=i;
+      else if (map.stock==null && /(stock|cantidad|unidades|cant)/.test(n)) map.stock=i;
+      else if (map.descripcion==null && /(descripcion|detalle|nota)/.test(n)) map.descripcion=i;
+      else if (map.categoria==null && /(categoria|rubro)/.test(n)) map.categoria=i;
+      else if (map.imagen==null && /(imagen|foto|url|link)/.test(n)) map.imagen=i;
+    });
+    return map;
+  }
+
+  function _precio(v){
+    var s = String(v==null?'':v).replace(/[^\d.,]/g,'');
+    if (s.indexOf(',')>-1 && s.indexOf('.')>-1) s = s.replace(/\./g,'').replace(',','.');
+    else if (s.indexOf(',')>-1) s = s.replace(',','.');
+    return Math.round(parseFloat(s)||0);
+  }
+
+  window.importDescargarPlantilla = function(){
+    try {
+      var ws = XLSX.utils.aoa_to_sheet([
+        ['Titulo','Descripcion','Categoria','Precio','Stock','Imagen (URL)'],
+        ['Perfume Ejemplo 100ml','Eau de parfum, fragancia amaderada','perfumeria',35000,5,'']
+      ]);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Catalogo');
+      XLSX.writeFile(wb, 'plantilla-catalogo-plaza-market.xlsx');
+    } catch(e){ if(typeof showToast==='function') showToast('No pude generar la plantilla','error'); }
+  };
+
+  window.importLeerArchivo = function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var prev = document.getElementById('importPreview');
+    var rd = new FileReader();
+    rd.onload = function(e){
+      try {
+        var wb = XLSX.read(e.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        if (!aoa.length) { prev.innerHTML = '<p style="color:#fca5a5">La planilla esta vacia.</p>'; return; }
+        var headers = aoa[0];
+        var map = _mapCols(headers);
+        if (map.titulo==null || map.precio==null) {
+          prev.innerHTML = '<p style="color:#fca5a5">No encontre columnas de <b>Titulo</b> y <b>Precio</b>. Revisa los encabezados (ej: Titulo, Precio).</p>';
+          return;
+        }
+        var rows = [], saltadas = 0;
+        for (var i=1; i<aoa.length; i++) {
+          var r = aoa[i];
+          if (!r || r.every(function(c){ return String(c).trim()===''; })) continue;
+          var titulo = String(r[map.titulo]==null?'':r[map.titulo]).trim();
+          var precio = _precio(r[map.precio]);
+          if (!titulo || !(precio>0)) { saltadas++; continue; }
+          var categoria = map.categoria!=null ? _norm(r[map.categoria]) : '';
+          if (CATS_VALIDAS.indexOf(categoria)===-1) categoria = 'perfumeria';
+          var stock = map.stock!=null ? (parseInt(r[map.stock],10)||1) : 1;
+          var descripcion = map.descripcion!=null ? String(r[map.descripcion]==null?'':r[map.descripcion]).trim() : '';
+          var imagen = map.imagen!=null ? String(r[map.imagen]==null?'':r[map.imagen]).trim() : '';
+          rows.push({ titulo: titulo.slice(0,120), descripcion: descripcion.slice(0,1000), categoria: categoria, precio: precio, stock: stock, imagen: imagen });
+        }
+        window.__importRows = rows;
+        var esc = (typeof escaparHtml==='function') ? escaparHtml : function(x){ return String(x); };
+        var fp = (typeof formatearPesos==='function') ? formatearPesos : function(x){ return '$'+x; };
+        var html = '<p style="color:#bbf7d0;font-size:.85rem;">Detecte <b>'+rows.length+'</b> productos para crear.' + (saltadas ? ' <span style="color:#fcd34d">('+saltadas+' filas salteadas por falta de titulo o precio)</span>' : '') + '</p>';
+        html += '<div style="max-height:230px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px;margin:.5rem 0;"><table style="width:100%;font-size:.78rem;border-collapse:collapse;">';
+        html += '<tr style="position:sticky;top:0;background:#0f172a;color:#93c5fd;"><th style="text-align:left;padding:.35rem .5rem;">Titulo</th><th style="padding:.35rem;">Cat.</th><th style="padding:.35rem;">Precio</th><th style="padding:.35rem;">Stock</th><th style="padding:.35rem;">Foto</th></tr>';
+        rows.slice(0,50).forEach(function(p){
+          html += '<tr style="border-top:1px solid rgba(255,255,255,.06);color:#e2e8f0;"><td style="padding:.3rem .5rem;">'+esc(p.titulo)+'</td><td style="padding:.3rem;text-align:center;">'+p.categoria+'</td><td style="padding:.3rem;text-align:right;">'+fp(p.precio)+'</td><td style="padding:.3rem;text-align:center;">'+p.stock+'</td><td style="padding:.3rem;text-align:center;">'+(p.imagen?'✅':'—')+'</td></tr>';
+        });
+        html += '</table></div>';
+        if (rows.length) html += '<button type="button" onclick="importConfirmar()" style="background:linear-gradient(160deg,#22c55e,#16a34a);border:none;color:#fff;font-weight:800;padding:.6rem 1rem;border-radius:10px;cursor:pointer;">✅ Confirmar e importar '+rows.length+' productos</button>';
+        prev.innerHTML = html;
+      } catch(err){ prev.innerHTML = '<p style="color:#fca5a5">No pude leer el archivo: '+err.message+'</p>'; }
+    };
+    rd.readAsArrayBuffer(f);
+  };
+
+  window.importConfirmar = async function(){
+    if (!window.__esAdmin) { if(typeof showToast==='function') showToast('Solo disponible para admin','error'); return; }
+    var rows = window.__importRows || [];
+    if (!rows.length) return;
+    if (typeof usuarioActual==='undefined' || !usuarioActual || !usuarioActual.id) { if(typeof showToast==='function') showToast('Ingresa con tu cuenta','error'); return; }
+    if (!confirm('Vas a crear '+rows.length+' productos en tu catalogo. Continuar?')) return;
+    var prev = document.getElementById('importPreview');
+    var ok=0, fail=0;
+    for (var k=0; k<rows.length; k++) {
+      var p = rows[k];
+      try {
+        var md = (typeof medidasPorCategoria==='function') ? medidasPorCategoria(p.categoria) : {alto:15,ancho:25,largo:30,peso:1000};
+        var datos = {
+          titulo: p.titulo, descripcion: p.descripcion || p.titulo, categoria: p.categoria, precio: p.precio,
+          fotos: p.imagen ? [p.imagen] : [], tipo: 'producto', envio_gratis: false, costo_envio: 0, stock: p.stock,
+          alto_cm: md.alto, ancho_cm: md.ancho, largo_cm: md.largo, peso_gr: md.peso, usuario_id: usuarioActual.id
+        };
+        var res = await supabaseClient.from('productos').insert([datos]);
+        if (res && res.error) throw res.error;
+        ok++;
+      } catch(e){ fail++; }
+      prev.innerHTML = '<p style="color:#93c5fd">Importando... '+(ok+fail)+'/'+rows.length+' ('+ok+' ok, '+fail+' con error)</p>';
+    }
+    prev.innerHTML = '<p style="color:#bbf7d0;font-weight:700;">✅ Listo: '+ok+' productos creados'+(fail?(', '+fail+' con error'):'')+'.</p>';
+    if (typeof cargarMisProductos==='function') cargarMisProductos();
+    if (typeof showToast==='function') showToast('Importacion terminada: '+ok+' creados','success');
+  };
+})();
 </script>
 
 </body>
