@@ -79,7 +79,9 @@
             background: rgba(11,17,32,0.8); color: #E2E8F0; font-size: 0.66rem; font-weight: 700;
             padding: 0.2rem 0.5rem; border-radius: 999px;
         }
-        .badge-agotado {
+        .badge-usado { display:inline-block; background:rgba(251,191,36,.15); color:#fbbf24; border:1px solid rgba(251,191,36,.4); font-size:.62rem; font-weight:700; padding:1px 7px; border-radius:999px; margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.03em; }
+    .badge-marca { display:inline-block; background:rgba(148,163,184,.12); color:#cbd5e1; font-size:.62rem; font-weight:600; padding:1px 7px; border-radius:999px; margin:0 0 .35rem .3rem; }
+    .badge-agotado {
             position: absolute; top: 0.5rem; left: 0.5rem;
             background: rgba(239,68,68,0.92); color: white; font-size: 0.66rem; font-weight: 800;
             padding: 0.25rem 0.6rem; border-radius: 999px; letter-spacing: 0.03em;
@@ -677,7 +679,8 @@
                 <div class="card-img-wrap">${badgeAgot}${img}</div>
                 <div class="card-body">
                     <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
-                    <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
+                    ${(p.condicion === 'usado' ? '<span class="badge-usado">Usado</span>' : '') + (p.marca ? '<span class="badge-marca">'+escaparHtml(p.marca)+'</span>' : '')}
+                        <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
                     <p class="card-desc">${desc}${desc.length >= 100 ? '…' : ''}</p>
                     <p class="card-precio">${pesos(p.precio)}</p>
                     ${envio}
