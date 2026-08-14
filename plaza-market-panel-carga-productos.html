@@ -1221,13 +1221,17 @@ async function publishProduct() {
 /* ===== Gestion de precios en masa - Plaza Market (solo cambia el PRECIO) ===== */
 function _pmProds(){ return (typeof misProductos!=='undefined' && misProductos ? misProductos : []).filter(function(p){ return p && p.id!=null && p.precio!=null; }); }
 function poblarAlcancePrecios(){
-  var sel=document.getElementById('apAlcance'); if(!sel) return;
-  var vistas={}, cats=[];
-  _pmProds().forEach(function(p){ if(!vistas[p.categoria]){ vistas[p.categoria]=1; cats.push(p.categoria); } });
-  var opts='<option value="todos">Todos mis productos</option>';
-  cats.forEach(function(c){ var nom=(typeof CATEGORY_LABELS!=='undefined' && CATEGORY_LABELS[c])?CATEGORY_LABELS[c]:c; opts+='<option value="cat:'+c+'">'+nom+'</option>'; });
-  var actual=sel.value; sel.innerHTML=opts; if(actual) sel.value=actual;
-}
+    var sel=document.getElementById('apAlcance'); if(!sel) return;
+    var prods=[]; try{ if(typeof misProductos!=='undefined' && Array.isArray(misProductos)) prods=misProductos; }catch(e){}
+    var cats=[]; prods.forEach(function(p){ if(p && p.categoria && cats.indexOf(p.categoria)===-1) cats.push(p.categoria); });
+    if(!cats.length){ cats=['perfumeria','cosmetica','indumentaria','construccion','pintura','calzado']; }
+    var labels=(typeof CATEGORY_LABELS!=='undefined')?CATEGORY_LABELS:{};
+    var val=sel.value;
+    var html='<option value="todos">Todos mis productos</option>';
+    cats.forEach(function(cat){ html+='<option value="cat:'+cat+'">Categor\u00eda: '+(labels[cat]||cat)+'</option>'; });
+    sel.innerHTML=html;
+    if(val){ for(var o=0;o<sel.options.length;o++){ if(sel.options[o].value===val){ sel.value=val; break; } } }
+  }
 async function ajusteRapido(){
   var aviso=document.getElementById('preciosAviso');
   var tipo=document.getElementById('apTipo').value;
