@@ -338,8 +338,8 @@
                         <div>
                             <label>Categoría</label>
                             <select id="productCategory" class="mt-2"></select>
-                <div class="mb-4"><label>Marca <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
-                    <input type="text" id="productMarca" placeholder="Ej: Lattafa, Afnan, Rasasi..." class="mt-2" maxlength="60"></div>
+                <div class="mb-4"><label>Marca <span style="color:#f87171;">*</span> <span style="color:#94a3b8;font-weight:400;font-size:.8rem;">(tu marca o subcategoría)</span></label>
+                    <input type="text" id="productMarca" list="marcasList" autocomplete="off" placeholder="Ej: Lattafa, Afnan, Rasasi..." class="mt-2" maxlength="60"><datalist id="marcasList"></datalist></div>
                 <div class="mb-4"><label>Condición</label>
                     <select id="productCondicion" class="mt-2"><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
                         </div>
@@ -986,6 +986,7 @@ async function publishProduct() {
 
             if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
+        if (!(document.getElementById('productMarca') && document.getElementById('productMarca').value.trim())) { showToast('❌ Ingresá la marca (ej: Lattafa, Afnan)', 'error'); return; }
             if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
 
             const stockRaw = soloDigitos(document.getElementById('productStock').value);
@@ -1481,5 +1482,8 @@ async function subirPlanilla(ev){
 })();
 </script>
 
+<script>
+(function(){var t=0,iv=setInterval(async function(){t++;if(typeof supabaseClient!=='undefined'){clearInterval(iv);try{var r=await supabaseClient.from('productos').select('marca').not('marca','is',null).limit(500);var dl=document.getElementById('marcasList');if(!dl||!r||!r.data)return;var seen={},html='';r.data.forEach(function(x){var m=(x.marca||'').trim();if(m&&!seen[m.toLowerCase()]){seen[m.toLowerCase()]=1;html+='<option value="'+m.replace(/"/g,'&quot;')+'"></option>';}});dl.innerHTML=html;}catch(e){}}if(t>40)clearInterval(iv);},500);})();
+</script>
 </body>
 </html>
