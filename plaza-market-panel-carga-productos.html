@@ -1223,6 +1223,7 @@ async function publishProduct() {
 <script>window.PM_TOUR={"key":"pm_tour_vender_v1","steps":[{"sel":null,"title":"🛒 Publicá tu primer producto","text":"Te muestro los pasos para cargar una publicación. Podés saltarlo cuando quieras."},{"sel":"#seccionCobros","title":"💳 Cobrá con Mercado Pago","text":"Conectá tu Mercado Pago (una sola vez) para cobrar tus ventas directo en tu cuenta."},{"sel":"#btnTipoProducto","title":"📦 ¿Producto o Servicio?","text":"Elegí qué vas a publicar: un producto físico o un servicio."},{"sel":"#productTitle","title":"📝 Título y descripción","text":"Poné un título claro y contá bien qué vendés."},{"sel":"#productCategory","title":"🏷️ Rubro, precio y stock","text":"Elegí el rubro y cargá el precio y cuántas unidades tenés."},{"sel":"#seccionMedidas","title":"📏 Medidas y peso","text":"Si es producto físico, cargá alto, ancho, largo y peso del paquete. Es obligatorio: sirve para calcular el envío. El código de barras es opcional."},{"sel":"#dropzone","title":"📸 Subí buenas fotos","text":"Fotos con luz y fondo limpio. ¡Las fotos venden!"},{"sel":"#publishBtn","title":"✅ Publicá","text":"Tocá Publicar. La revisión es automática, no tenés que esperar aprobación. ¿Volver a ver esto? Tocá el botón ❓ Ayuda."}]};</script>
 <script src="pm-tour.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 /* ===== Gestion de precios en masa - Plaza Market (solo cambia el PRECIO) ===== */
 function _pmProds(){ return (typeof misProductos!=='undefined' && misProductos ? misProductos : []).filter(function(p){ return p && p.id!=null && p.precio!=null; }); }
@@ -1264,20 +1265,39 @@ async function ajusteRapido(){
   if(typeof cargarMisProductos==='function') cargarMisProductos();
 }
 function descargarPlanilla(){
-  var aviso=document.getElementById('preciosAviso');
-  if(typeof XLSX==='undefined'){ aviso.style.color='#fca5a5'; aviso.textContent='Esperá unos segundos y probá de nuevo (cargando Excel).'; return; }
-  var prods=_pmProds();
-  if(!prods.length){ aviso.style.color='#fca5a5'; aviso.textContent='No tenés productos para exportar.'; return; }
-  var rows=prods.map(function(p){
-    var nom=(typeof CATEGORY_LABELS!=='undefined' && CATEGORY_LABELS[p.categoria])?CATEGORY_LABELS[p.categoria]:p.categoria;
-    return { 'ID (NO EDITAR)': p.id, 'Producto (no editar)': p.titulo, 'Categoria (no editar)': nom, 'Precio': Number(p.precio)||0, 'Stock (no editar)': (p.stock==null?'':p.stock) };
-  });
-  var ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:14},{wch:34},{wch:20},{wch:12},{wch:14}];
-  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Precios');
-  XLSX.writeFile(wb, 'precios-plaza-market.xlsx');
-  aviso.style.color='#93c5fd'; aviso.textContent='Planilla descargada. Editá SOLO la columna "Precio" y volvé a subirla.';
-}
+    try{
+      var prods = _pmProds();
+      if(typeof ExcelJS === 'undefined'){ if(typeof showToast==='function') showToast('El generador esta cargando, proba de nuevo en 2 segundos','error'); return; }
+      var labels = (typeof CATEGORY_LABELS!=='undefined') ? CATEGORY_LABELS : {};
+      var wb = new ExcelJS.Workbook();
+      var ws = wb.addWorksheet('Precios');
+      ws.columns = [
+        { header:'ID (NO EDITAR)', key:'id', width:14 },
+        { header:'Producto (no editar)', key:'prod', width:34 },
+        { header:'Categoria (no editar)', key:'cat', width:18 },
+        { header:'Precio', key:'precio', width:14 },
+        { header:'Stock (no editar)', key:'stock', width:16 }
+      ];
+      prods.forEach(function(p){ ws.addRow({ id:p.id, prod:p.titulo, cat:(labels[p.categoria]||p.categoria), precio:p.precio, stock:p.stock }); });
+      ws.getRow(1).font = { bold:true };
+      ws.getColumn(4).eachCell(function(cell, rowNumber){
+        if(rowNumber > 1){
+          cell.protection = { locked:false };
+          cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFF6D6' } };
+        }
+      });
+      ws.protect('', { selectLockedCells:true, selectUnlockedCells:true }).then(function(){
+        return wb.xlsx.writeBuffer();
+      }).then(function(buf){
+        var blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'precios-plaza-market.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      }).catch(function(e){ if(typeof showToast==='function') showToast('No pude generar la planilla: '+e.message,'error'); });
+    }catch(e){ if(typeof showToast==='function') showToast('No pude generar la planilla: '+e.message,'error'); }
+  }
 async function subirPlanilla(ev){
   var aviso=document.getElementById('preciosAviso');
   var file=ev.target.files && ev.target.files[0]; ev.target.value='';
