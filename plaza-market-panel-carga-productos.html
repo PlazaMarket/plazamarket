@@ -941,7 +941,25 @@
         // ============================================================
         // PUBLICAR
         // ============================================================
-        async function publishProduct() {
+        // ============================================================
+// MEDIDAS POR DEFECTO SEGUN CATEGORIA (para no medir a mano)
+// El vendedor puede cargar las suyas; si las deja vacias, usamos estas.
+// ============================================================
+function medidasPorCategoria(cat) {
+  const c = String(cat || '').toLowerCase();
+  const has = (...w) => w.some(x => c.includes(x));
+  if (has('perfum','cosmet','estetic','maquill','belleza','fragan','skincare')) return { alto:12, ancho:10, largo:8,  peso:400 };
+  if (has('calzado','zapat','bota','zapatilla','sneaker'))                        return { alto:13, ancho:22, largo:33, peso:900 };
+  if (has('indument','ropa','remera','textil','moda','vestir','pantalon'))        return { alto:5,  ancho:25, largo:30, peso:400 };
+  if (has('joy','bijou','accesor','anillo','aros','pulsera','reloj de puls'))     return { alto:6,  ancho:12, largo:15, peso:250 };
+  if (has('libro','papel','revista','cuaderno','libreria'))                       return { alto:4,  ancho:18, largo:25, peso:500 };
+  if (has('electro','tecno','celular','audio','gadget','tecnolog'))               return { alto:12, ancho:20, largo:25, peso:800 };
+  if (has('juguet','jugueter','peluche'))                                         return { alto:20, ancho:25, largo:30, peso:700 };
+  if (has('hogar','deco','bazar','cocina','mueble','canast','jardin','reloj'))    return { alto:25, ancho:30, largo:35, peso:1500 };
+  return { alto:15, ancho:25, largo:30, peso:1000 }; // universal (cualquier cosa)
+}
+
+async function publishProduct() {
             const title = document.getElementById('productTitle').value.trim();
             const description = document.getElementById('productDescription').value.trim();
             const category = document.getElementById('productCategory').value;
@@ -965,10 +983,12 @@
             const anchoCm = valorMedida('paqueteAncho');
             const largoCm = valorMedida('paqueteLargo');
             const pesoGr = valorMedida('paquetePeso');
-            if (esProducto && (!altoCm || !anchoCm || !largoCm || !pesoGr)) {
-                showToast('❌ Cargá las medidas y el peso del paquete para poder calcular el envío.', 'error');
-                return;
-            }
+            // Si es producto y faltan medidas, usamos las de la categoria (opcional para el vendedor)
+    const _md = medidasPorCategoria(category);
+    const altoF  = esProducto ? (Number(altoCm)  || _md.alto)  : null;
+    const anchoF = esProducto ? (Number(anchoCm) || _md.ancho) : null;
+    const largoF = esProducto ? (Number(largoCm) || _md.largo) : null;
+    const pesoF  = esProducto ? (Number(pesoGr)  || _md.peso)  : null;
 
             if (checkBlockedCategory(`${title} ${description}`)) {
                 showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
@@ -993,8 +1013,8 @@
                 const datos = {
                     titulo: title, descripcion: description, categoria: category, precio: price,
                     fotos: fotos, tipo: tipoActual, envio_gratis: envioGratis, costo_envio: costoEnvio, stock: stock,
-                    alto_cm: esProducto ? altoCm : null, ancho_cm: esProducto ? anchoCm : null,
-                    largo_cm: esProducto ? largoCm : null, peso_gr: esProducto ? pesoGr : null
+                    alto_cm: altoF, ancho_cm: anchoF,
+        largo_cm: largoF, peso_gr: pesoF
                 };
                 if (esProducto) { try { const _e=(document.getElementById('productoEan')?.value||'').trim(); if(_e) datos.ean=_e; } catch(e){} }
 
