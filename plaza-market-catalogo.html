@@ -681,10 +681,10 @@
                     <p class="card-desc">${desc}${desc.length >= 100 ? '…' : ''}</p>
                     <p class="card-precio">${pesos(p.precio)}</p>
                     ${envio}
-                    <div class="card-stats">
+                    ${(miUserId && p.usuario_id === miUserId) ? `<div class="card-stats">
                         <span>👁 ${p.vistas || 0} vistas</span>
                         <span>💬 ${p.consultas || 0} consultas</span>
-                    </div>
+                    </div>` : ''}
                 </div>
             </article>`;
         }
@@ -845,7 +845,7 @@
             mostrarFoto();
 
             document.getElementById('modalStats').innerHTML =
-                `<span>👁 ${p.vistas || 0} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
+                (miUserId && p.usuario_id === miUserId) ? `<span>👁 ${p.vistas || 0} vistas</span><span>💬 ${p.consultas || 0} consultas</span>` : '';
 
             // Botón consultar — según el caso
             const btn = document.getElementById('modalBtnChat');
@@ -893,7 +893,7 @@
             if (miUserId && miUserId === p.usuario_id) return;
             p.vistas = (p.vistas || 0) + 1;
             document.getElementById('modalStats').innerHTML =
-                `<span>👁 ${p.vistas} vistas</span><span>💬 ${p.consultas || 0} consultas</span>`;
+                (miUserId && p.usuario_id === miUserId) ? `<span>👁 ${p.vistas} vistas</span><span>💬 ${p.consultas || 0} consultas</span>` : '';
             db.rpc('sumar_vista', { pid: p.id }).then(({ error }) => { if (error) console.error(error); });
         }
 
