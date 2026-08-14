@@ -338,6 +338,10 @@
                         <div>
                             <label>Categoría</label>
                             <select id="productCategory" class="mt-2"></select>
+                <div class="mb-4"><label>Marca <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+                    <input type="text" id="productMarca" placeholder="Ej: Lattafa, Afnan, Rasasi..." class="mt-2" maxlength="60"></div>
+                <div class="mb-4"><label>Condición</label>
+                    <select id="productCondicion" class="mt-2"><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
                         </div>
                         <div>
                             <label id="labelPrecio">Precio Unitario (ARS)</label>
@@ -1022,8 +1026,10 @@ async function publishProduct() {
                 const nuevasUrls = await subirFotosAprobadas();
                 const fotos = fotosExistentes.concat(nuevasUrls);
 
-                const datos = {
-                    titulo: title, descripcion: description, categoria: category, precio: price,
+                const marca = (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '').trim().slice(0,60);
+    const condicion = (document.getElementById('productCondicion') ? document.getElementById('productCondicion').value : 'nuevo');
+    const datos = {
+                    titulo: title, descripcion: description, categoria: category, marca: marca || null, condicion: condicion, precio: price,
                     fotos: fotos, tipo: tipoActual, envio_gratis: envioGratis, costo_envio: costoEnvio, stock: stock,
                     alto_cm: altoF, ancho_cm: anchoF,
         largo_cm: largoF, peso_gr: pesoF
