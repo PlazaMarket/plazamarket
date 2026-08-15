@@ -1425,5 +1425,13 @@
 </script>
 <!-- === FIN TOUR === -->
 
+<style id="modoPaginaCss">
+body.modo-pagina > main { display:none !important; }
+body.modo-pagina #modalFondo { position:static !important; inset:auto !important; background:transparent !important; display:block !important; padding:0 !important; overflow:visible !important; }
+body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100% !important; margin:1rem auto !important; box-shadow:none !important; max-height:none !important; height:auto !important; }
+</style>
+<script>
+(function(){ document.addEventListener("click", function(e){ if(document.body.classList.contains("modo-pagina")){ var cerrar=e.target.closest&&e.target.closest(".modal-cerrar"); if(cerrar){ e.preventDefault(); e.stopPropagation(); location.href="plaza-market-catalogo.html"; } } }, true); var params=new URLSearchParams(location.search); var id=params.get("id"); if(id){ var t=0, iv=setInterval(function(){ t++; if(typeof abrirModal==="function"){ try{ abrirModal(parseInt(id)); }catch(e){} var mf=document.getElementById("modalFondo"); if(mf&&mf.classList.contains("abierto")){ document.body.classList.add("modo-pagina"); window.scrollTo(0,0); clearInterval(iv); } } if(t>40) clearInterval(iv); }, 250); } })();
+</script>
 </body>
 </html>
