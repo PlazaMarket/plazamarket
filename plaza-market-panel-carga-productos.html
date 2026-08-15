@@ -1285,6 +1285,9 @@ function descargarPlanilla(){
       ];
       prods.forEach(function(p){ ws.addRow({ id:p.id, prod:p.titulo, cat:(labels[p.categoria]||p.categoria), precio:p.precio, stock:p.stock }); });
       ws.getRow(1).font = { bold:true };
+      // Bloquear TODAS las celdas explicitamente (ExcelJS no lo hace por defecto)
+      ws.eachRow(function(row){ row.eachCell(function(cell){ cell.protection = { locked:true }; }); });
+      // Luego destrabar SOLO la columna Precio (datos)
       ws.getColumn(4).eachCell(function(cell, rowNumber){
         if(rowNumber > 1){
           cell.protection = { locked:false };
