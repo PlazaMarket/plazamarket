@@ -423,7 +423,7 @@
         <a href="plaza-market-arrepentimiento.html" style="color:#7dd3fc;text-decoration:none;">🔘 Botón de Arrepentimiento</a>
         <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener" style="color:#7dd3fc;text-decoration:none;">Defensa del Consumidor</a>
       </div>
-      <div>Plaza Market · Hecho por y para emprendedores argentinos 🇦🇷</div>
+      <div>© <span id="pmAnioCat">2026</span> Plaza Market · Hecho por y para emprendedores argentinos 🇦🇷</div>
     </footer>
 
     <script>
@@ -1434,5 +1434,6 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
 <script>
 (function(){ document.addEventListener("click", function(e){ if(document.body.classList.contains("modo-pagina")){ var cerrar=e.target.closest&&e.target.closest(".modal-cerrar"); if(cerrar){ e.preventDefault(); e.stopPropagation(); location.href="plaza-market-catalogo.html"; } } }, true); var params=new URLSearchParams(location.search); var id=params.get("id"); if(id){ var t=0, iv=setInterval(function(){ t++; if(typeof abrirModal==="function"){ try{ abrirModal(parseInt(id)); }catch(e){} var mf=document.getElementById("modalFondo"); if(mf&&mf.classList.contains("abierto")){ document.body.classList.add("modo-pagina"); window.scrollTo(0,0); clearInterval(iv); } } if(t>40) clearInterval(iv); }, 250); } })();
 </script>
+<script>try{var _y=document.getElementById("pmAnioCat"); if(_y) _y.textContent=new Date().getFullYear();}catch(e){}</script>
 </body>
 </html>
