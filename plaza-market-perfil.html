@@ -42,7 +42,7 @@
             background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1);
             box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem;
             display: flex; flex-direction: column; gap: 0.3rem;
-            transform: translateX(-100%); transition: transform 0.22s ease;
+            transform: translateX(-100%); transition: transform 0.22s ease; overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
         .menu-overlay.abierto .menu-panel { transform: translateX(0); }
         .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }

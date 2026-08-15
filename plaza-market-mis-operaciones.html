@@ -31,7 +31,7 @@
         .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
         .menu-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
         .menu-overlay.abierto { display: block; }
-        .menu-panel { position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px); background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; transform: translateX(-100%); transition: transform 0.22s ease; }
+        .menu-panel { position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px); background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; transform: translateX(-100%); transition: transform 0.22s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .menu-overlay.abierto .menu-panel { transform: translateX(0); }
         .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
         .menu-cerrar:hover { color: #fff; }
