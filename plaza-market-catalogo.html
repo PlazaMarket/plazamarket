@@ -628,7 +628,7 @@
             sincronizarPush();
 
             const cont = document.getElementById('contenido');
-            const { data, error } = await db.from('productos').select('*').order('creado_en', { ascending: false }).limit(300);
+            const { data, error } = await db.from('productos').select('*').neq('activa', false).order('creado_en', { ascending: false }).limit(300);
             if (error) {
                 cont.innerHTML = `<div class="estado">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">${error.message}</b><br>código: ${error.code || '—'}</div>`;
                 return;
