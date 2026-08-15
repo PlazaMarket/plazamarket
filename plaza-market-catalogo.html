@@ -675,7 +675,7 @@
             else envio = '<p class="card-envio pago" style="letter-spacing:0.03em;font-weight:700;">ENVÍO APARTE</p>';
 
             return `
-            <article class="card-producto" onclick="abrirModal(${p.id})">
+            <article class="card-producto" onclick="location.href='plaza-market-catalogo.html?id=${p.id}'">
                 <div class="card-img-wrap">${badgeAgot}${img}</div>
                 <div class="card-body">
                     <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
@@ -733,7 +733,7 @@
             const foto = (p.fotos && p.fotos[0])
                 ? `<img src="${p.fotos[0]}" alt="">`
                 : `<div class="mini-ph">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
-            return `<div class="mini-prod" onclick="abrirModal(${p.id})">
+            return `<div class="mini-prod" onclick="location.href='plaza-market-catalogo.html?id=${p.id}'">
                 ${foto}
                 <p>${escaparHtml((p.titulo || '').slice(0, 28))}</p>
                 <p class="mini-precio">${pesos(p.precio)}</p>
