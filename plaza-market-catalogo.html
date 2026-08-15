@@ -1004,7 +1004,7 @@
                 const dias = (o.dias_min && o.dias_max) ? (o.dias_min + ' a ' + o.dias_max + ' días hábiles') : 'Pickit';
                 const nombre = String(o.nombre || '').replace(/'/g, '');
                 return `<button type="button" class="cotiz-op" onclick="elegirEnvio(this, '${o.tipo}', ${o.precio}, '${nombre}')">
-                        <span class="cotiz-op-nom">${o.tipo === 'S' ? '🏢' : '🏠'} ${o.nombre}</span>
+                        <span class="cotiz-op-nom">${o.icono || '🏠'} ${o.nombre}</span>
                         <span class="cotiz-op-info">${dias}</span>
                         <span class="cotiz-op-precio">${pesos(o.precio)}</span>
                     </button>`;
