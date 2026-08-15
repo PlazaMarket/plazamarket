@@ -1231,12 +1231,15 @@ function _pmProds(){ return (typeof misProductos!=='undefined' && misProductos ?
 function poblarAlcancePrecios(){
     var sel=document.getElementById('apAlcance'); if(!sel) return;
     var prods=[]; try{ if(typeof misProductos!=='undefined' && Array.isArray(misProductos)) prods=misProductos; }catch(e){}
+    var labels=(typeof CATEGORY_LABELS!=='undefined')?CATEGORY_LABELS:{};
     var cats=[]; prods.forEach(function(p){ if(p && p.categoria && cats.indexOf(p.categoria)===-1) cats.push(p.categoria); });
     if(!cats.length){ cats=['perfumeria','cosmetica','indumentaria','construccion','pintura','calzado']; }
-    var labels=(typeof CATEGORY_LABELS!=='undefined')?CATEGORY_LABELS:{};
+    var marcas=[]; prods.forEach(function(p){ var m=(p&&p.marca?String(p.marca).trim():''); if(m && marcas.indexOf(m)===-1) marcas.push(m); });
+    marcas.sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;});
     var val=sel.value;
     var html='<option value="todos">Todos mis productos</option>';
-    cats.forEach(function(cat){ html+='<option value="cat:'+cat+'">Categor\u00eda: '+(labels[cat]||cat)+'</option>'; });
+    cats.forEach(function(cat){ html+='<option value="cat:'+cat+'">Categoría: '+(labels[cat]||cat)+'</option>'; });
+    marcas.forEach(function(m){ html+='<option value="marca:'+m.replace(/"/g,'&quot;')+'">Marca: '+m+'</option>'; });
     sel.innerHTML=html;
     if(val){ for(var o=0;o<sel.options.length;o++){ if(sel.options[o].value===val){ sel.value=val; break; } } }
   }
@@ -1253,7 +1256,8 @@ async function ajusteRapido(){
   function nuevo(p){ var np = (tipo==='pct') ? Math.round(Number(p.precio)*(1+valor/100)) : Math.round(Number(p.precio)+valor); return np>0?np:1; }
   var signo=valor>=0?'+':'';
   var detalle=(tipo==='pct') ? (signo+valor+'%') : (signo+'$'+Math.abs(valor));
-  if(!confirm('Vas a ajustar el precio de '+objetivo.length+' producto(s) ('+detalle+'). Solo se cambia el precio. ¿Confirmás?')) return;
+  if (alcance === 'todos') { objetivo = _pmProds(); detalle = 'todos'; } else if (alcance.indexOf('cat:') === 0) { var _cc = alcance.slice(4); objetivo = _pmProds().filter(function(p){ return p.categoria === _cc; }); detalle = 'categoría ' + _cc; } else if (alcance.indexOf('marca:') === 0) { var _mm = alcance.slice(6); objetivo = _pmProds().filter(function(p){ return (p.marca||'') === _mm; }); detalle = 'marca ' + _mm; }
+    if(!confirm('Vas a ajustar el precio de '+objetivo.length+' producto(s) ('+detalle+'). Solo se cambia el precio. ¿Confirmás?')) return;
   aviso.style.color='#93c5fd'; aviso.textContent='Actualizando precios...';
   var ok=0, err=0;
   for(var i=0;i<objetivo.length;i++){
