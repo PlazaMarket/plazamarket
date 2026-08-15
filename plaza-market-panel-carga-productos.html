@@ -1170,17 +1170,27 @@ async function publishProduct() {
                     <div class="flex items-center gap-3">
                         ${foto}
                         <div>
-                            <p class="product-title">${escaparHtml(p.titulo)}</p>
+                            <p class="product-title">${p.activa === false ? '<span style="display:inline-block;background:#fde68a;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">\u23f8\ufe0f Pausada</span>' : ''}${escaparHtml(p.titulo)}</p>
                             <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}${stockTxt}</p>
                             <p class="product-meta">Recibís ${formatearPesos(recibis)} · ${fecha}</p>
                             <p class="product-meta" style="color:#93C5FD;margin-top:0.3rem;">👁 ${p.vistas || 0} vistas · 💬 ${p.consultas || 0} consultas</p>
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
+                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Reactivar' : '\u23f8\ufe0f Pausar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
                     </div>
                 </div>`;
             }).join('');
+        }
+
+        async function togglePausa(id, estaPausada) {
+            const nuevoActiva = estaPausada;
+            try {
+                const { error } = await supabaseClient.from('productos').update({ activa: nuevoActiva }).eq('id', id);
+                if (error) { showToast('\u274c No se pudo: ' + error.message, 'error'); return; }
+                showToast(nuevoActiva ? '\u25b6\ufe0f Publicaci\u00f3n reactivada' : '\u23f8\ufe0f Publicaci\u00f3n pausada', 'success');
+                if (typeof cargarMisProductos === 'function') cargarMisProductos();
+            } catch (e) { showToast('\u274c Error: ' + (e.message || e), 'error'); }
         }
 
         async function eliminarEnEdicion() {
