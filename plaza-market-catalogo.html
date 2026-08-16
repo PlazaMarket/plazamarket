@@ -388,7 +388,7 @@
                     <p style="font-size:0.78rem;color:rgba(226,232,240,0.65);margin-bottom:0.2rem;">Completá tu dirección para que el vendedor pueda despacharte.</p>
                     <p style="font-size:0.72rem;color:#86efac;margin-bottom:0.6rem;">🔒 Tus datos viajan seguros y solo los usa el vendedor para enviarte tu compra.</p>
                     <input id="dirNombre" class="dir-inp" type="text" placeholder="Nombre y apellido de quien recibe">
-                    <input id="dirTel" class="dir-inp" type="tel" inputmode="numeric" placeholder="Teléfono de contacto">
+                    <input id="dirTel" class="dir-inp" type="tel" inputmode="numeric" placeholder="Teléfono (opcional)">
                     <div class="dir-fila"><input id="dirCalle" class="dir-inp" type="text" placeholder="Calle" style="flex:2;"><input id="dirAltura" class="dir-inp" type="text" inputmode="numeric" placeholder="Altura" style="flex:1;"></div>
                     <input id="dirPisoDepto" class="dir-inp" type="text" placeholder="Piso / Depto (opcional)">
                     <div class="dir-fila"><input id="dirLocalidad" class="dir-inp" type="text" placeholder="Localidad" style="flex:2;"><input id="dirCP" class="dir-inp" type="text" inputmode="numeric" maxlength="8" placeholder="CP" style="flex:1;"></div>
@@ -1018,7 +1018,7 @@
         }
         function direccionValida() {
             var d = datosDireccion();
-            return !!(d.nombre && d.telefono && d.calle && d.altura && d.localidad && d.provincia && d.cp.length >= 4);
+            return !!(d.nombre && d.calle && d.altura && d.localidad && d.provincia && d.cp.length >= 4);
         }
         function necesitaDireccionAhora() {
             var f = document.getElementById("formDireccionEnvio");
