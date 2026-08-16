@@ -1592,9 +1592,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
 (function(){
   function getCart(){ try { return JSON.parse(localStorage.getItem('pmCart')||'[]'); } catch(e){ return []; } }
   function saveCart(c){ localStorage.setItem('pmCart', JSON.stringify(c)); if(window.updateCartBadge) window.updateCartBadge(); }
-  function pesosCart(n){ return '
-</html>
-+(Number(n)||0).toLocaleString('es-AR'); }
+  function pesosCart(n){ return '$'+(Number(n)||0).toLocaleString('es-AR'); }
   window.updateCartBadge=function(){ var b=document.getElementById('cartBadge'); if(!b) return; var n=getCart().length; b.textContent=n; b.style.display=n>0?'inline-block':'none'; };
   window.addAlCarrito=function(p){
     if(!p||!p.id) return;
