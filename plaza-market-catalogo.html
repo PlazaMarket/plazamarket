@@ -1599,18 +1599,13 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var c=getCart();
     if(c.some(function(x){return x.id===p.id;})){ window.abrirCarrito(); return; }
     var foto=(p.fotos&&p.fotos.length)?p.fotos[0]:'';
-    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto' });
+    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis });
     saveCart(c); window.abrirCarrito();
   };
   window.quitarDelCarrito=function(id){ saveCart(getCart().filter(function(x){return x.id!==id;})); window.renderCarrito(); };
   window.abrirCarrito=function(){ window.renderCarrito(); var o=document.getElementById('cartOverlay'); if(o) o.classList.add('abierto'); };
   window.cerrarCarrito=function(){ var o=document.getElementById('cartOverlay'); if(o) o.classList.remove('abierto'); };
-  window.comprarGrupo=function(vendId){
-    var items=getCart().filter(function(x){return String(x.vendedorId)===String(vendId);});
-    if(!items.length) return;
-    if(items.length>1){ alert('Por ahora la compra se completa producto por producto. Te llevo al primero para finalizar. (Próximo: pagar todo junto al mismo vendedor.)'); }
-    location.href='plaza-market-catalogo.html?id='+items[0].id;
-  };
+  window.comprarGrupo=function(vendId){ if(window.abrirCheckout){ window.abrirCheckout(vendId); } };
   window.renderCarrito=function(){
     var cont=document.getElementById('cartBody'); if(!cont) return;
     var c=getCart();
@@ -1630,6 +1625,98 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     cont.querySelectorAll('[data-vend]').forEach(function(b){ b.onclick=function(){ comprarGrupo(b.getAttribute('data-vend')); }; });
   };
   if(document.readyState!=='loading') window.updateCartBadge(); else document.addEventListener('DOMContentLoaded', window.updateCartBadge);
+})();
+</script>
+
+<style>
+#checkoutOverlay .co-item{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+#checkoutOverlay .co-tit{color:#e2e8f0;font-size:0.9rem;flex:1 1 60%;}
+#checkoutOverlay .co-pre{color:#60a5fa;font-weight:700;font-size:0.9rem;}
+#checkoutOverlay .co-env{flex-basis:100%;color:#94a3b8;font-size:0.78rem;}
+#checkoutOverlay .co-label{color:#93c5fd;font-weight:700;font-size:0.85rem;margin:0.9rem 0 0.4rem;}
+#checkoutOverlay .co-calc{width:100%;padding:0.6rem;border:1px solid rgba(96,165,250,0.5);background:rgba(96,165,250,0.15);color:#dbeafe;border-radius:0.6rem;cursor:pointer;margin:0.3rem 0 0.6rem;font-weight:600;}
+#checkoutOverlay .co-total{color:#cbd5e1;text-align:right;font-size:0.9rem;line-height:1.7;margin:0.6rem 0;padding-top:0.5rem;border-top:1px solid rgba(255,255,255,0.1);}
+</style>
+<div id="checkoutOverlay" class="cart-overlay" style="z-index:70;" onclick="if(event.target===this)cerrarCheckout()">
+  <div class="cart-panel" style="width:min(96vw,480px);">
+    <div class="cart-head"><h3>🧾 Finalizar compra</h3><button class="cart-x" onclick="cerrarCheckout()">✕</button></div>
+    <div id="checkoutBody" class="cart-body"></div>
+  </div>
+</div>
+<script>
+(function(){
+  function LC(){ try{ return JSON.parse(localStorage.getItem('pmCart')||'[]'); }catch(e){ return []; } }
+  function soloDig(x){ return String(x||'').split('').filter(function(c){ return c>='0'&&c<='9'; }).join(''); }
+  function money(n){ return '$'+(Number(n)||0).toLocaleString('es-AR'); }
+  var st={ vendId:null, items:[], cp:'', envios:{}, tipos:{} };
+  window.abrirCheckout=function(vendId){
+    var items=LC().filter(function(x){ return String(x.vendedorId)===String(vendId); });
+    if(!items.length) return;
+    st={ vendId:vendId, items:items, cp:'', envios:{}, tipos:{} };
+    render();
+    var o=document.getElementById('checkoutOverlay'); if(o) o.classList.add('abierto');
+  };
+  window.cerrarCheckout=function(){ var o=document.getElementById('checkoutOverlay'); if(o) o.classList.remove('abierto'); };
+  function render(){
+    var b=document.getElementById('checkoutBody'); if(!b) return;
+    var prod=0, envio=0, listo=true;
+    var filas=st.items.map(function(it){
+      prod+=Number(it.precio)||0;
+      var eTxt;
+      if(it.envioGratis){ eTxt='🎁 Envío gratis'; }
+      else if(st.envios[it.id]!==undefined){ envio+=st.envios[it.id]; eTxt='📦 Envío: '+money(st.envios[it.id]); }
+      else { eTxt='📦 Envío a calcular'; listo=false; }
+      return '<div class="co-item"><span class="co-tit">'+(it.titulo||'')+'</span><span class="co-pre">'+money(it.precio)+'</span><span class="co-env">'+eTxt+'</span></div>';
+    }).join('');
+    var total=prod+envio;
+    b.innerHTML=
+      '<p class="co-label">🏪 '+(st.items[0].vendedorNombre||'Vendedor')+'</p>'+
+      '<div>'+filas+'</div>'+
+      '<p class="co-label">📍 Dirección de entrega</p>'+
+      '<input id="coCP" class="dir-inp" inputmode="numeric" maxlength="8" placeholder="Código postal">'+
+      '<input id="coNombre" class="dir-inp" placeholder="Nombre y apellido">'+
+      '<input id="coCalle" class="dir-inp" placeholder="Calle y altura">'+
+      '<input id="coLoc" class="dir-inp" placeholder="Localidad">'+
+      '<input id="coProv" class="dir-inp" placeholder="Provincia">'+
+      '<input id="coRef" class="dir-inp" placeholder="Entre calles / referencia (opcional)">'+
+      '<p style="font-size:0.72rem;color:#86efac;margin:0.2rem 0 0.4rem;">🔒 Tus datos viajan seguros y solo los usa el vendedor para enviarte tu compra.</p>'+
+      '<button id="coCalc" class="co-calc">Calcular envíos a ese CP</button>'+
+      '<div class="co-total">Productos: '+money(prod)+'<br>Envíos: '+money(envio)+'<br><strong>Total: '+money(total)+'</strong></div>'+
+      '<button id="coPagar" class="cart-comprar"'+(listo?'':' disabled')+' style="'+(listo?'':'opacity:.5;')+'">💳 Pagar</button>';
+    if(st.cp) document.getElementById('coCP').value=st.cp;
+    document.getElementById('coCalc').onclick=cotizar;
+    document.getElementById('coPagar').onclick=pagar;
+  }
+  function cotizar(){
+    var cp=soloDig(document.getElementById('coCP').value);
+    if(cp.length<4){ alert('Poné un código postal válido (4 números).'); return; }
+    st.cp=cp;
+    var pend=st.items.filter(function(it){ return !it.envioGratis; });
+    if(!pend.length){ render(); return; }
+    var btn=document.getElementById('coCalc'); btn.textContent='Calculando…'; btn.disabled=true;
+    var hechos=0;
+    pend.forEach(function(it){
+      db.functions.invoke('cc-cotizar-envio',{ body:{ producto_id:it.id, cp_destino:cp } }).then(function(r){
+        var d=r.data||{}; var ops=(d.ok&&d.opciones)?d.opciones:[];
+        var dom=ops.filter(function(o){ return o.tipo==='pk_dom'||String(o.tipo).indexOf('ca_D')===0; });
+        var el= dom.length? dom.sort(function(a,b){return a.precio-b.precio;})[0] : (ops[0]||null);
+        st.envios[it.id]= el? Math.round(el.precio):0; st.tipos[it.id]= el? el.tipo:null;
+      }).catch(function(){ st.envios[it.id]=0; st.tipos[it.id]=null; }).finally(function(){ hechos++; if(hechos>=pend.length) render(); });
+    });
+  }
+  function pagar(){
+    if(typeof sesionActiva!=='undefined' && !sesionActiva){ alert('Iniciá sesión (es gratis) para comprar.'); location.href='plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html'; return; }
+    var g=function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
+    var dir={ nombre:g('coNombre'), calle:g('coCalle'), localidad:g('coLoc'), provincia:g('coProv'), cp:soloDig(g('coCP')), referencia:g('coRef') };
+    if(!dir.nombre||!dir.calle||!dir.localidad||!dir.provincia||dir.cp.length<4){ alert('Completá tu dirección: nombre, calle y altura, localidad, provincia y CP.'); return; }
+    var items=st.items.map(function(it){ return { producto_id:it.id, envio_tipo: it.envioGratis?null:(st.tipos[it.id]||null) }; });
+    var btn=document.getElementById('coPagar'); btn.textContent='Preparando el pago…'; btn.disabled=true;
+    db.functions.invoke('mp-crear-pago-multi',{ body:{ items:items, cp_destino:st.cp, envio_direccion:dir } }).then(function(r){
+      var d=r.data||{};
+      if(d&&d.ok&&d.url){ location.href=d.url; }
+      else { alert('No se pudo preparar el pago. '+((d&&d.error)||'')); btn.textContent='💳 Pagar'; btn.disabled=false; }
+    }).catch(function(e){ alert('Error: '+(e.message||e)); btn.textContent='💳 Pagar'; btn.disabled=false; });
+  }
 })();
 </script>
 
