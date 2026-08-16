@@ -306,10 +306,16 @@
                     <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Catálogo</p>
                 </div>
             </a>
-            <button class="hdr-btn" onclick="window.location.href='plaza-market-mensajes.html'" aria-label="Mensajes" title="Mensajes">
-                🔔
-                <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
-            </button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button class="hdr-btn" onclick="window.location.href='plaza-market-mensajes.html'" aria-label="Mensajes" title="Mensajes">
+                    🔔
+                    <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+                </button>
+                <button class="hdr-btn" onclick="abrirCarrito()" aria-label="Carrito" title="Carrito" style="position:relative;">
+                    🛒
+                    <span id="cartBadge" class="notif-badge" style="display:none;">0</span>
+                </button>
+            </div>
         </header>
 
         <!-- Menú desplegable -->
@@ -378,6 +384,7 @@
                 <div id="modalRating" style="font-size:.85rem;margin:.15rem 0 .35rem;"></div>
                 <div id="modalResenas" style="margin-top:.2rem;"></div>
                 <a id="modalBtnComprar" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.85rem;border-radius:0.75rem;margin-bottom:0.6rem;background:linear-gradient(135deg,#059669 0%,#10B981 100%);box-shadow:0 4px 20px rgba(16,185,129,0.35);">🛒 Comprar ahora</a>
+                <a id="modalBtnCarrito" href="#" class="btn-primary" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;margin-bottom:0.6rem;background:rgba(96,165,250,0.18);border:1px solid rgba(96,165,250,0.5);color:#dbeafe;">🛒 Agregar al carrito</a>
                 <a id="modalBtnChat" href="#" class="btn-primary card-chat" style="display:block;text-align:center;padding:0.7rem;border-radius:0.75rem;">💬 Consultar al vendedor</a>
                 <a id="modalBtnReportar" href="#" onclick="reportarPublicacion();return false;" style="display:block;text-align:center;padding:0.5rem;margin-top:0.4rem;font-size:0.78rem;color:#9CA3AF;text-decoration:underline;">🚩 Reportar esta publicación</a>
                 <div id="modalAgotado" class="agotado-cartel hidden">Este producto está agotado por ahora.</div>
@@ -903,6 +910,7 @@
                 btnComprar.classList.remove('hidden');
                 btnComprar.textContent = esServicio ? '🔖 Pagar seña y reservar' : '🛒 Comprar ahora';
                 btnComprar.onclick = (e) => { e.preventDefault(); comprar(p); };
+                var btnCar = document.getElementById('modalBtnCarrito'); if (btnCar) btnCar.onclick = (e) => { e.preventDefault(); addAlCarrito(p); };
 
                 btn.classList.remove('hidden');
                 btn.textContent = esServicio ? '💬 Consultar / Reservar' : '💬 Consultar al vendedor';
@@ -1555,5 +1563,77 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
 (function(){ document.addEventListener("click", function(e){ if(document.body.classList.contains("modo-pagina")){ var cerrar=e.target.closest&&e.target.closest(".modal-cerrar"); if(cerrar){ e.preventDefault(); e.stopPropagation(); location.href="plaza-market-catalogo.html"; } } }, true); var params=new URLSearchParams(location.search); var id=params.get("id"); if(id){ var t=0, iv=setInterval(function(){ t++; if(typeof abrirModal==="function"){ try{ abrirModal(parseInt(id)); }catch(e){} var mf=document.getElementById("modalFondo"); if(mf&&mf.classList.contains("abierto")){ document.body.classList.add("modo-pagina"); window.scrollTo(0,0); clearInterval(iv); } } if(t>40) clearInterval(iv); }, 250); } })();
 </script>
 <script>try{var _y=document.getElementById("pmAnioCat"); if(_y) _y.textContent=new Date().getFullYear();}catch(e){}</script>
+<style>
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;z-index:60;}
+.cart-overlay.abierto{display:block;}
+.cart-panel{position:absolute;top:0;right:0;height:100%;width:min(92vw,420px);background:#0f172a;border-left:1px solid rgba(255,255,255,0.1);box-shadow:-8px 0 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.08);}
+.cart-head h3{color:#fff;font-size:1.1rem;font-weight:700;margin:0;}
+.cart-x{background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;}
+.cart-body{flex:1;overflow-y:auto;padding:0.9rem 1.1rem;}
+.cart-grupo{border:1px solid rgba(148,163,184,0.2);border-radius:0.75rem;padding:0.8rem;margin-bottom:0.9rem;}
+.cart-vend{color:#93c5fd;font-weight:700;font-size:0.85rem;margin:0 0 0.5rem;}
+.cart-item{display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0;border-top:1px solid rgba(255,255,255,0.05);}
+.cart-thumb{width:46px;height:46px;border-radius:0.5rem;object-fit:cover;background:#1e293b;flex-shrink:0;}
+.cart-info{flex:1;min-width:0;}
+.cart-tit{color:#e2e8f0;font-size:0.85rem;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cart-precio{color:#60a5fa;font-weight:700;font-size:0.9rem;margin:0.1rem 0 0;}
+.cart-quitar{background:none;border:none;color:#f87171;font-size:1rem;cursor:pointer;padding:0.2rem 0.4rem;}
+.cart-sub{color:#cbd5e1;text-align:right;font-size:0.85rem;margin:0.5rem 0;}
+.cart-comprar{display:block;width:100%;padding:0.7rem;border:none;border-radius:0.6rem;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;font-weight:700;cursor:pointer;}
+</style>
+<div id="cartOverlay" class="cart-overlay" onclick="if(event.target===this)cerrarCarrito()">
+  <div class="cart-panel">
+    <div class="cart-head"><h3>🛒 Tu carrito</h3><button class="cart-x" onclick="cerrarCarrito()">✕</button></div>
+    <div id="cartBody" class="cart-body"></div>
+  </div>
+</div>
+<script>
+(function(){
+  function getCart(){ try { return JSON.parse(localStorage.getItem('pmCart')||'[]'); } catch(e){ return []; } }
+  function saveCart(c){ localStorage.setItem('pmCart', JSON.stringify(c)); if(window.updateCartBadge) window.updateCartBadge(); }
+  function pesosCart(n){ return '
+</html>
++(Number(n)||0).toLocaleString('es-AR'); }
+  window.updateCartBadge=function(){ var b=document.getElementById('cartBadge'); if(!b) return; var n=getCart().length; b.textContent=n; b.style.display=n>0?'inline-block':'none'; };
+  window.addAlCarrito=function(p){
+    if(!p||!p.id) return;
+    var c=getCart();
+    if(c.some(function(x){return x.id===p.id;})){ window.abrirCarrito(); return; }
+    var foto=(p.fotos&&p.fotos.length)?p.fotos[0]:'';
+    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto' });
+    saveCart(c); window.abrirCarrito();
+  };
+  window.quitarDelCarrito=function(id){ saveCart(getCart().filter(function(x){return x.id!==id;})); window.renderCarrito(); };
+  window.abrirCarrito=function(){ window.renderCarrito(); var o=document.getElementById('cartOverlay'); if(o) o.classList.add('abierto'); };
+  window.cerrarCarrito=function(){ var o=document.getElementById('cartOverlay'); if(o) o.classList.remove('abierto'); };
+  window.comprarGrupo=function(vendId){
+    var items=getCart().filter(function(x){return String(x.vendedorId)===String(vendId);});
+    if(!items.length) return;
+    if(items.length>1){ alert('Por ahora la compra se completa producto por producto. Te llevo al primero para finalizar. (Próximo: pagar todo junto al mismo vendedor.)'); }
+    location.href='plaza-market-catalogo.html?id='+items[0].id;
+  };
+  window.renderCarrito=function(){
+    var cont=document.getElementById('cartBody'); if(!cont) return;
+    var c=getCart();
+    if(!c.length){ cont.innerHTML='<p style="color:#94a3b8;text-align:center;padding:2.5rem 0;">Tu carrito está vacío.<br>Agregá productos con el botón 🛒</p>'; return; }
+    var grupos={}; c.forEach(function(it){ var k=it.vendedorId||'x'; (grupos[k]=grupos[k]||[]).push(it); });
+    var html='';
+    Object.keys(grupos).forEach(function(k){
+      var items=grupos[k]; var sub=items.reduce(function(a,b){return a+(Number(b.precio)||0);},0);
+      html+='<div class="cart-grupo"><p class="cart-vend">🏪 '+(items[0].vendedorNombre||'Vendedor')+'</p>';
+      items.forEach(function(it){
+        html+='<div class="cart-item">'+(it.foto?('<img src="'+it.foto+'" class="cart-thumb">'):'<div class="cart-thumb"></div>')+'<div class="cart-info"><p class="cart-tit">'+(it.titulo||'')+'</p><p class="cart-precio">'+pesosCart(it.precio)+'</p></div><button class="cart-quitar" data-quitar="'+it.id+'">✕</button></div>';
+      });
+      html+='<div class="cart-sub">Subtotal: <strong>'+pesosCart(sub)+'</strong></div><button class="cart-comprar" data-vend="'+k+'">🛒 Comprar a este vendedor</button></div>';
+    });
+    cont.innerHTML=html;
+    cont.querySelectorAll('[data-quitar]').forEach(function(b){ b.onclick=function(){ quitarDelCarrito(Number(b.getAttribute('data-quitar'))); }; });
+    cont.querySelectorAll('[data-vend]').forEach(function(b){ b.onclick=function(){ comprarGrupo(b.getAttribute('data-vend')); }; });
+  };
+  if(document.readyState!=='loading') window.updateCartBadge(); else document.addEventListener('DOMContentLoaded', window.updateCartBadge);
+})();
+</script>
+
 </body>
 </html>
