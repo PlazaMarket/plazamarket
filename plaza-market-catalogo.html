@@ -291,6 +291,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
     </style>
+<style>.card-img-wrap{position:relative;}.fav-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.45);border:none;border-radius:999px;width:34px;height:34px;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;padding:0;transition:transform .12s;}.fav-btn:hover{transform:scale(1.12);}</style>
 </head>
 <body>
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -622,6 +623,21 @@
             if (pasos) pasos.classList.toggle('hidden');
         }
 
+        let favoritosSet = new Set();
+        async function toggleFavorito(ev, id, el) {
+            try { ev.stopPropagation(); ev.preventDefault(); } catch (e) {}
+            if (!sesionActiva || !miUserId) { alert("Iniciá sesión (es gratis) para guardar tus favoritos ❤️"); return; }
+            const yaEs = favoritosSet.has(id);
+            try {
+                if (yaEs) {
+                    await db.from("pm_favoritos").delete().eq("usuario_id", miUserId).eq("producto_id", id);
+                    favoritosSet.delete(id); el.textContent = "🤍"; el.classList.remove("fav-on");
+                } else {
+                    await db.from("pm_favoritos").insert({ usuario_id: miUserId, producto_id: id });
+                    favoritosSet.add(id); el.textContent = "❤️"; el.classList.add("fav-on");
+                }
+            } catch (e) { alert("No se pudo guardar el favorito. Probá de nuevo en un ratito."); }
+        }
         async function cargarCatalogo() {
             // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
             try {
@@ -635,6 +651,9 @@
                 }
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
+            if (sesionActiva && miUserId) {
+                try { const r = await db.from("pm_favoritos").select("producto_id").eq("usuario_id", miUserId); favoritosSet = new Set((r.data || []).map(function (f) { return f.producto_id; })); } catch (e) {}
+            }
             renderCuenta();
             actualizarNotif();
             escucharNotif();
@@ -689,7 +708,7 @@
 
             return `
             <article class="card-producto" onclick="location.href='plaza-market-catalogo.html?id=${p.id}'">
-                <div class="card-img-wrap">${badgeAgot}${img}</div>
+                <div class="card-img-wrap">${badgeAgot}${img}<button class="fav-btn${favoritosSet.has(p.id) ? ' fav-on' : ''}" onclick="toggleFavorito(event, ${p.id}, this)" aria-label="Favorito">${favoritosSet.has(p.id) ? '❤️' : '🤍'}</button></div>
                 <div class="card-body">
                     <p class="card-cat">${CATEGORY_LABELS[p.categoria] || p.categoria}</p>
                     ${(p.condicion === 'usado' ? '<span class="badge-usado">Usado</span>' : '') + (p.marca ? '<span class="badge-marca">'+escaparHtml(p.marca)+'</span>' : '')}
