@@ -627,16 +627,19 @@
         async function toggleFavorito(ev, id, el) {
             try { ev.stopPropagation(); ev.preventDefault(); } catch (e) {}
             if (!sesionActiva || !miUserId) { alert("Iniciá sesión (es gratis) para guardar tus favoritos ❤️"); return; }
+            id = Number(id);
             const yaEs = favoritosSet.has(id);
             try {
                 if (yaEs) {
-                    await db.from("pm_favoritos").delete().eq("usuario_id", miUserId).eq("producto_id", id);
+                    const { error } = await db.from("pm_favoritos").delete().eq("usuario_id", miUserId).eq("producto_id", id);
+                    if (error) throw error;
                     favoritosSet.delete(id); el.textContent = "🤍"; el.classList.remove("fav-on");
                 } else {
-                    await db.from("pm_favoritos").insert({ usuario_id: miUserId, producto_id: id });
+                    const { error } = await db.from("pm_favoritos").upsert({ usuario_id: miUserId, producto_id: id });
+                    if (error) throw error;
                     favoritosSet.add(id); el.textContent = "❤️"; el.classList.add("fav-on");
                 }
-            } catch (e) { alert("No se pudo guardar el favorito. Probá de nuevo en un ratito."); }
+            } catch (e) { alert("No se pudo guardar el favorito: " + (e.message || e)); }
         }
         async function cargarCatalogo() {
             // ¿Hay un vendedor logueado mirando? (para no contar sus propias vistas)
@@ -652,7 +655,7 @@
             } catch (e) {}
             if (!miUserId) miUserId = localStorage.getItem('pm_uid');
             if (sesionActiva && miUserId) {
-                try { const r = await db.from("pm_favoritos").select("producto_id").eq("usuario_id", miUserId); favoritosSet = new Set((r.data || []).map(function (f) { return f.producto_id; })); } catch (e) {}
+                try { const r = await db.from("pm_favoritos").select("producto_id").eq("usuario_id", miUserId); favoritosSet = new Set((r.data || []).map(function (f) { return Number(f.producto_id); })); } catch (e) {}
             }
             renderCuenta();
             actualizarNotif();
