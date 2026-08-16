@@ -384,7 +384,8 @@
                 <div id="formDireccionEnvio" class="hidden" style="margin-top:0.5rem;padding:0.9rem;border:1px solid rgba(148,163,184,0.25);border-radius:0.75rem;background:rgba(30,41,59,0.55);">
                     <style>#formDireccionEnvio .dir-inp{width:100%;box-sizing:border-box;padding:0.6rem;margin-bottom:0.5rem;border-radius:0.5rem;border:1px solid rgba(148,163,184,0.3);background:rgba(15,23,42,0.6);color:#e2e8f0;font-size:0.9rem;}#formDireccionEnvio .dir-inp::placeholder{color:rgba(148,163,184,0.7);}#formDireccionEnvio .dir-fila{display:flex;gap:0.5rem;}</style>
                     <p style="font-weight:700;color:#e2e8f0;margin-bottom:0.15rem;">📍 ¿A dónde te lo enviamos?</p>
-                    <p style="font-size:0.78rem;color:rgba(226,232,240,0.65);margin-bottom:0.6rem;">Completá tu dirección para que el vendedor pueda despacharte.</p>
+                    <p style="font-size:0.78rem;color:rgba(226,232,240,0.65);margin-bottom:0.2rem;">Completá tu dirección para que el vendedor pueda despacharte.</p>
+                    <p style="font-size:0.72rem;color:#86efac;margin-bottom:0.6rem;">🔒 Tus datos viajan seguros y solo los usa el vendedor para enviarte tu compra.</p>
                     <input id="dirNombre" class="dir-inp" type="text" placeholder="Nombre y apellido de quien recibe">
                     <input id="dirTel" class="dir-inp" type="tel" inputmode="numeric" placeholder="Teléfono de contacto">
                     <div class="dir-fila"><input id="dirCalle" class="dir-inp" type="text" placeholder="Calle" style="flex:2;"><input id="dirAltura" class="dir-inp" type="text" inputmode="numeric" placeholder="Altura" style="flex:1;"></div>
@@ -851,7 +852,7 @@
                 }
             }
 
-            mostrarFormDireccion(!!(p.tipo !== 'servicio' && p.envio_gratis));
+            mostrarFormDireccion(false);
             const stockEl = document.getElementById('modalStock');
             if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
             else stockEl.classList.add('hidden');
@@ -1001,6 +1002,12 @@
             var f = document.getElementById("formDireccionEnvio");
             return !!(f && !f.classList.contains("hidden"));
         }
+        function necesitaDireccion() {
+            if (!fichaProd || fichaProd.tipo === "servicio") return false;
+            if (fichaProd.envio_gratis) return true;
+            if (envioElegido && (envioElegido.tipo === "pk_dom" || String(envioElegido.tipo).indexOf("ca_D") === 0)) return true;
+            return false;
+        }
         function actualizarBotonComprar() {
             const b = document.getElementById('modalBtnComprar');
             if (!b || !fichaProd || fichaProd.tipo === 'servicio') return;
@@ -1055,7 +1062,7 @@
             if (_op.requierePunto && !_op._puntoElegido) { abrirMapaPickit(btn, _op); return; }
             envioElegido = { tipo: tipo, precio: precio, nombre: nombre };
             if (_op._puntoElegido) { envioElegido.uuid = _op.uuid; envioElegido.punto = _op._puntoElegido; }
-            mostrarFormDireccion(tipo === 'pk_dom' || String(tipo).indexOf('ca_D') === 0);
+            if (!(tipo === 'pk_dom' || String(tipo).indexOf('ca_D') === 0)) mostrarFormDireccion(false);
             document.querySelectorAll('.cotiz-op').forEach(b => b.classList.remove('sel'));
             btn.classList.add('sel');
             const prodPrecio = Number(fichaProd.precio) || 0;
@@ -1246,8 +1253,9 @@
                 alert('Elegí una opción de envío (a sucursal o a domicilio) para continuar.');
                 return;
             }
-            if (p.tipo !== 'servicio' && necesitaDireccionAhora() && !direccionValida()) {
-                alert('Completá tu dirección de entrega (nombre, teléfono, calle, altura, localidad y provincia) para que el vendedor sepa a dónde enviarte.');
+            if (p.tipo !== 'servicio' && necesitaDireccion() && !direccionValida()) {
+                mostrarFormDireccion(true);
+                alert('Para finalizar tu compra, completá tu dirección de entrega. 🔒 Tus datos viajan seguros y solo los usa el vendedor para enviarte el producto.');
                 var _fd = document.getElementById('formDireccionEnvio'); if (_fd) _fd.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
@@ -1263,7 +1271,7 @@
                     cuerpo.envio_tipo = envioElegido.tipo;
                     if (envioElegido.uuid) cuerpo.envio_uuid = envioElegido.uuid;
                 }
-                if (p.tipo !== 'servicio' && necesitaDireccionAhora()) {
+                if (p.tipo !== 'servicio' && necesitaDireccion()) {
                     cuerpo.envio_direccion = datosDireccion();
                     if (!cuerpo.cp_destino && cuerpo.envio_direccion.cp) cuerpo.cp_destino = cuerpo.envio_direccion.cp;
                 }
