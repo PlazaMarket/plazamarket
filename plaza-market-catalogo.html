@@ -999,6 +999,7 @@
         function pintarOpcionesEnvio(p, opciones) {
             opciones.sort((a, b) => a.precio - b.precio);
             envioModo = 'ok';
+            window._envioOpciones = opciones;
             const cont = document.getElementById('envioResultado');
             cont.innerHTML = opciones.map(o => {
                 const dias = (o.dias_min && o.dias_max) ? (o.dias_min + ' a ' + o.dias_max + ' días hábiles') : 'Pickit';
@@ -1012,7 +1013,10 @@
         }
 
         function elegirEnvio(btn, tipo, precio, nombre) {
+            const _op = (window._envioOpciones || []).find(x => x.tipo === tipo) || {};
+            if (_op.requierePunto && !_op._puntoElegido) { abrirMapaPickit(btn, _op); return; }
             envioElegido = { tipo: tipo, precio: precio, nombre: nombre };
+            if (_op._puntoElegido) { envioElegido.uuid = _op.uuid; envioElegido.punto = _op._puntoElegido; }
             document.querySelectorAll('.cotiz-op').forEach(b => b.classList.remove('sel'));
             btn.classList.add('sel');
             const prodPrecio = Number(fichaProd.precio) || 0;
@@ -1022,6 +1026,43 @@
         }
 
         // ============================================================
+        // ============================================================
+        // PICKIT — RETIRO EN PUNTO (abre el mapa y detecta el punto elegido)
+        // ============================================================
+        async function abrirMapaPickit(btn, op) {
+            if (!op.urlMap || !op.uuid) { alert('No se pudo abrir el mapa de puntos Pickit. Probá de nuevo.'); return; }
+            document.querySelectorAll('.cotiz-op').forEach(function (b) { b.classList.remove('sel'); });
+            btn.classList.add('sel');
+            var _ct = document.getElementById('cotizTotal');
+            if (_ct) _ct.innerHTML = '<span style="color:#6b7280">Abriendo el mapa de Pickit… elegí tu punto de retiro. Estamos esperando tu selección…</span>';
+            var win = window.open(op.urlMap, 'pickitMapa', 'width=460,height=700');
+            if (!win) { win = window.open(op.urlMap, '_blank'); }
+            var intentos = 0;
+            var timer = setInterval(async function () {
+                intentos++;
+                try {
+                    var r = await db.functions.invoke('cc-pickit-cotizacion', { body: { uuid: op.uuid } });
+                    var d = r.data || {};
+                    if (d.ok && d.elegido && d.punto) {
+                        clearInterval(timer);
+                        try { if (win && !win.closed) win.close(); } catch (e) {}
+                        op._puntoElegido = d.punto;
+                        op.precio = d.precio || op.precio || 0;
+                        op.nombre = 'Pickit — Retiro en punto';
+                        var dir = (d.punto.direccion || '') + (d.punto.ciudad ? ', ' + d.punto.ciudad : '');
+                        try {
+                            btn.querySelector('.cotiz-op-nom').innerHTML = '🏢 Pickit — ' + (d.punto.nombre || 'Retiro en punto');
+                            btn.querySelector('.cotiz-op-info').textContent = dir || 'Punto de retiro elegido';
+                            btn.querySelector('.cotiz-op-precio').textContent = pesos(op.precio);
+                        } catch (e) {}
+                        elegirEnvio(btn, op.tipo, op.precio, op.nombre);
+                        var _b = document.getElementById('modalBtnComprar'); if (_b) _b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } catch (e) {}
+                if (intentos > 120) { clearInterval(timer); if (_ct) _ct.innerHTML = '<span style="color:#b91c1c">No detectamos la selección del punto. Volvé a tocar la opción para reintentar.</span>'; }
+            }, 3000);
+        }
+
         // PREGUNTAS PÚBLICAS (mismo filtro anti-contacto que el chat)
         // ============================================================
         const PREG_NUM_WORDS = new Set(['cero','uno','una','dos','tres','cuatro','cinco','seis','siete','ocho','nueve']);
@@ -1176,6 +1217,7 @@
                 if (p.tipo !== 'servicio' && envioElegido) {
                     cuerpo.cp_destino = ((document.getElementById('cotizCP') || {}).value || '').replace(/\D/g, '');
                     cuerpo.envio_tipo = envioElegido.tipo;
+                    if (envioElegido.uuid) cuerpo.envio_uuid = envioElegido.uuid;
                 }
                 const { data, error } = await db.functions.invoke('mp-crear-pago', { body: cuerpo });
                 if (error) {
