@@ -1719,7 +1719,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     pend.forEach(function(it){
       db.functions.invoke('cc-cotizar-envio',{ body:{ producto_id:it.id, cp_destino:cp } }).then(function(r){
         var d=r.data||{}; var ops=(d.ok&&Array.isArray(d.opciones))?d.opciones:[];
-        st.opciones[it.id]=ops; if(ops.length && !st.elegido[it.id]) st.elegido[it.id]=ops[0].tipo;
+        var ops2=ops.filter(function(o){return o.tipo!=="pk_pto";}); st.opciones[it.id]=ops2; if(ops2.length && !st.elegido[it.id]) st.elegido[it.id]=ops2[0].tipo;
       }).catch(function(){ st.opciones[it.id]=[]; }).finally(function(){ hechos++; if(hechos>=pend.length){ st.calculado=true; render(); } });
     });
   }
