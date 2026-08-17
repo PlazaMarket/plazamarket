@@ -1509,13 +1509,14 @@
 <script>
 (function(){
   if(window.__pmTourInit) return; window.__pmTourInit=true;
-  var KEY='pm_tour_catalogo_v1';
+  var KEY='pm_tour_catalogo_v2';
   var steps=[
-    {sel:null, title:'\u{1F44B} \u00A1Bienvenido a Plaza Market!', text:'Te muestro en unos pasos c\u00F3mo moverte por la plaza. Pod\u00E9s saltarlo cuando quieras.'},
-    {sel:'#buscador', title:'\u{1F50E} Busc\u00E1 lo que quer\u00E9s', text:'Escrib\u00ED ac\u00E1 el nombre de un producto: un perfume, una crema, lo que est\u00E9s buscando.'},
-    {sel:'#filtroCategoria', title:'\u{1F3F7}\uFE0F Filtr\u00E1 por rubro', text:'O eleg\u00ED una categor\u00EDa para ver solo lo que te interesa.'},
-    {sel:'button[onclick="toggleMenu()"]', title:'\u2630 El men\u00FA', text:'Toc\u00E1 ac\u00E1 para abrir el men\u00FA: Vender, Mensajes y Mi perfil.'},
-    {sel:null, title:'\u{1F6CD}\uFE0F \u00A1Listo!', text:'Para vender o comprar cre\u00E1 tu cuenta (es gratis y toma 1 minuto). \u00BFQuer\u00E9s volver a ver este tutorial? Toc\u00E1 el bot\u00F3n \u2753 Ayuda, abajo a la derecha, cuando quieras.'}
+    {sel:null, title:'👋 ¡Hola! Te muestro cómo comprar', text:'En 1 minuto te enseño a comprar en Plaza Market. Podés saltarlo cuando quieras.'},
+    {sel:'#buscador', title:'🔎 Encontrá lo que querés', text:'Buscá o explorá los productos. Tocá cualquiera para ver sus fotos, precio y descripción.'},
+    {sel:'.fav-btn', title:'🤍 Guardá tus favoritos', text:'Tocá el corazón y el producto queda en tus favoritos (se pone rojo ❤️) para verlo cuando quieras.'},
+    {sel:'button[onclick="abrirCarrito()"]', title:'🛒 Tu carrito', text:'Para comprar, dentro de un producto tocás "Agregar al carrito". Todo lo que sumás aparece acá arriba, en tu carrito.'},
+    {sel:'button[onclick="abrirCarrito()"]', title:'🔢 Cantidad y Comprar', text:'Abrí el carrito, elegí la cantidad con − y +, y tocá Comprar.'},
+    {sel:null, title:'🚚 Envío y pago, todo junto', text:'En el último paso cargás tu dirección y elegís el envío de cada producto (a domicilio o a sucursal, con su precio). Pagás todo en un solo pago seguro con Mercado Pago. ¡El vendedor te lo despacha! Para volver a ver esto, tocá ❓ Ayuda.'},
   ];
   var i=0, ring, card, overlay;
   function mk(tag,cls){var e=document.createElement(tag); if(cls)e.className=cls; return e;}
