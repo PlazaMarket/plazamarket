@@ -1599,10 +1599,12 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var c=getCart();
     if(c.some(function(x){return x.id===p.id;})){ window.abrirCarrito(); return; }
     var foto=(p.fotos&&p.fotos.length)?p.fotos[0]:'';
-    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis });
+    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis, cantidad:1 });
     saveCart(c); window.abrirCarrito();
   };
   window.quitarDelCarrito=function(id){ saveCart(getCart().filter(function(x){return x.id!==id;})); window.renderCarrito(); };
+  function setCant(id,delta){ var c=getCart(); var it=c.filter(function(x){return x.id===id;})[0]; if(!it) return; var n=(Number(it.cantidad)||1)+delta; if(n<1)n=1; it.cantidad=n; saveCart(c); window.renderCarrito(); }
+  function setCantAbs(id,v){ var n=parseInt(String(v).split('').filter(function(c){return c>='0'&&c<='9';}).join(''),10); if(!n||n<1)n=1; var c=getCart(); var it=c.filter(function(x){return x.id===id;})[0]; if(!it) return; it.cantidad=n; saveCart(c); window.renderCarrito(); }
   window.abrirCarrito=function(){ window.renderCarrito(); var o=document.getElementById('cartOverlay'); if(o) o.classList.add('abierto'); };
   window.cerrarCarrito=function(){ var o=document.getElementById('cartOverlay'); if(o) o.classList.remove('abierto'); };
   window.comprarGrupo=function(vendId){ if(window.abrirCheckout){ window.abrirCheckout(vendId); } };
@@ -1613,16 +1615,19 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var grupos={}; c.forEach(function(it){ var k=it.vendedorId||'x'; (grupos[k]=grupos[k]||[]).push(it); });
     var html='';
     Object.keys(grupos).forEach(function(k){
-      var items=grupos[k]; var sub=items.reduce(function(a,b){return a+(Number(b.precio)||0);},0);
+      var items=grupos[k]; var sub=items.reduce(function(a,b){return a+((Number(b.precio)||0)*(Number(b.cantidad)||1));},0);
       html+='<div class="cart-grupo"><p class="cart-vend">🏪 '+(items[0].vendedorNombre||'Vendedor')+'</p>';
       items.forEach(function(it){
-        html+='<div class="cart-item">'+(it.foto?('<img src="'+it.foto+'" class="cart-thumb">'):'<div class="cart-thumb"></div>')+'<div class="cart-info"><p class="cart-tit">'+(it.titulo||'')+'</p><p class="cart-precio">'+pesosCart(it.precio)+'</p></div><button class="cart-quitar" data-quitar="'+it.id+'">✕</button></div>';
+        html+='<div class="cart-item">'+(it.foto?('<img src="'+it.foto+'" class="cart-thumb">'):'<div class="cart-thumb"></div>')+'<div class="cart-info"><p class="cart-tit">'+(it.titulo||'')+'</p><p class="cart-precio">'+pesosCart(it.precio)+'</p><div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><button data-menos="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">−</button><input type="number" min="1" value="'+(Number(it.cantidad)||1)+'" data-cant="'+it.id+'" style="width:70px;text-align:center;padding:5px;border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;font-size:14px;"><button data-mas="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">+</button></div></div><button class="cart-quitar" data-quitar="'+it.id+'">✕</button></div>';
       });
       html+='<div class="cart-sub">Subtotal: <strong>'+pesosCart(sub)+'</strong></div><button class="cart-comprar" data-vend="'+k+'">🛒 Comprar</button></div>';
     });
     cont.innerHTML=html;
     cont.querySelectorAll('[data-quitar]').forEach(function(b){ b.onclick=function(){ quitarDelCarrito(Number(b.getAttribute('data-quitar'))); }; });
     cont.querySelectorAll('[data-vend]').forEach(function(b){ b.onclick=function(){ comprarGrupo(b.getAttribute('data-vend')); }; });
+    cont.querySelectorAll('[data-menos]').forEach(function(b){ b.onclick=function(){ setCant(Number(b.getAttribute('data-menos')),-1); }; });
+    cont.querySelectorAll('[data-mas]').forEach(function(b){ b.onclick=function(){ setCant(Number(b.getAttribute('data-mas')),1); }; });
+    cont.querySelectorAll('[data-cant]').forEach(function(inp){ inp.onchange=function(){ setCantAbs(Number(inp.getAttribute('data-cant')), inp.value); }; });
   };
   if(document.readyState!=='loading') window.updateCartBadge(); else document.addEventListener('DOMContentLoaded', window.updateCartBadge);
 })();
@@ -1675,7 +1680,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var b=document.getElementById('checkoutBody'); if(!b) return;
     var prod=0, envio=0, falta=false;
     var itemsHtml=st.items.map(function(it){
-      prod+=Number(it.precio)||0;
+      prod+=(Number(it.precio)||0)*(Number(it.cantidad)||1);
       var envHtml='';
       if(it.envioGratis){ envHtml='<div class="co-envrow co-gratis">🎁 Envío gratis</div>'; }
       else if(st.opciones[it.id] && st.opciones[it.id].length){
@@ -1684,7 +1689,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
         var elO=st.opciones[it.id].filter(function(o){return o.tipo===st.elegido[it.id];})[0];
         if(elO) envio+=Number(elO.precio)||0; else falta=true;
       } else { envHtml='<div class="co-envrow co-flabel">Tocá "Calcular envíos" abajo 👇</div>'; falta=true; }
-      return '<div class="co-item"><div class="co-row"><span class="co-tit">'+(it.titulo||'')+'</span><span class="co-pre">'+money(it.precio)+'</span></div>'+envHtml+'</div>';
+      return '<div class="co-item"><div class="co-row"><span class="co-tit">'+(it.titulo||'')+(((Number(it.cantidad)||1)>1)?(' ×'+(Number(it.cantidad)||1)):'')+'</span><span class="co-pre">'+money((Number(it.precio)||0)*(Number(it.cantidad)||1))+'</span></div>'+envHtml+'</div>';
     }).join('');
     var total=prod+envio;
     var d=st.dir;
@@ -1728,7 +1733,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     if(typeof sesionActiva!=='undefined' && !sesionActiva){ alert('Iniciá sesión (es gratis) para comprar.'); location.href='plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html'; return; }
     var d=st.dir;
     if(!d.nombre.trim()||!d.calle.trim()||!d.loc.trim()||!d.prov.trim()||soloDig(d.cp).length<4){ alert('Completá tu dirección: nombre, calle y altura, localidad, provincia y CP.'); return; }
-    var items=st.items.map(function(it){ return { producto_id:it.id, envio_tipo: it.envioGratis?null:(st.elegido[it.id]||null) }; });
+    var items=st.items.map(function(it){ return { producto_id:it.id, cantidad:(Number(it.cantidad)||1), envio_tipo: it.envioGratis?null:(st.elegido[it.id]||null) }; });
     var dir={ nombre:d.nombre.trim(), calle:d.calle.trim(), localidad:d.loc.trim(), provincia:d.prov.trim(), cp:soloDig(d.cp), referencia:d.ref.trim() };
     var btn=document.getElementById('coPagar'); btn.textContent='Preparando el pago…'; btn.disabled=true;
     db.functions.invoke('mp-crear-pago-multi',{ body:{ items:items, cp_destino:dir.cp, envio_direccion:dir } }).then(function(r){
