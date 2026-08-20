@@ -1100,6 +1100,8 @@ async function publishProduct() {
             document.getElementById('productDescription').value = p.descripcion || '';
             document.getElementById('productCategory').value = p.categoria || '';
             document.getElementById('productPrice').value = p.precio ? formatearPesos(p.precio) : '';
+            var _m=document.getElementById('productMarca'); if(_m) _m.value = p.marca || '';
+            var _c=document.getElementById('productCondicion'); if(_c) _c.value = p.condicion || 'nuevo';
 
             if (p.tipo === 'producto') {
                 document.getElementById('productStock').value = (p.stock ?? '') === '' ? '' : String(p.stock);
