@@ -924,7 +924,7 @@
                 <div class="photo-slot">
                     <img src="${url}" alt="Foto" class="photo-slot-real-img">
                     <div class="photo-approved-badge">✓ Ya cargada</div>
-                    ${i===0?'<div class="photo-portada">⭐ Portada</div>':''}<div class="photo-move"><button type="button" onclick="moverFotoExistente(${i},-1)" class="photo-move-btn" ${i===0?'disabled':''}>◀</button><button type="button" onclick="moverFotoExistente(${i},1)" class="photo-move-btn" ${i===fotosExistentes.length-1?'disabled':''}>▶</button></div><button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
+                    ${i===0?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
                 </div>`).join('');
 
             if (total === 0) { container.innerHTML = ''; return; }
@@ -937,7 +937,7 @@
                 return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
                     <img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">
                     ${statusBlock}
-                    ${(idx===0 && fotosExistentes.length===0)?'<div class="photo-portada">⭐ Portada</div>':''}<div class="photo-move"><button type="button" onclick="moverFotoNueva(${p.id},-1)" class="photo-move-btn" ${idx===0?'disabled':''}>◀</button><button type="button" onclick="moverFotoNueva(${p.id},1)" class="photo-move-btn" ${idx===uploadedPhotos.length-1?'disabled':''}>▶</button></div><button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
+                    ${(idx===0 && fotosExistentes.length===0)?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
                 </div>`;
             }).join('');
         }
@@ -1504,6 +1504,31 @@ async function subirPlanilla(ev){
 
 <script>
 (function(){var t=0,iv=setInterval(async function(){t++;if(typeof supabaseClient!=='undefined'){clearInterval(iv);try{var r=await supabaseClient.from('productos').select('marca').not('marca','is',null).limit(500);var dl=document.getElementById('marcasList');if(!dl||!r||!r.data)return;var seen={},html='';r.data.forEach(function(x){var m=(x.marca||'').trim();if(m&&!seen[m.toLowerCase()]){seen[m.toLowerCase()]=1;html+='<option value="'+m.replace(/"/g,'&quot;')+'"></option>';}});dl.innerHTML=html;}catch(e){}}if(t>40)clearInterval(iv);},500);})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<style>#photoSlotsContainer .photo-slot{cursor:grab;}#photoSlotsContainer .photo-slot:active{cursor:grabbing;}.sortable-ghost{opacity:.35;}.sortable-chosen{outline:2px dashed #60a5fa;}#pmDragHint{font-size:.8rem;color:#93c5fd;margin:4px 0 8px;}</style>
+<script>
+(function(){
+  function reordenar(){
+    var cont=document.getElementById('photoSlotsContainer'); if(!cont) return;
+    var imgs=[].slice.call(cont.querySelectorAll('.photo-slot .photo-slot-real-img'));
+    var ne=[], nn=[];
+    imgs.forEach(function(img){
+      var src=img.getAttribute('src');
+      if(typeof fotosExistentes!=='undefined' && fotosExistentes.indexOf(src)>-1){ ne.push(src); return; }
+      if(typeof uploadedPhotos!=='undefined'){ var p=uploadedPhotos.find(function(x){return x.imageUrl===src;}); if(p){ nn.push(p); } }
+    });
+    try{
+      if(typeof fotosExistentes!=='undefined' && ne.length===fotosExistentes.length){ fotosExistentes.length=0; ne.forEach(function(u){fotosExistentes.push(u);}); }
+      if(typeof uploadedPhotos!=='undefined' && nn.length===uploadedPhotos.length){ uploadedPhotos.length=0; nn.forEach(function(p){uploadedPhotos.push(p);}); }
+    }catch(e){}
+    if(typeof renderPhotoSlots==='function') renderPhotoSlots();
+  }
+  function hint(cont){ if(document.getElementById('pmDragHint')) return; var h=document.createElement('p'); h.id='pmDragHint'; h.textContent='✋ Arrastrá las fotos para reordenarlas. La primera (⭐ Portada) es la que se ve primero.'; if(cont.parentNode) cont.parentNode.insertBefore(h, cont); }
+  function init(){ var cont=document.getElementById('photoSlotsContainer'); if(!cont) return; if(!cont._pmSort && typeof Sortable!=='undefined'){ cont._pmSort=Sortable.create(cont,{animation:150,delay:130,delayOnTouchOnly:true,onEnd:reordenar}); } if(cont.children.length) hint(cont); }
+  function boot(){ var c=document.getElementById('photoSlotsContainer'); if(c){ new MutationObserver(init).observe(c,{childList:true}); init(); } else { setTimeout(boot,500); } }
+  if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
 </script>
 </body>
 </html>
