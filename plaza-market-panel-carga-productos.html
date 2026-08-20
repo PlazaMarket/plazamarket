@@ -1532,5 +1532,23 @@ async function subirPlanilla(ev){
   if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
 })();
 </script>
+<script>
+(function(){
+  var CAMPOS=['productTitle','productDescription','productCategory','productPrice','productMarca','productCondicion','productStock','paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso','productoEan','costoEnvio'];
+  var KEY='pm_borrador_vender';
+  function leer(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+  function guardar(){
+    if(typeof editandoId!=='undefined' && editandoId) return;
+    var d={}, algo=false;
+    CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e){ d[id]=e.value; if(e.value && String(e.value).trim()) algo=true; } });
+    if(algo){ d._ts=Date.now(); try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(x){} }
+  }
+  window.pmLimpiarBorrador=function(){ try{ localStorage.removeItem(KEY); }catch(e){} var b=document.getElementById('pmBorradorBanner'); if(b) b.remove(); };
+  window.pmContinuarBorrador=function(){ var d=leer(); if(!d) return; CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e && d[id]!=null){ e.value=d[id]; try{ e.dispatchEvent(new Event('input',{bubbles:true})); e.dispatchEvent(new Event('change',{bubbles:true})); }catch(x){} } }); var b=document.getElementById('pmBorradorBanner'); if(b) b.remove(); };
+  function banner(){ var d=leer(); if(!d) return; if(document.getElementById('pmBorradorBanner')) return; var titulo=(d.productTitle||'').replace(/</g,'&lt;'); var div=document.createElement('div'); div.id='pmBorradorBanner'; div.style.cssText='background:#1e293b;border:1px solid #f59e0b;border-radius:10px;padding:12px 14px;margin:10px 0;color:#e2e8f0;font-size:.9rem;'; div.innerHTML='📝 Tenés un <b>borrador sin terminar</b>'+(titulo?(': "'+titulo+'"'):'')+'. <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button type="button" id="pmBorrCont" style="background:#22c55e;border:none;color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;">Continuar</button><button type="button" id="pmBorrDel" style="background:transparent;border:1px solid #f87171;color:#fca5a5;padding:7px 14px;border-radius:8px;cursor:pointer;">Eliminar</button></div>'; var t=document.getElementById('productTitle'); var anchor=t?(t.closest('form')||t.parentNode):document.body; (anchor.parentNode||document.body).insertBefore(div, anchor); document.getElementById('pmBorrCont').onclick=pmContinuarBorrador; document.getElementById('pmBorrDel').onclick=pmLimpiarBorrador; }
+  function boot(){ var t=document.getElementById('productTitle'); if(!t){ setTimeout(boot,600); return; } CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e){ e.addEventListener('input', guardar); e.addEventListener('change', guardar); } }); setTimeout(function(){ if(!t.value){ banner(); } }, 900); new MutationObserver(function(muts){ muts.forEach(function(m){ (m.addedNodes||[]).forEach(function(n){ var txt=(n.textContent||''); if(/con éxito|publicad|guardado con/i.test(txt)){ try{ pmLimpiarBorrador(); }catch(e){} } }); }); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
 </body>
 </html>
