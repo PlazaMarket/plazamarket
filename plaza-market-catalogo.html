@@ -701,7 +701,7 @@
             let lista = todos;
             if (cat) lista = lista.filter(p => p.categoria === cat);
             if (texto) lista = lista.filter(p =>
-                (p.titulo || '').toLowerCase().includes(texto) || (p.descripcion || '').toLowerCase().includes(texto));
+                (p.marca || '').toLowerCase().includes(texto) || (p.titulo || '').toLowerCase().includes(texto) || (p.descripcion || '').toLowerCase().includes(texto));
             var _hist = document.getElementById('seccionHistorial');
             if (_hist) { if (texto || cat) _hist.classList.add('hidden'); else renderHistorial(); }
             renderProductos(ordenarLista(lista));
