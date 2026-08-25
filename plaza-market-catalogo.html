@@ -337,7 +337,7 @@
         </div>
 
         <div class="filtros">
-            <input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros()">
+            <div class="buscador-wrap" style="flex:1;min-width:180px;position:relative;"><input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros();pmToggleClearBusqueda()" style="width:100%;padding-right:2.2rem;box-sizing:border-box;"><span id="btnClearBusqueda" onclick="pmLimpiarBusqueda()" title="Limpiar búsqueda" style="display:none;position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:1.1rem;font-weight:bold;line-height:1;">✕</span></div>
             <select id="filtroCategoria" onchange="aplicarFiltros()">
                 <option value="">Todas las categorías</option>
                 <option value="perfumeria">Perfumería</option>
@@ -692,6 +692,8 @@
             return l;
         }
 
+        function pmToggleClearBusqueda(){ var b=document.getElementById('buscador'); var x=document.getElementById('btnClearBusqueda'); if(b&&x) x.style.display = b.value ? 'block' : 'none'; }
+        function pmLimpiarBusqueda(){ var b=document.getElementById('buscador'); if(b) b.value=''; if(typeof aplicarFiltros==='function') aplicarFiltros(); pmToggleClearBusqueda(); if(b) b.focus(); }
         function aplicarFiltros() {
             const texto = document.getElementById('buscador').value.trim().toLowerCase();
             const cat = document.getElementById('filtroCategoria').value;
