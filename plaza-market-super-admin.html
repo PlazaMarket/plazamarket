@@ -111,6 +111,14 @@
                 <div class="stat-card"><div class="stat-num" id="stOrdenes">—</div><div class="stat-lbl">🧾 Órdenes totales</div></div>
             </div>
 
+            <!-- Visitas del sitio (Cloudflare) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card"><div class="stat-num" id="stVisHoy">—</div><div class="stat-lbl">🌐 Visitas hoy</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVisSemana">—</div><div class="stat-lbl">🌐 Visitas (7 días)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVisMes">—</div><div class="stat-lbl">🌐 Visitas (30 días)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPvMes">—</div><div class="stat-lbl">📄 Páginas vistas (30 d)</div></div>
+            </div>
+
             <!-- De dónde son (por código de área del celular) -->
             <section class="glass-card p-5 sm:p-6">
                 <h2 class="text-lg font-bold text-white mb-1">📍 De dónde son</h2>
@@ -261,6 +269,14 @@
             await cargarTodo();
         }
 
+        async function cargarVisitas() {
+            try {
+                const { data, error } = await db.functions.invoke('cc-analytics');
+                var set = function(id, v){ var e=document.getElementById(id); if(e) e.textContent = (v!=null? Number(v):0).toLocaleString('es-AR'); };
+                if (error || !data || !data.ok) { ['stVisHoy','stVisSemana','stVisMes','stPvMes'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent='—'; }); return; }
+                set('stVisHoy', data.hoy); set('stVisSemana', data.semana); set('stVisMes', data.mes); set('stPvMes', data.pageviewsMes);
+            } catch(e){}
+        }
         async function cargarTodo() {
             const [perfiles, productos, consultas, admins, ordenes, reportes, reviews] = await Promise.all([
                 db.from('pm_perfiles').select('*').order('creado_en', { ascending: false }),
@@ -299,6 +315,7 @@
             document.getElementById('stPublicaron').textContent = publicaronSet.size;
             document.getElementById('stCompradores').textContent = compradoresSet.size;
             document.getElementById('stConMp').textContent = us.filter(u => u.mp_conectado).length;
+            cargarVisitas();
 
             // KPIs extra
             document.getElementById('stProductos').textContent = ps.length;
