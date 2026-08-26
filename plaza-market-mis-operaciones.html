@@ -61,7 +61,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none !important; }
     </style>
-</head>
+<style> .etq-box{display:flex;flex-wrap:wrap;gap:.5rem;margin:.2rem 0 .8rem;} .etq-btn{display:inline-block;padding:.5rem .8rem;background:#0ea5e9;color:#fff;border:none;border-radius:.5rem;font-weight:700;font-size:.85rem;cursor:pointer;text-decoration:none;} .etq-btn[disabled]{opacity:.6;} .etq-link{display:inline-block;padding:.5rem .8rem;background:#334155;color:#93c5fd;border-radius:.5rem;font-size:.85rem;text-decoration:none;} .etq-nota{font-size:.82rem;color:#cbd5e1;background:#1e293b;border:1px dashed #475569;border-radius:.5rem;padding:.5rem .7rem;} </style></head>
 <body>
 
     <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
@@ -301,7 +301,7 @@
             '</div>';
         }
 
-        function render() {
+        function pmBotonesEtiqueta(){ document.querySelectorAll('#lista .op-wrap').forEach(function(w){ if(w.querySelector('.etq-box')) return; var est=w.getAttribute('data-oest'), tipo=w.getAttribute('data-otipo')||'', oid=w.getAttribute('data-oid'); var etq=w.getAttribute('data-oetq')||'', trk=w.getAttribute('data-otrk')||''; if(est!=='pagado') return; var esPickit=(tipo.indexOf('pk_')===0), esCorreo=(tipo.indexOf('ca_')===0); var html=''; if(esPickit){ if(etq){ html+='<a class="etq-btn" href="'+etq+'" target="_blank">🖨️ Ver / imprimir etiqueta</a>'; } else { html+='<button type="button" class="etq-btn" data-oid="'+oid+'">🖨️ Generar etiqueta</button>'; } if(trk){ html+='<a class="etq-link" href="'+trk+'" target="_blank">📍 Ver seguimiento</a>'; } } else if(esCorreo){ html+='<div class="etq-nota">📮 Envío por Correo Argentino: despachalo en la sucursal (la etiqueta se completa ahí).</div>'; } if(!html) return; var box=document.createElement('div'); box.className='etq-box'; box.innerHTML=html; w.appendChild(box); var b=box.querySelector('button.etq-btn'); if(b) b.onclick=function(){ pmGenerarEtiqueta(b.getAttribute('data-oid'), b); }; }); } function pmGenerarEtiqueta(oid, btn){ if(!oid) return; var txt=btn.textContent; btn.textContent='Generando etiqueta…'; btn.disabled=true; db.functions.invoke('cc-etiqueta',{ body:{ orden_id: oid } }).then(function(r){ var d=r.data||{}; if(d && d.ok && d.etiqueta_url){ var h='<a class="etq-btn" href="'+d.etiqueta_url+'" target="_blank">🖨️ Ver / imprimir etiqueta</a>'; if(d.tracking_url) h+='<a class="etq-link" href="'+d.tracking_url+'" target="_blank">📍 Ver seguimiento</a>'; btn.parentElement.innerHTML=h; } else if(d && d.correo){ btn.parentElement.innerHTML='<div class="etq-nota">📮 Correo Argentino: despachá en la sucursal.</div>'; } else { btn.textContent=txt; btn.disabled=false; alert((d && d.error) ? d.error : 'No pude generar la etiqueta. Probá de nuevo en un rato.'); } }).catch(function(){ btn.textContent=txt; btn.disabled=false; alert('Hubo un problema generando la etiqueta. Probá de nuevo.'); }); } function render() {
             const cont = document.getElementById('lista');
             const lista = tabActual === 'ventas' ? ventas : compras;
             const esVenta = tabActual === 'ventas';
@@ -311,7 +311,7 @@
                     : '<div class="vacio">Todavía no compraste nada.<br>Cuando compres algo, lo vas a ver acá. 🛒</div>';
                 return;
             }
-            cont.innerHTML = lista.map(o => filaHTML(o, esVenta)).join('');
+            cont.innerHTML = lista.map(function(o){ return '<div class="op-wrap" data-oid="'+o.id+'" data-otipo="'+(o.envio_tipo||'')+'" data-oest="'+(o.estado||'')+'" data-oetq="'+(o.envio_etiqueta_url||'')+'" data-otrk="'+(o.envio_tracking_url||'')+'">'+filaHTML(o, esVenta)+'</div>'; }).join(''); if (esVenta) pmBotonesEtiqueta();
         }
 
         cargar();
