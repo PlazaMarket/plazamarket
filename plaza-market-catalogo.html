@@ -1729,7 +1729,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var btn=document.getElementById('coCalc'); btn.textContent='Calculando envíos…'; btn.disabled=true;
     var hechos=0;
     pend.forEach(function(it){
-      db.functions.invoke('cc-cotizar-envio',{ body:{ producto_id:it.id, cp_destino:cp } }).then(function(r){
+      db.functions.invoke('cc-cotizar-envio',{ body:{ producto_id:it.id, cp_destino:cp, calle:(st.dir.calle||''), localidad:(st.dir.loc||''), provincia:(st.dir.prov||'') } }).then(function(r){
         var d=r.data||{}; var ops=(d.ok&&Array.isArray(d.opciones))?d.opciones:[];
         var ops2=ops; st.opciones[it.id]=ops2; if(ops2.length && !st.elegido[it.id]){ var _def=ops2.filter(function(o){return o.tipo!=="pk_pto";})[0]||ops2[0]; st.elegido[it.id]=_def.tipo; }
       }).catch(function(){ st.opciones[it.id]=[]; }).finally(function(){ hechos++; if(hechos>=pend.length){ st.calculado=true; render(); } });
