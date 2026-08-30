@@ -831,7 +831,7 @@
             const fotos = (p.fotos && p.fotos.length) ? p.fotos : [];
             const agot = agotado(p);
 
-            document.getElementById('modalCat').textContent = CATEGORY_LABELS[p.categoria] || p.categoria;
+            document.getElementById('modalCat').textContent = CATEGORY_LABELS[p.categoria] || p.categoria; var _mc=document.getElementById('modalCat'); if(_mc){ var _box=document.getElementById('modalVentas'); if(!_box){ _box=document.createElement('div'); _box.id='modalVentas'; _box.style.cssText='font-size:.85rem;color:#94a3b8;margin:.35rem 0;font-weight:600;'; if(_mc.parentElement) _mc.parentElement.insertBefore(_box, _mc.nextSibling); } var _v=Number(p.ventas)||0; var _txt=_v>0?('🛒 '+_v+' '+(_v===1?'venta':'ventas')):'🛒 ¡Sé el primero en comprarle!'; _box.textContent=_txt; try{ db.from('pm_perfiles').select('creado_en').eq('id', p.usuario_id).maybeSingle().then(function(r){ if(r.data&&r.data.creado_en){ var _d=new Date(r.data.creado_en); var _M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; _box.textContent=_txt+' · Vendedor desde '+_M[_d.getMonth()]+'. '+_d.getFullYear(); } }).catch(function(){}); }catch(_e){} }
             document.getElementById('modalTitulo').textContent = p.titulo;
             document.getElementById('modalPrecio').textContent = pesos(p.precio);
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
