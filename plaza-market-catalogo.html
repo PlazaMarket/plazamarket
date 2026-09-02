@@ -341,6 +341,18 @@
             <div class="buscador-wrap" style="flex:1;min-width:180px;position:relative;"><input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros();pmToggleClearBusqueda()" style="width:100%;padding-right:2.2rem;box-sizing:border-box;"><span id="btnClearBusqueda" onclick="pmLimpiarBusqueda()" title="Limpiar búsqueda" style="display:none;position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:1.1rem;font-weight:bold;line-height:1;">✕</span></div>
             <select id="filtroCategoria" onchange="aplicarFiltros()">
                 <option value="">Todas las categorías</option>
+                    <option value="consolas">Consolas y Videojuegos</option>
+                    <option value="muebles">Muebles y Jardín</option>
+                    <option value="bazar">Bazar y Cocina</option>
+                    <option value="bebes">Bebés</option>
+                    <option value="salud">Salud y Cuidado Personal</option>
+                    <option value="deportes">Deportes y Fitness</option>
+                    <option value="mascotas">Mascotas</option>
+                    <option value="herramientas">Herramientas</option>
+                    <option value="instrumentos">Instrumentos Musicales</option>
+                    <option value="libreria">Arte, Librería y Mercería</option>
+                    <option value="antiguedades">Antigüedades y Coleccionables</option>
+                    <option value="cotillon">Souvenirs y Cotillón</option>
                 <option value="perfumeria">Perfumería</option>
                 <option value="cosmetica">Cosmética</option>
                 <option value="indumentaria">Indumentaria</option><option value="calzado">Calzado</option>
@@ -455,6 +467,10 @@
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const CATEGORY_LABELS = {
+            consolas: 'Consolas y Videojuegos', muebles: 'Muebles y Jardín', bazar: 'Bazar y Cocina',
+            bebes: 'Bebés', salud: 'Salud y Cuidado Personal', deportes: 'Deportes y Fitness', mascotas: 'Mascotas',
+            herramientas: 'Herramientas', instrumentos: 'Instrumentos Musicales', libreria: 'Arte, Librería y Mercería',
+            antiguedades: 'Antigüedades y Coleccionables', cotillon: 'Souvenirs y Cotillón',
             cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
             construccion: 'Construcción', pintura: 'Pintura', calzado: 'Calzado', reformas: 'Reformas y refacciones',
             servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza', masajes: 'Masajes y Bienestar'
