@@ -553,5 +553,41 @@
   });
 })();
 </script>
+
+<div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
+  <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas (últimos 30 días)</h2>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:10px;">Desde qué lugar llega la gente a la web. "Directo" = escribió la dirección o entró desde la app. "Navegación interna" = se movió dentro del sitio (no es un origen externo). Solo cuenta visitantes no logueados.</div>
+  <div id="pmOrigenesList" style="color:#cbd5e1;font-size:14px;">Cargando…</div>
+</div>
+<script>
+(async function(){
+  var el=function(){return document.getElementById('pmOrigenesList');};
+  try{
+    var html=document.documentElement.innerHTML;
+    var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+    var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+    var r=await fetch('https://'+ref+'.functions.supabase.co/cc-analytics',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anon,'apikey':anon},body:'{}'});
+    var j=await r.json();
+    var refs=(j&&j.referrers)||[];
+    function label(h){
+      h=(h||'').toLowerCase();
+      if(!h) return '🔗 Directo / App';
+      if(h.indexOf('instagram')>-1) return '📷 Instagram';
+      if(h.indexOf('facebook')>-1||h.indexOf('fb.')>-1) return '📘 Facebook';
+      if(h.indexOf('google')>-1) return '🔎 Google';
+      if(h.indexOf('whatsapp')>-1||h.indexOf('wa.me')>-1) return '💬 WhatsApp';
+      if(h.indexOf('t.co')>-1||h.indexOf('twitter')>-1||h==='x.com') return '✖ Twitter/X';
+      if(h.indexOf('tiktok')>-1) return '🎵 TikTok';
+      if(h.indexOf('plazamarket')>-1) return '🔁 Navegación interna';
+      return '🌐 '+h;
+    }
+    if(refs.length===0){ el().textContent='Todavía no hay datos de orígenes (aparecen cuando entra gente desde afuera).'; return; }
+    var rows=refs.map(function(x){
+      return '<tr style="border-top:1px solid rgba(255,255,255,.06)"><td style="padding:7px 6px;color:#fff">'+label(x.host)+'</td><td style="padding:7px 6px;text-align:right;color:#8fb3ff;font-weight:bold">'+x.count+'</td></tr>';
+    }).join('');
+    el().innerHTML='<table style="width:100%;border-collapse:collapse;font-size:14px;color:#cbd5e1"><thead><tr style="text-align:left;color:#93a4c0"><th style="padding:6px">Origen</th><th style="padding:6px;text-align:right">Páginas vistas</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }catch(e){ if(el())el().textContent='No se pudo cargar: '+(e&&e.message||e); }
+})();
+</script>
 </body>
 </html>
