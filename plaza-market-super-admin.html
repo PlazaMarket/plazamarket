@@ -572,11 +572,12 @@
     function label(h){
       h=(h||'').toLowerCase();
       if(!h) return '🔗 Directo / App';
+      if(h.indexOf('plazamarket')>-1) return '🔁 Navegación interna';
       if(h.indexOf('instagram')>-1) return '📷 Instagram';
       if(h.indexOf('facebook')>-1||h.indexOf('fb.')>-1) return '📘 Facebook';
       if(h.indexOf('google')>-1) return '🔎 Google';
       if(h.indexOf('whatsapp')>-1||h.indexOf('wa.me')>-1) return '💬 WhatsApp';
-      if(h.indexOf('t.co')>-1||h.indexOf('twitter')>-1||h==='x.com') return '✖ Twitter/X';
+      if(h==='t.co'||h.indexOf('twitter')>-1||h==='x.com') return '✖ Twitter/X';
       if(h.indexOf('tiktok')>-1) return '🎵 TikTok';
       if(h.indexOf('plazamarket')>-1) return '🔁 Navegación interna';
       return '🌐 '+h;
