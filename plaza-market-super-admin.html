@@ -528,5 +528,30 @@
   });
 })();
 </script>
+
+<div style="max-width:1100px;margin:0 auto 30px;padding:0 12px;">
+  <button id="pmBtnPush" style="background:#7c3aed;color:#fff;border:none;padding:12px 22px;border-radius:40px;font-size:15px;font-weight:bold;cursor:pointer;">🔔 Enviar notificación al celu a los que no publicaron</button>
+  <span id="pmBtnPushMsg" style="margin-left:12px;color:#cbd5e1;font-size:14px;"></span>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('pmBtnPush'); if(!btn) return;
+  btn.addEventListener('click', async function(){
+    if(!confirm('¿Enviar una notificación al celu a los usuarios registrados que todavía no publicaron?')) return;
+    var msg=document.getElementById('pmBtnPushMsg');
+    btn.disabled=true; msg.textContent='Enviando…';
+    try{
+      var html=document.documentElement.innerHTML;
+      var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+      var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+      var r=await fetch('https://'+ref+'.functions.supabase.co/cc-push-recordatorios',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anon,'apikey':anon},body:'{}'});
+      var j=await r.json();
+      if(j.ok){ msg.textContent='✅ Enviadas: '+j.enviados+' a '+j.usuarios+' usuario(s)'+(j.fallos?(' · '+j.fallos+' viejas limpiadas'):''); }
+      else { msg.textContent='❌ '+(j.error||'No se pudo'); }
+    }catch(e){ msg.textContent='❌ '+(e&&e.message||e); }
+    btn.disabled=false;
+  });
+})();
+</script>
 </body>
 </html>
