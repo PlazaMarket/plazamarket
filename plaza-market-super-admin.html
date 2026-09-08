@@ -558,14 +558,11 @@
 
 
 
+
+
 <div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
   <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas</h2>
-  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES (no estimados). Cada vez que alguien entra = 1 visita. No te cuenta a vos ni a los logueados. Empezó a contar hoy.</div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-    <button class="pmPer2" data-p="hoy" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">Hoy</button>
-    <button class="pmPer2" data-p="semana" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">7 días</button>
-    <button class="pmPer2" data-p="mes" style="background:#3d7bff;color:#fff;border:none;padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">30 días</button>
-  </div>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES (no estimados). Cada persona que entra = 1 visita. No te cuenta a vos ni a los logueados. Empezó a contar hoy.</div>
   <div id="pmOrigCols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">Cargando…</div>
   <div id="pmHistReal" style="margin-top:12px;"></div>
 </div>
@@ -577,12 +574,8 @@
     var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
     var keys=Object.keys(localStorage); var ak=keys.find(function(k){return /sb-.*-auth-token/.test(k);});
     var at=null; try{var s=JSON.parse(localStorage.getItem(ak)); at=s.access_token||(s.currentSession&&s.currentSession.access_token);}catch(e){}
-    var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=10000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
+    var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=20000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
     var rows=await rr.json(); if(!Array.isArray(rows)) rows=[];
-    var now=new Date();
-    var artNow=new Date(now.getTime()-3*3600*1000);
-    var artMid=Date.UTC(artNow.getUTCFullYear(),artNow.getUTCMonth(),artNow.getUTCDate())+3*3600*1000;
-    var d7=now.getTime()-7*86400000, d30=now.getTime()-30*86400000;
     function meta(o){o=o||'';
       if(o==='Instagram')return ['red','📷 Instagram'];
       if(o==='Facebook')return ['red','📘 Facebook'];
@@ -594,28 +587,26 @@
       if(o==='Interno')return null;
       return ['enl','🌐 '+o.replace('Otro: ','')];
     }
-    function tabla(obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];});return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Sin visitas en este período</div>';}
-    function render(p){
-      var red={},enl={};
-      rows.forEach(function(x){
-        var t=new Date(x.creado_en).getTime();
-        var ok=(p==='hoy')? t>=artMid : (p==='semana')? t>=d7 : t>=d30;
-        if(!ok) return;
-        var m=meta(x.origen); if(!m) return;
-        var o=(m[0]==='red')?red:enl; o[m[1]]=(o[m[1]]||0)+1;
-      });
-      document.getElementById('pmOrigCols').innerHTML=
-        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+tabla(red)+'</div>'+
-        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+tabla(enl)+'</div>';
-    }
-    var meses={}; rows.forEach(function(x){var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);meses[k]=(meses[k]||0)+1;});
+    function tabla(obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];});return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Todavía sin visitas</div>';}
+    var red={},enl={};
+    rows.forEach(function(x){var m=meta(x.origen); if(!m) return; var o=(m[0]==='red')?red:enl; o[m[1]]=(o[m[1]]||0)+1;});
+    document.getElementById('pmOrigCols').innerHTML=
+      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+tabla(red)+'</div>'+
+      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+tabla(enl)+'</div>';
+    var meses={}; rows.forEach(function(x){if(x.origen==='Interno')return; var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);meses[k]=(meses[k]||0)+1;});
     var MN={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
     var mk=Object.keys(meses).sort().reverse();
     var hr=mk.map(function(k){var pp=k.split('-');return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+(MN[pp[1]]||k)+' '+pp[0]+'</span><span style="font-weight:bold;color:#8fb3ff">'+meses[k]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Todavía sin datos (arranca hoy)</div>';
     document.getElementById('pmHistReal').innerHTML='<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📅 Total de visitas por mes</div>'+hr+'</div>';
-    var btns=document.querySelectorAll('.pmPer2');
-    btns.forEach(function(b){b.addEventListener('click',function(){btns.forEach(function(x){x.style.background='transparent';x.style.color='#cbd5e1';x.style.border='1px solid rgba(255,255,255,.15)';});b.style.background='#3d7bff';b.style.color='#fff';b.style.border='none';render(b.getAttribute('data-p'));});});
-    render('mes');
+    var now=Date.now();
+    var an=new Date(now-3*3600*1000);
+    var artMid=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),an.getUTCDate())+3*3600*1000;
+    var d7=now-7*86400000, d30=now-30*86400000;
+    var cHoy=0,c7=0,c30=0;
+    rows.forEach(function(x){if(x.origen==='Interno')return; var t=new Date(x.creado_en).getTime(); if(t>=artMid)cHoy++; if(t>=d7)c7++; if(t>=d30)c30++;});
+    function setT(id,v){var el=document.getElementById(id); if(el) el.textContent=v;}
+    function apply(){setT('stVisHoy',cHoy);setT('stVisSemana',c7);setT('stVisMes',c30);setT('stPvMes',c30);}
+    apply(); setTimeout(apply,2500); setTimeout(apply,5000);
   }catch(e){ var el=document.getElementById('pmOrigCols'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
 </script>
