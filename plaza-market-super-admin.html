@@ -560,11 +560,12 @@
 
 
 
+
+
 <div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
   <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas</h2>
-  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES (no estimados). Cada persona que entra = 1 visita. No te cuenta a vos ni a los logueados. Empezó a contar hoy.</div>
-  <div id="pmOrigCols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">Cargando…</div>
-  <div id="pmHistReal" style="margin-top:12px;"></div>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES. Tocá cada sección para abrirla y ver el detalle adentro. No te cuenta a vos ni a los logueados.</div>
+  <div id="pmTree">Cargando…</div>
 </div>
 <script>
 (async function(){
@@ -576,38 +577,69 @@
     var at=null; try{var s=JSON.parse(localStorage.getItem(ak)); at=s.access_token||(s.currentSession&&s.currentSession.access_token);}catch(e){}
     var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=20000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
     var rows=await rr.json(); if(!Array.isArray(rows)) rows=[];
-    function meta(o){o=o||'';
-      if(o==='Instagram')return ['red','📷 Instagram'];
-      if(o==='Facebook')return ['red','📘 Facebook'];
-      if(o==='TikTok')return ['red','🎵 TikTok'];
-      if(o==='WhatsApp')return ['red','💬 WhatsApp'];
-      if(o==='Google')return ['enl','🔎 Google'];
-      if(o==='Directo')return ['enl','🔗 Directo / App'];
-      if(o==='App Play Store')return ['enl','📲 App Play Store'];
-      if(o==='Interno')return null;
-      return ['enl','🌐 '+o.replace('Otro: ','')];
+    rows=rows.filter(function(x){return x.origen!=='Interno';});
+    function fh(iso){var d=new Date(new Date(iso).getTime()-3*3600*1000);var s=d.toISOString();return s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11,16)+' hs';}
+    function lab(o){o=o||'';
+      if(o==='Instagram')return '📷 Instagram';
+      if(o==='Facebook')return '📘 Facebook';
+      if(o==='TikTok')return '🎵 TikTok';
+      if(o==='WhatsApp')return '💬 WhatsApp';
+      if(o==='Google')return '🔎 Google';
+      if(o==='Directo')return '🔗 Directo / App';
+      if(o==='App Play Store')return '📲 App Play Store';
+      return '🌐 '+o.replace('Otro: ','');
     }
-    function tabla(obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];});return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Todavía sin visitas</div>';}
-    var red={},enl={};
-    rows.forEach(function(x){var m=meta(x.origen); if(!m) return; var o=(m[0]==='red')?red:enl; o[m[1]]=(o[m[1]]||0)+1;});
-    document.getElementById('pmOrigCols').innerHTML=
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+tabla(red)+'</div>'+
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+tabla(enl)+'</div>';
-    var meses={}; rows.forEach(function(x){if(x.origen==='Interno')return; var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);meses[k]=(meses[k]||0)+1;});
+    var byO={}; rows.forEach(function(x){(byO[x.origen]=byO[x.origen]||[]).push(x.creado_en);});
+    function esc(s){return String(s).replace(/[^a-zA-Z0-9]/g,'');}
+    function item(o){
+      var arr=(byO[o]||[]).slice().sort().reverse();
+      var det = arr.length? arr.slice(0,60).map(function(c){return '· '+fh(c);}).join('<br>') : 'Todavía nadie entró por acá.';
+      return '<div class="pmItem" style="cursor:pointer;display:flex;justify-content:space-between;padding:9px 6px;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+lab(o)+'</span><span style="font-weight:bold;color:#8fb3ff">'+arr.length+' <span style="color:#93a4c0;font-size:11px;font-weight:normal">▾</span></span></div>'
+        +'<div class="pmDet" style="display:none;padding:2px 14px 10px;color:#cbd5e1;font-size:13px;line-height:1.7">'+det+'</div>';
+    }
+    function suma(list){var t=0;list.forEach(function(o){t+=(byO[o]||[]).length;});return t;}
+    function seccion(titulo,cuerpo){
+      return '<div class="pmSec" style="cursor:pointer;background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-weight:500;color:#cbd5e1">'+titulo+'</span><span style="color:#8fb3ff">▾</span></div>'
+        +'<div class="pmBody" style="display:none;padding:0 6px 8px">'+cuerpo+'</div>';
+    }
+    var redes=['Instagram','Facebook','TikTok','WhatsApp'];
+    var enlacesBase=['Google','Directo','App Play Store'];
+    var otros=Object.keys(byO).filter(function(o){return redes.indexOf(o)<0 && enlacesBase.indexOf(o)<0;});
+    var enlaces=enlacesBase.concat(otros);
+    // meses
+    var meses={}; rows.forEach(function(x){var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);(meses[k]=meses[k]||[]).push(x.origen);});
     var MN={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
     var mk=Object.keys(meses).sort().reverse();
-    var hr=mk.map(function(k){var pp=k.split('-');return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+(MN[pp[1]]||k)+' '+pp[0]+'</span><span style="font-weight:bold;color:#8fb3ff">'+meses[k]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Todavía sin datos (arranca hoy)</div>';
-    document.getElementById('pmHistReal').innerHTML='<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📅 Total de visitas por mes</div>'+hr+'</div>';
-    var now=Date.now();
-    var an=new Date(now-3*3600*1000);
+    function mesItem(k){
+      var pp=k.split('-'); var arr=meses[k];
+      var porOrigen={}; arr.forEach(function(o){porOrigen[o]=(porOrigen[o]||0)+1;});
+      var det=Object.keys(porOrigen).sort(function(a,b){return porOrigen[b]-porOrigen[a];}).map(function(o){return '· '+lab(o)+': '+porOrigen[o];}).join('<br>')||'Sin visitas';
+      return '<div class="pmItem" style="cursor:pointer;display:flex;justify-content:space-between;padding:9px 6px;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+(MN[pp[1]]||k)+' '+pp[0]+'</span><span style="font-weight:bold;color:#8fb3ff">'+arr.length+' <span style="color:#93a4c0;font-size:11px;font-weight:normal">▾</span></span></div>'
+        +'<div class="pmDet" style="display:none;padding:2px 14px 10px;color:#cbd5e1;font-size:13px;line-height:1.7">'+det+'</div>';
+    }
+    var tree=
+      seccion('📣 Redes sociales &nbsp;<span style="color:#8fb3ff;font-weight:bold">'+suma(redes)+'</span>', redes.map(item).join(''))+
+      seccion('🔗 Enlaces y otros &nbsp;<span style="color:#8fb3ff;font-weight:bold">'+suma(enlaces)+'</span>', enlaces.map(item).join(''))+
+      seccion('📅 Total de visitas por mes', mk.length? mk.map(mesItem).join('') : '<div style="color:#93a4c0;padding:8px 6px">Todavía sin datos (arranca hoy)</div>');
+    var cont=document.getElementById('pmTree'); cont.innerHTML=tree;
+    cont.addEventListener('click', function(ev){
+      var sec=ev.target.closest('.pmSec'); var it=ev.target.closest('.pmItem');
+      if(sec){ var b=sec.nextElementSibling; if(b&&b.classList.contains('pmBody')){ b.style.display=(b.style.display==='none')?'block':'none'; var ar=sec.querySelector('span:last-child'); if(ar) ar.textContent=(b.style.display==='none')?'▾':'▴'; } return; }
+      if(it){ var d=it.nextElementSibling; if(d&&d.classList.contains('pmDet')){ d.style.display=(d.style.display==='none')?'block':'none'; } }
+    });
+    // === Contadores de arriba con datos REALES (a prueba de balas con MutationObserver) ===
+    var now=Date.now(); var an=new Date(now-3*3600*1000);
     var artMid=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),an.getUTCDate())+3*3600*1000;
     var d7=now-7*86400000, d30=now-30*86400000;
     var cHoy=0,c7=0,c30=0;
-    rows.forEach(function(x){if(x.origen==='Interno')return; var t=new Date(x.creado_en).getTime(); if(t>=artMid)cHoy++; if(t>=d7)c7++; if(t>=d30)c30++;});
-    function setT(id,v){var el=document.getElementById(id); if(el) el.textContent=v;}
-    function apply(){setT('stVisHoy',cHoy);setT('stVisSemana',c7);setT('stVisMes',c30);setT('stPvMes',c30);}
-    apply(); setTimeout(apply,2500); setTimeout(apply,5000);
-  }catch(e){ var el=document.getElementById('pmOrigCols'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
+    rows.forEach(function(x){var t=new Date(x.creado_en).getTime(); if(t>=artMid)cHoy++; if(t>=d7)c7++; if(t>=d30)c30++;});
+    var reales={stVisHoy:String(cHoy), stVisSemana:String(c7), stVisMes:String(c30), stPvMes:String(c30)};
+    Object.keys(reales).forEach(function(id){
+      var el=document.getElementById(id); if(!el) return;
+      el.textContent=reales[id];
+      try{ var mo=new MutationObserver(function(){ if(el.textContent!==reales[id]) el.textContent=reales[id]; }); mo.observe(el,{childList:true,characterData:true,subtree:true}); }catch(e){}
+    });
+  }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
 </script>
 </body>
