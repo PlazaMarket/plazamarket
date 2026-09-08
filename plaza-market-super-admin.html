@@ -558,7 +558,7 @@
 
 <div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
   <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas</h2>
-  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Solo visitantes no logueados. "Directo/App" = escribió la dirección o entró desde la app. "Navegación interna" = se movió dentro del sitio. Números estimados por Cloudflare.</div>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Solo visitantes no logueados. "Directo/App" = escribió la dirección o entró desde la app. "Navegación interna" = se movió dentro del sitio. ⚠️ Los números son ESTIMADOS por Cloudflare (muestreo del plan gratis): son aproximados, no exactos. El dato REAL de Instagram está en Navegadores → Instagram (in-app), porque el navegador de IG borra el origen. Navegadores y Dispositivos son siempre de los últimos 30 días (no cambian con la solapa).</div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
     <button class="pmPer" data-p="hoy" style="background:#3d7bff;color:#fff;border:none;padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">Hoy</button>
     <button class="pmPer" data-p="semana" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">7 días</button>
@@ -586,14 +586,14 @@
       if(h.indexOf('whatsapp')>-1||h.indexOf('wa.me')>-1) return ['red','💬 WhatsApp'];
       if(h.indexOf('android-app')>-1||h.indexOf('plazamarket.twa')>-1) return ['enl','📲 App Play Store'];
       if(h.indexOf('google')>-1) return ['enl','🔎 Google'];
-      if(h.indexOf('plazamarket')>-1) return ['enl','🔁 Navegación interna'];
+      if(h.indexOf('plazamarket')>-1) return null;
       if(!h) return ['enl','🔗 Directo / App'];
       return ['enl','🌐 '+h];
     }
     function rows(obj){ var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];}); return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Sin datos en este período</div>'; }
     function render(p){
       var red={},enl={};
-      (per[p]||[]).forEach(function(x){var c=cat(x.host);var o=(c[0]==='red')?red:enl;o[c[1]]=(o[c[1]]||0)+x.count;});
+      (per[p]||[]).forEach(function(x){var c=cat(x.host);if(!c)return;var o=(c[0]==='red')?red:enl;o[c[1]]=(o[c[1]]||0)+x.count;});
       document.getElementById('pmOrigenesCols').innerHTML=
         '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+rows(red)+'</div>'+
         '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+rows(enl)+'</div>';
@@ -603,8 +603,8 @@
     var bwObj={}; (j.browsers||[]).forEach(function(x){var L=brLabel(x.name);bwObj[L]=(bwObj[L]||0)+x.count;});
     var dvObj={}; (j.devices||[]).forEach(function(x){var L=devLabel(x.name);dvObj[L]=(dvObj[L]||0)+x.count;});
     document.getElementById('pmNavDisp').innerHTML=
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🖥️ Navegadores (30 días)</div>'+rows(bwObj)+'</div>'+
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📱 Dispositivos (30 días)</div>'+rows(dvObj)+'</div>';
+      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🖥️ Navegadores · siempre 30 días</div>'+rows(bwObj)+'</div>'+
+      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📱 Dispositivos · siempre 30 días</div>'+rows(dvObj)+'</div>';
     try{
       var rm=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas_mensuales?select=mes,total&order=mes.desc',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
       var hist=await rm.json();
