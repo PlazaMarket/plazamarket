@@ -556,17 +556,18 @@
 
 
 
+
+
 <div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
   <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas</h2>
-  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Solo visitantes no logueados. "Directo/App" = escribió la dirección o entró desde la app. "Navegación interna" = se movió dentro del sitio. ⚠️ Los números son ESTIMADOS por Cloudflare (muestreo del plan gratis): son aproximados, no exactos. El dato REAL de Instagram está en Navegadores → Instagram (in-app), porque el navegador de IG borra el origen. Navegadores y Dispositivos son siempre de los últimos 30 días (no cambian con la solapa).</div>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES (no estimados). Cada vez que alguien entra = 1 visita. No te cuenta a vos ni a los logueados. Empezó a contar hoy.</div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-    <button class="pmPer" data-p="hoy" style="background:#3d7bff;color:#fff;border:none;padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">Hoy</button>
-    <button class="pmPer" data-p="semana" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">7 días</button>
-    <button class="pmPer" data-p="mes" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">30 días</button>
+    <button class="pmPer2" data-p="hoy" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">Hoy</button>
+    <button class="pmPer2" data-p="semana" style="background:transparent;color:#cbd5e1;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">7 días</button>
+    <button class="pmPer2" data-p="mes" style="background:#3d7bff;color:#fff;border:none;padding:8px 16px;border-radius:30px;font-size:14px;cursor:pointer;">30 días</button>
   </div>
-  <div id="pmOrigenesCols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">Cargando…</div>
-  <div id="pmNavDisp" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px;"></div>
-  <div id="pmHistMes" style="margin-top:12px;"></div>
+  <div id="pmOrigCols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">Cargando…</div>
+  <div id="pmHistReal" style="margin-top:12px;"></div>
 </div>
 <script>
 (async function(){
@@ -576,48 +577,46 @@
     var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
     var keys=Object.keys(localStorage); var ak=keys.find(function(k){return /sb-.*-auth-token/.test(k);});
     var at=null; try{var s=JSON.parse(localStorage.getItem(ak)); at=s.access_token||(s.currentSession&&s.currentSession.access_token);}catch(e){}
-    var r=await fetch('https://'+ref+'.functions.supabase.co/cc-analytics',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anon,'apikey':anon},body:'{}'});
-    var j=await r.json();
-    var per={hoy:j.refsHoy||[], semana:j.refsSemana||[], mes:j.refsMes||[]};
-    function cat(h){ h=(h||'').toLowerCase();
-      if(h.indexOf('instagram')>-1) return ['red','📷 Instagram'];
-      if(h.indexOf('facebook')>-1||h.indexOf('fb.')>-1) return ['red','📘 Facebook'];
-      if(h.indexOf('tiktok')>-1) return ['red','🎵 TikTok'];
-      if(h.indexOf('whatsapp')>-1||h.indexOf('wa.me')>-1) return ['red','💬 WhatsApp'];
-      if(h.indexOf('android-app')>-1||h.indexOf('plazamarket.twa')>-1) return ['enl','📲 App Play Store'];
-      if(h.indexOf('google')>-1) return ['enl','🔎 Google'];
-      if(h.indexOf('plazamarket')>-1) return null;
-      if(!h) return ['enl','🔗 Directo / App'];
-      return ['enl','🌐 '+h];
+    var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=10000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
+    var rows=await rr.json(); if(!Array.isArray(rows)) rows=[];
+    var now=new Date();
+    var artNow=new Date(now.getTime()-3*3600*1000);
+    var artMid=Date.UTC(artNow.getUTCFullYear(),artNow.getUTCMonth(),artNow.getUTCDate())+3*3600*1000;
+    var d7=now.getTime()-7*86400000, d30=now.getTime()-30*86400000;
+    function meta(o){o=o||'';
+      if(o==='Instagram')return ['red','📷 Instagram'];
+      if(o==='Facebook')return ['red','📘 Facebook'];
+      if(o==='TikTok')return ['red','🎵 TikTok'];
+      if(o==='WhatsApp')return ['red','💬 WhatsApp'];
+      if(o==='Google')return ['enl','🔎 Google'];
+      if(o==='Directo')return ['enl','🔗 Directo / App'];
+      if(o==='App Play Store')return ['enl','📲 App Play Store'];
+      if(o==='Interno')return null;
+      return ['enl','🌐 '+o.replace('Otro: ','')];
     }
-    function rows(obj){ var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];}); return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Sin datos en este período</div>'; }
+    function tabla(obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];});return k.map(function(n){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+n+'</span><span style="font-weight:bold;color:#8fb3ff">'+obj[n]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Sin visitas en este período</div>';}
     function render(p){
       var red={},enl={};
-      (per[p]||[]).forEach(function(x){var c=cat(x.host);if(!c)return;var o=(c[0]==='red')?red:enl;o[c[1]]=(o[c[1]]||0)+x.count;});
-      document.getElementById('pmOrigenesCols').innerHTML=
-        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+rows(red)+'</div>'+
-        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+rows(enl)+'</div>';
+      rows.forEach(function(x){
+        var t=new Date(x.creado_en).getTime();
+        var ok=(p==='hoy')? t>=artMid : (p==='semana')? t>=d7 : t>=d30;
+        if(!ok) return;
+        var m=meta(x.origen); if(!m) return;
+        var o=(m[0]==='red')?red:enl; o[m[1]]=(o[m[1]]||0)+1;
+      });
+      document.getElementById('pmOrigCols').innerHTML=
+        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📣 Redes sociales</div>'+tabla(red)+'</div>'+
+        '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🔗 Enlaces y otros</div>'+tabla(enl)+'</div>';
     }
-    function brLabel(n){var l=(n||'').toLowerCase();if(l.indexOf('instagram')>-1)return '📷 Instagram (in-app)';if(l.indexOf('facebook')>-1)return '📘 Facebook (in-app)';if(l.indexOf('chromemobile')>-1||l==='chrome mobile')return '🌐 Chrome (celu)';if(l.indexOf('samsung')>-1)return '🌐 Samsung Internet';if(l==='chrome')return '🌐 Chrome';if(l.indexOf('firefox')>-1)return '🌐 Firefox';if(l.indexOf('safari')>-1)return '🌐 Safari';if(l.indexOf('edge')>-1)return '🌐 Edge';if(l==='unknown'||!n)return 'Otros / desconocido';return '🌐 '+n;}
-    function devLabel(n){n=(n||'').toLowerCase();if(n==='mobile')return '📱 Celular';if(n==='desktop')return '💻 Computadora';if(n==='tablet')return '📋 Tablet';return n||'?';}
-    var bwObj={}; (j.browsers||[]).forEach(function(x){var L=brLabel(x.name);bwObj[L]=(bwObj[L]||0)+x.count;});
-    var dvObj={}; (j.devices||[]).forEach(function(x){var L=devLabel(x.name);dvObj[L]=(dvObj[L]||0)+x.count;});
-    document.getElementById('pmNavDisp').innerHTML=
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">🖥️ Navegadores · siempre 30 días</div>'+rows(bwObj)+'</div>'+
-      '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📱 Dispositivos · siempre 30 días</div>'+rows(dvObj)+'</div>';
-    try{
-      var rm=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas_mensuales?select=mes,total&order=mes.desc',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
-      var hist=await rm.json();
-      if(Array.isArray(hist)&&hist.length){
-        var M={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
-        var hr=hist.map(function(x){var pp=(x.mes||'').split('-');var nm=(M[pp[1]]||x.mes)+' '+pp[0];return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+nm+'</span><span style="font-weight:bold;color:#8fb3ff">'+x.total+'</span></div>';}).join('');
-        document.getElementById('pmHistMes').innerHTML='<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📅 Historial por mes (páginas vistas)</div>'+hr+'</div>';
-      }
-    }catch(e){}
-    var btns=document.querySelectorAll('.pmPer');
+    var meses={}; rows.forEach(function(x){var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);meses[k]=(meses[k]||0)+1;});
+    var MN={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+    var mk=Object.keys(meses).sort().reverse();
+    var hr=mk.map(function(k){var pp=k.split('-');return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+(MN[pp[1]]||k)+' '+pp[0]+'</span><span style="font-weight:bold;color:#8fb3ff">'+meses[k]+'</span></div>';}).join('')||'<div style="color:#93a4c0;padding:6px 0">Todavía sin datos (arranca hoy)</div>';
+    document.getElementById('pmHistReal').innerHTML='<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px"><div style="font-weight:500;margin-bottom:6px;color:#cbd5e1">📅 Total de visitas por mes</div>'+hr+'</div>';
+    var btns=document.querySelectorAll('.pmPer2');
     btns.forEach(function(b){b.addEventListener('click',function(){btns.forEach(function(x){x.style.background='transparent';x.style.color='#cbd5e1';x.style.border='1px solid rgba(255,255,255,.15)';});b.style.background='#3d7bff';b.style.color='#fff';b.style.border='none';render(b.getAttribute('data-p'));});});
-    render('hoy');
-  }catch(e){ var box=document.getElementById('pmOrigenesCols'); if(box) box.textContent='No se pudo cargar: '+(e&&e.message||e); }
+    render('mes');
+  }catch(e){ var el=document.getElementById('pmOrigCols'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
 </script>
 </body>
