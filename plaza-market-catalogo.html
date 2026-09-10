@@ -216,6 +216,40 @@
             background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5;
             border-radius: 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.8rem; font-weight: 600; text-align: center; margin-top: 0.9rem;
         }
+        /* ===== Historial (Vistos + Búsquedas) ===== */
+        .hist-btn{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.35);color:#93C5FD;font-weight:700;border-radius:0.7rem;padding:0 0.85rem;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:0.35rem;font-size:0.9rem;}
+        .hist-btn:hover{background:rgba(59,130,246,0.2);}
+        .hist-fondo{position:fixed;inset:0;background:rgba(3,7,18,0.82);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:3.5rem 1rem 1rem;overflow-y:auto;}
+        .hist-fondo.abierto{display:flex;}
+        .hist-card{background:#0F1729;border:1px solid rgba(255,255,255,0.1);border-radius:1.1rem;width:100%;max-width:640px;padding:1.1rem 1.1rem 1.4rem;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+        .hist-cerrar{position:absolute;top:0.7rem;right:0.9rem;background:none;border:none;color:#94A3B8;font-size:1.4rem;cursor:pointer;line-height:1;}
+        .hist-tit{font-size:1.05rem;font-weight:800;color:#E2E8F0;margin:0 0 0.9rem;display:flex;align-items:center;gap:0.5rem;}
+        .hist-tabs{display:flex;gap:0.5rem;margin-bottom:1rem;}
+        .hist-tab{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#CBD5E1;font-weight:700;border-radius:0.7rem;padding:0.6rem;cursor:pointer;font-size:0.9rem;}
+        .hist-tab.on{background:linear-gradient(135deg,#0052D4,#4364F7);color:#fff;border-color:transparent;}
+        .hist-selector{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.85rem;font-size:0.82rem;color:#94A3B8;flex-wrap:wrap;}
+        .hist-selector button[data-n]{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#CBD5E1;border-radius:0.5rem;padding:0.25rem 0.65rem;cursor:pointer;font-weight:700;font-size:0.8rem;}
+        .hist-selector button[data-n].on{background:rgba(59,130,246,0.25);color:#DBEAFE;border-color:rgba(59,130,246,0.4);}
+        .hist-lista{display:flex;flex-direction:column;gap:0.6rem;max-height:60vh;overflow-y:auto;}
+        .hist-row{display:flex;gap:0.75rem;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);border-radius:0.8rem;padding:0.55rem;cursor:pointer;align-items:center;text-align:left;}
+        .hist-row:hover{background:rgba(255,255,255,0.07);}
+        .hist-row img,.hist-row .hist-ph{width:64px;height:64px;object-fit:cover;border-radius:0.55rem;flex-shrink:0;background:linear-gradient(135deg,rgba(0,82,212,0.2),rgba(88,28,135,0.25));display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
+        .hist-row .hist-info{flex:1;min-width:0;}
+        .hist-row .hist-cat{font-size:0.68rem;color:#93C5FD;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;margin:0;}
+        .hist-row .hist-name{font-size:0.9rem;color:#E2E8F0;font-weight:700;margin:0.1rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .hist-row .hist-desc{font-size:0.75rem;color:#94A3B8;margin:0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+        .hist-row .hist-precio{font-size:0.92rem;color:#93C5FD;font-weight:800;margin:0.2rem 0 0;}
+        .hist-vacio{color:#94A3B8;text-align:center;padding:2rem 1rem;font-size:0.9rem;line-height:1.5;}
+        .hist-borrar{background:none;border:none;color:#F87171;font-weight:700;cursor:pointer;font-size:0.8rem;}
+        .hist-chip{display:flex;align-items:center;gap:0.5rem;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:0.7rem;padding:0.7rem 0.85rem;color:#E2E8F0;cursor:pointer;font-size:0.92rem;text-align:left;}
+        .hist-chip:hover{background:rgba(255,255,255,0.08);}
+        .hist-chip .q{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .busq-sug{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#0F1729;border:1px solid rgba(255,255,255,0.12);border-radius:0.7rem;box-shadow:0 12px 30px rgba(0,0,0,0.45);z-index:60;overflow:hidden;display:none;}
+        .busq-sug.abierto{display:block;}
+        .busq-sug .sug-head{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.8rem;font-size:0.72rem;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+        .busq-sug .sug-head button{background:none;border:none;color:#F87171;cursor:pointer;font-size:0.72rem;font-weight:700;}
+        .busq-sug .sug-item{display:flex;align-items:center;gap:0.55rem;padding:0.6rem 0.85rem;cursor:pointer;color:#E2E8F0;font-size:0.9rem;border-top:1px solid rgba(255,255,255,0.05);}
+        .busq-sug .sug-item:hover{background:rgba(255,255,255,0.06);}
         .hidden { display: none !important; }
 
         /* Globito discreto para instalar la app */
@@ -338,7 +372,7 @@
         </div>
 
         <div class="filtros">
-            <div class="buscador-wrap" style="flex:1;min-width:180px;position:relative;"><input type="text" id="buscador" placeholder="🔎 Buscar producto..." oninput="aplicarFiltros();pmToggleClearBusqueda()" style="width:100%;padding-right:2.2rem;box-sizing:border-box;"><span id="btnClearBusqueda" onclick="pmLimpiarBusqueda()" title="Limpiar búsqueda" style="display:none;position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:1.1rem;font-weight:bold;line-height:1;">✕</span></div>
+            <div class="buscador-wrap" style="flex:1;min-width:180px;position:relative;"><input type="text" id="buscador" placeholder="🔎 Buscar producto..." autocomplete="off" oninput="aplicarFiltros();pmToggleClearBusqueda();pmSugerenciasBusqueda()" onfocus="pmSugerenciasBusqueda()" onblur="pmBusquedaBlur()" onkeydown="pmBusquedaEnter(event)" style="width:100%;padding-right:2.2rem;box-sizing:border-box;"><span id="btnClearBusqueda" onclick="pmLimpiarBusqueda()" title="Limpiar búsqueda" style="display:none;position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:1.1rem;font-weight:bold;line-height:1;">✕</span><div id="busqSug" class="busq-sug"></div></div><button type="button" class="hist-btn" onclick="pmAbrirHistorial()">🕘 Historial</button>
             <select id="filtroCategoria" onchange="aplicarFiltros()">
                 <option value="">Todas las categorías</option>
                     <option value="consolas">Consolas y Videojuegos</option>
@@ -372,9 +406,27 @@
             </select>
         </div>
 
-        <div id="seccionHistorial" class="hidden">
-            <p class="seccion-titulo">🕘 Vistos recientemente</p>
-            <div id="stripHistorial" class="strip"></div>
+        <div id="histFondo" class="hist-fondo" onclick="if(event.target===this)pmCerrarHistorial()">
+            <div class="hist-card">
+                <button class="hist-cerrar" onclick="pmCerrarHistorial()">✕</button>
+                <p class="hist-tit">🕘 Historial</p>
+                <div class="hist-tabs">
+                    <button class="hist-tab on" id="tabVistos" onclick="pmTabHistorial('vistos')">👁️ Vistos</button>
+                    <button class="hist-tab" id="tabBusquedas" onclick="pmTabHistorial('busquedas')">🔎 Búsquedas</button>
+                </div>
+                <div id="panelVistos">
+                    <div class="hist-selector">Mostrar:
+                        <button data-n="5" onclick="pmSetVistosN(5)">5</button>
+                        <button data-n="15" class="on" onclick="pmSetVistosN(15)">15</button>
+                        <button data-n="30" onclick="pmSetVistosN(30)">30</button>
+                        <button class="hist-borrar" onclick="pmBorrarVistos()">Borrar historial</button>
+                    </div>
+                    <div id="listaVistos" class="hist-lista"></div>
+                </div>
+                <div id="panelBusquedas" class="hidden">
+                    <div id="listaBusquedas" class="hist-lista"></div>
+                </div>
+            </div>
         </div>
 
         <div id="contenido">
@@ -776,19 +828,132 @@
         function guardarEnHistorial(id) {
             let h = leerHistorial().filter(x => x !== id);
             h.unshift(id);
-            h = h.slice(0, 8);
+            h = h.slice(0, 300);
             localStorage.setItem('pm_historial', JSON.stringify(h));
         }
         function renderHistorial() {
-            const cont = document.getElementById('seccionHistorial');
-            // Con pocos productos, "Vistos recientemente" solo duplica el catálogo. Lo mostramos cuando el catálogo crece.
-            if (todos.length < 4) { cont.classList.add('hidden'); return; }
-            const ids = leerHistorial();
-            const items = ids.map(id => todos.find(p => p.id === id)).filter(Boolean);
-            if (!items.length) { cont.classList.add('hidden'); return; }
-            document.getElementById('stripHistorial').innerHTML = items.map(tarjetaHTML).join('');
-            cont.classList.remove('hidden');
+            // El bloque de arriba se reemplazó por el botón 🕘 Historial (panel con solapas).
+            var cont = document.getElementById('seccionHistorial');
+            if (cont) cont.classList.add('hidden');
         }
+
+        // ===== Panel Historial (Vistos + Búsquedas) =====
+        var pmVistosN = 15;
+        var pmBusqActual = [];
+        var pmSugActual = [];
+        function leerBusquedas(){ try { return JSON.parse(localStorage.getItem('pm_busquedas') || '[]'); } catch(e){ return []; } }
+        function guardarBusqueda(q){
+            q = (q || '').trim();
+            if (q.length < 2) return;
+            var b = leerBusquedas().filter(function(x){ return x.toLowerCase() !== q.toLowerCase(); });
+            b.unshift(q);
+            b = b.slice(0, 30);
+            localStorage.setItem('pm_busquedas', JSON.stringify(b));
+        }
+        function pmBusquedaEnter(e){
+            if (e.key === 'Enter'){ var v = document.getElementById('buscador').value; guardarBusqueda(v); pmCerrarSugerencias(); document.getElementById('buscador').blur(); }
+        }
+        function pmBusquedaBlur(){
+            var v = document.getElementById('buscador').value;
+            setTimeout(pmCerrarSugerencias, 180);
+            guardarBusqueda(v);
+        }
+        function pmAbrirHistorial(){
+            pmTabHistorial('vistos');
+            document.getElementById('histFondo').classList.add('abierto');
+            document.body.style.overflow = 'hidden';
+        }
+        function pmCerrarHistorial(){
+            document.getElementById('histFondo').classList.remove('abierto');
+            document.body.style.overflow = '';
+        }
+        function pmTabHistorial(cual){
+            var esV = cual === 'vistos';
+            document.getElementById('tabVistos').classList.toggle('on', esV);
+            document.getElementById('tabBusquedas').classList.toggle('on', !esV);
+            document.getElementById('panelVistos').classList.toggle('hidden', !esV);
+            document.getElementById('panelBusquedas').classList.toggle('hidden', esV);
+            if (esV) renderVistosPanel(); else renderBusquedasPanel();
+        }
+        function pmSetVistosN(n){
+            pmVistosN = n;
+            var bs = document.querySelectorAll('#panelVistos .hist-selector button[data-n]');
+            bs.forEach(function(b){ b.classList.toggle('on', Number(b.dataset.n) === n); });
+            renderVistosPanel();
+        }
+        function filaVistoHTML(p){
+            var foto = (p.fotos && p.fotos[0])
+                ? '<img src="' + p.fotos[0] + '" alt="">'
+                : '<div class="hist-ph">' + (p.tipo === 'servicio' ? '🛠️' : '📦') + '</div>';
+            var desc = escaparHtml(p.descripcion || '').slice(0, 90);
+            return '<div class="hist-row" onclick="location.href=\'plaza-market-catalogo.html?id=' + p.id + '\'">'
+                + foto
+                + '<div class="hist-info">'
+                + '<p class="hist-cat">' + (CATEGORY_LABELS[p.categoria] || p.categoria || '') + '</p>'
+                + '<p class="hist-name">' + escaparHtml(p.titulo || '') + '</p>'
+                + '<p class="hist-desc">' + desc + (desc.length >= 90 ? '…' : '') + '</p>'
+                + '<p class="hist-precio">' + pesos(p.precio) + '</p>'
+                + '</div></div>';
+        }
+        function renderVistosPanel(){
+            var cont = document.getElementById('listaVistos');
+            var ids = leerHistorial();
+            var items = ids.map(function(id){ return todos.find(function(p){ return p.id === id; }); }).filter(Boolean).slice(0, pmVistosN);
+            if (!items.length){ cont.innerHTML = '<p class="hist-vacio">Todavía no viste ningún producto.<br>Cuando abras productos, van a aparecer acá. 👀</p>'; return; }
+            cont.innerHTML = items.map(filaVistoHTML).join('');
+        }
+        function renderBusquedasPanel(){
+            var cont = document.getElementById('listaBusquedas');
+            pmBusqActual = leerBusquedas();
+            if (!pmBusqActual.length){ cont.innerHTML = '<p class="hist-vacio">Todavía no buscaste nada.<br>Tus búsquedas van a quedar guardadas acá. 🔎</p>'; return; }
+            cont.innerHTML = pmBusqActual.map(function(q, i){ return '<button type="button" class="hist-chip" onclick="pmUsarBusquedaIdx(' + i + ')"><span>🔎</span><span class="q">' + escaparHtml(q) + '</span></button>'; }).join('')
+                + '<button type="button" class="hist-borrar" style="margin:0.6rem auto 0;display:block;" onclick="pmBorrarBusquedas()">Borrar búsquedas</button>';
+        }
+        function pmUsarBusquedaIdx(i){ pmUsarBusqueda(pmBusqActual[i]); }
+        function pmUsarBusqueda(q){
+            var inp = document.getElementById('buscador');
+            inp.value = q;
+            aplicarFiltros(); pmToggleClearBusqueda();
+            pmCerrarHistorial();
+            guardarBusqueda(q);
+        }
+        function pmBorrarVistos(){
+            if (!confirm('¿Borrar todo el historial de productos vistos?')) return;
+            localStorage.removeItem('pm_historial');
+            renderVistosPanel();
+        }
+        function pmBorrarBusquedas(){
+            if (!confirm('¿Borrar todas tus búsquedas guardadas?')) return;
+            localStorage.removeItem('pm_busquedas');
+            renderBusquedasPanel();
+        }
+        function pmSugerenciasBusqueda(){
+            var inp = document.getElementById('buscador');
+            var box = document.getElementById('busqSug');
+            if (!box) return;
+            var val = (inp.value || '').trim().toLowerCase();
+            var b = leerBusquedas();
+            if (val) b = b.filter(function(x){ return x.toLowerCase().indexOf(val) > -1 && x.toLowerCase() !== val; });
+            b = b.slice(0, 8);
+            pmSugActual = b;
+            if (!b.length){ box.classList.remove('abierto'); box.innerHTML = ''; return; }
+            box.innerHTML = '<div class="sug-head"><span>Búsquedas recientes</span><button type="button" onmousedown="event.preventDefault()" onclick="pmBorrarBusquedas();pmSugerenciasBusqueda()">Borrar</button></div>'
+                + b.map(function(q, i){ return '<div class="sug-item" onmousedown="event.preventDefault()" onclick="pmUsarSugerenciaIdx(' + i + ')"><span>🔎</span><span>' + escaparHtml(q) + '</span></div>'; }).join('');
+            box.classList.add('abierto');
+        }
+        function pmUsarSugerenciaIdx(i){ pmUsarSugerencia(pmSugActual[i]); }
+        function pmUsarSugerencia(q){
+            var inp = document.getElementById('buscador');
+            inp.value = q;
+            aplicarFiltros(); pmToggleClearBusqueda();
+            guardarBusqueda(q);
+            pmCerrarSugerencias();
+        }
+        function pmCerrarSugerencias(){ var box = document.getElementById('busqSug'); if (box) box.classList.remove('abierto'); }
+        document.addEventListener('click', function(e){
+            var w = e.target.closest && e.target.closest('.buscador-wrap');
+            if (!w) pmCerrarSugerencias();
+        });
 
         // ============================================================
         // VISTA GRANDE + CONTADOR
