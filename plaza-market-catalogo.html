@@ -1116,6 +1116,7 @@
             if (interesar.length) { document.getElementById('gridInteresar').innerHTML = interesar.map(miniHTML).join(''); secInt.classList.remove('hidden'); }
             else secInt.classList.add('hidden');
 
+            try{ if(window.pmVarModal) pmVarModal(p); }catch(e){}
             document.getElementById('modalFondo').scrollTop = 0;
             document.getElementById('modalFondo').classList.add('abierto');
             document.body.style.overflow = 'hidden';
@@ -1784,10 +1785,15 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
   window.updateCartBadge=function(){ var b=document.getElementById('cartBadge'); if(!b) return; var n=getCart().length; b.textContent=n; b.style.display=n>0?'inline-block':'none'; };
   window.addAlCarrito=function(p){
     if(!p||!p.id) return;
+    var variante=null, varOpciones=null;
+    if(p.variaciones && p.variaciones.combinaciones && p.variaciones.combinaciones.length){
+      if(!window.pmVarSel){ alert('Eleg\u00ed '+((p.variaciones.atributos||[]).join(' y ')||'la variante')+' antes de agregar al carrito.'); return; }
+      variante=window.pmVarSel.variante; varOpciones=window.pmVarSel.opciones;
+    }
     var c=getCart();
     if(c.some(function(x){return x.id===p.id;})){ window.abrirCarrito(); return; }
     var foto=(p.fotos&&p.fotos.length)?p.fotos[0]:'';
-    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis, cantidad:1 });
+    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis, cantidad:1, variante:variante, varOpciones:varOpciones });
     saveCart(c); window.abrirCarrito();
   };
   window.quitarDelCarrito=function(id){ saveCart(getCart().filter(function(x){return x.id!==id;})); window.renderCarrito(); };
@@ -1806,7 +1812,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
       var items=grupos[k]; var sub=items.reduce(function(a,b){return a+((Number(b.precio)||0)*(Number(b.cantidad)||1));},0);
       html+='<div class="cart-grupo"><p class="cart-vend">🏪 '+(items[0].vendedorNombre||'Vendedor')+'</p>';
       items.forEach(function(it){
-        html+='<div class="cart-item">'+(it.foto?('<img src="'+it.foto+'" class="cart-thumb">'):'<div class="cart-thumb"></div>')+'<div class="cart-info"><p class="cart-tit">'+(it.titulo||'')+'</p><p class="cart-precio">'+pesosCart(it.precio)+'</p><div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><button data-menos="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">−</button><input type="number" min="1" value="'+(Number(it.cantidad)||1)+'" data-cant="'+it.id+'" style="width:70px;text-align:center;padding:5px;border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;font-size:14px;"><button data-mas="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">+</button></div></div><button class="cart-quitar" data-quitar="'+it.id+'">✕</button></div>';
+        html+='<div class="cart-item">'+(it.foto?('<img src="'+it.foto+'" class="cart-thumb">'):'<div class="cart-thumb"></div>')+'<div class="cart-info"><p class="cart-tit">'+(it.titulo||'')+'</p>'+(it.variante?('<p style="font-size:.72rem;color:#93c5fd;margin:2px 0 0;">'+String(it.variante).replace(/</g,'&lt;')+'</p>'):'')+'<p class="cart-precio">'+pesosCart(it.precio)+'</p><div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><button data-menos="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">−</button><input type="number" min="1" value="'+(Number(it.cantidad)||1)+'" data-cant="'+it.id+'" style="width:70px;text-align:center;padding:5px;border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;font-size:14px;"><button data-mas="'+it.id+'" style="width:28px;height:28px;border:none;border-radius:6px;background:#334155;color:#fff;font-size:17px;line-height:1;cursor:pointer;">+</button></div></div><button class="cart-quitar" data-quitar="'+it.id+'">✕</button></div>';
       });
       html+='<div class="cart-sub">Subtotal: <strong>'+pesosCart(sub)+'</strong></div><button class="cart-comprar" data-vend="'+k+'">🛒 Comprar</button></div>';
     });
@@ -1921,7 +1927,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     if(typeof sesionActiva!=='undefined' && !sesionActiva){ alert('Iniciá sesión (es gratis) para comprar.'); location.href='plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html'; return; }
     var d=st.dir;
     if(!d.nombre.trim()||!d.calle.trim()||!d.loc.trim()||!d.prov.trim()||soloDig(d.cp).length<4){ alert('Completá tu dirección: nombre, calle y altura, localidad, provincia y CP.'); return; }
-    var items=st.items.map(function(it){ var _et=it.envioGratis?null:(st.elegido[it.id]||null); var _uuid=null; var _suc=null; if(_et==='pk_pto'){ var _o=(st.opciones[it.id]||[]).filter(function(o){return o.tipo==='pk_pto';})[0]; if(_o) _uuid=_o.uuid; } else if(_et && _et.indexOf('ca_S')===0){ var _os=(st.opciones[it.id]||[]).filter(function(o){return o.tipo===_et;})[0]; if(_os) _suc=_os._sucursal||null; } return { producto_id:it.id, cantidad:(Number(it.cantidad)||1), envio_tipo:_et, envio_uuid:_uuid, envio_sucursal:_suc }; });
+    var items=st.items.map(function(it){ var _et=it.envioGratis?null:(st.elegido[it.id]||null); var _uuid=null; var _suc=null; if(_et==='pk_pto'){ var _o=(st.opciones[it.id]||[]).filter(function(o){return o.tipo==='pk_pto';})[0]; if(_o) _uuid=_o.uuid; } else if(_et && _et.indexOf('ca_S')===0){ var _os=(st.opciones[it.id]||[]).filter(function(o){return o.tipo===_et;})[0]; if(_os) _suc=_os._sucursal||null; } return { producto_id:it.id, cantidad:(Number(it.cantidad)||1), envio_tipo:_et, envio_uuid:_uuid, envio_sucursal:_suc, variante:(it.variante||null) }; });
     var dir={ nombre:d.nombre.trim(), calle:d.calle.trim(), localidad:d.loc.trim(), provincia:d.prov.trim(), cp:soloDig(d.cp), referencia:d.ref.trim() };
     var btn=document.getElementById('coPagar'); btn.textContent='Preparando el pago…'; btn.disabled=true;
     db.functions.invoke('mp-crear-pago-multi',{ body:{ items:items, cp_destino:dir.cp, envio_direccion:dir } }).then(function(r){
@@ -1931,6 +1937,13 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     }).catch(function(e){ alert('Error: '+(e.message||e)); render(); });
   }
 })();
+</script>
+<script>
+window.pmVarSel=null;
+function pmVEsc(s){ return String(s==null?"":s).replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+window.pmVarModal=function(p){ var precioEl=document.getElementById("modalPrecio"); var cont=document.getElementById("modalVarSel"); if(!cont && precioEl && precioEl.parentElement){ cont=document.createElement("div"); cont.id="modalVarSel"; precioEl.parentElement.insertBefore(cont, precioEl.nextSibling); } window.pmVarSel=null; window._pmVarPick={}; var v=p&&p.variaciones; var btnComprar=document.getElementById("modalBtnComprar"); if(!v||!v.atributos||!v.combinaciones||!v.combinaciones.length){ if(cont){ cont.innerHTML=""; cont.style.display="none"; } return; } if(cont) cont.style.display="block"; if(btnComprar) btnComprar.style.display="none"; var bc=document.getElementById("modalBtnCarrito"); if(bc) bc.style.display=""; var st=document.getElementById("modalStock"); if(st) st.classList.add("hidden"); window._pmVarP=p; pmVarRenderSel(); };
+function pmVarRenderSel(){ var p=window._pmVarP; var cont=document.getElementById("modalVarSel"); if(!p||!cont)return; var v=p.variaciones; var pick=window._pmVarPick||{}; var h="<div style=\"margin:.6rem 0;\">"; v.atributos.forEach(function(nm){ var opciones=[]; v.combinaciones.forEach(function(cb){ var val=cb.opciones[nm]; if(val!=null && opciones.indexOf(val)<0) opciones.push(val); }); h+="<div style=\"margin-bottom:.5rem;\"><div style=\"font-size:.82rem;color:#93c5fd;font-weight:700;margin-bottom:4px;\">"+pmVEsc(nm)+":</div><div style=\"display:flex;flex-wrap:wrap;gap:6px;\">"; opciones.forEach(function(o){ var sel=pick[nm]===o; var disp=v.combinaciones.some(function(cb){ if(cb.opciones[nm]!==o)return false; var ok=true; v.atributos.forEach(function(nm2){ if(nm2!==nm && pick[nm2]!=null && cb.opciones[nm2]!==pick[nm2]) ok=false; }); return ok && (cb.stock||0)>0; }); h+="<button type=\"button\" onclick=\"pmVarPick(&#39;"+encodeURIComponent(nm)+"&#39;,&#39;"+encodeURIComponent(o)+"&#39;)\" "+(disp?"":"disabled")+" style=\"border-radius:8px;padding:6px 12px;font-size:.85rem;cursor:"+(disp?"pointer":"not-allowed")+";border:1px solid "+(sel?"#3B82F6":"rgba(255,255,255,.2)")+";background:"+(sel?"rgba(59,130,246,.3)":"rgba(255,255,255,.05)")+";color:"+(disp?"#e2e8f0":"#64748b")+";"+(disp?"":"text-decoration:line-through;")+"\">"+pmVEsc(o)+"</button>"; }); h+="</div></div>"; }); var full=v.atributos.every(function(nm){ return pick[nm]!=null; }); var msg=""; if(full){ var combo=v.combinaciones.filter(function(cb){ return v.atributos.every(function(nm){ return cb.opciones[nm]===pick[nm]; }); })[0]; if(combo && (combo.stock||0)>0){ window.pmVarSel={ variante:v.atributos.map(function(nm){ return nm+": "+pick[nm]; }).join(", "), opciones:JSON.parse(JSON.stringify(pick)), stock:combo.stock }; msg="<span style=\"color:#86efac;\">\u2714 "+combo.stock+" en stock</span>"; } else { window.pmVarSel=null; msg="<span style=\"color:#fca5a5;\">Sin stock en esa combinaci\u00f3n</span>"; } } else { window.pmVarSel=null; msg="<span style=\"color:#94a3b8;\">Eleg\u00ed "+v.atributos.join(" y ")+"</span>"; } h+="<div style=\"font-size:.85rem;margin-top:2px;\">"+msg+"</div></div>"; cont.innerHTML=h; }
+window.pmVarPick=function(nmEnc,oEnc){ var nm=decodeURIComponent(nmEnc), o=decodeURIComponent(oEnc); if(!window._pmVarPick) window._pmVarPick={}; window._pmVarPick[nm]=o; pmVarRenderSel(); };
 </script>
 </body>
 </html>
