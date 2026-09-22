@@ -356,6 +356,22 @@
                         <p class="envio-hint">Cuando el stock llegue a 0, la publicación se muestra como <strong>“Agotado”</strong> hasta que lo repongas.</p>
                     </div>
 
+                    <div id="seccionVariaciones" style="margin-top:1rem;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+    <input type="checkbox" id="chkVariaciones" onchange="pmVarToggle()" style="width:auto;margin:0;"> Este producto tiene <span style="color:#93c5fd;">variaciones</span> (ej: talle, color)
+  </label>
+  <div id="varBox" class="hidden" style="margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.03);">
+    <p class="envio-hint" style="margin-top:0;">Agregá las opciones de cada variable y cargá el stock de cada combinación. El stock total se calcula solo.</p>
+    <div id="varAtributos"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributo('Color')">+ Color</button>
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributo('Talle')">+ Talle</button>
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributoPropio()">+ Otra variable</button>
+    </div>
+    <div id="varGrid"></div>
+  </div>
+</div>
+<style>.pm-varbtn{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#93c5fd;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.85rem;}.pm-varbtn:hover{background:rgba(59,130,246,.28);}#varBox input[type=text]{padding:6px 8px;border-radius:8px;}</style>
                     <div id="seccionMedidas">
                         <div class="mb-4"><label>🔖 Código de barras (opcional)</label><input type="text" id="productoEan" inputmode="numeric" placeholder="Ej: 7791234567890" class="mt-2"><p class="text-xs text-gray-400 mt-1">¿Tu producto tiene código de barras? Cargalo y aparecés en más búsquedas. Si es hecho a mano o no tiene, dejalo vacío.</p></div><label>📦 Medidas del paquete</label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
@@ -1005,11 +1021,11 @@ async function publishProduct() {
             if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
 
             const stockRaw = soloDigitos(document.getElementById('productStock').value);
-            if (esProducto && stockRaw === '') {
+            if (esProducto && stockRaw === '' && !(window.pmVar && pmVar.activo)) {
                 showToast('❌ Poné cuántas unidades tenés en stock (0 = agotado)', 'error');
                 return;
             }
-            const stock = esProducto ? Number(stockRaw) : null;
+            const stock = esProducto ? ((window.pmVar && pmVar.activo) ? pmVarStockTotal() : Number(stockRaw)) : null;
 
             const altoCm = valorMedida('paqueteAlto');
             const anchoCm = valorMedida('paqueteAncho');
@@ -1050,6 +1066,7 @@ async function publishProduct() {
                     alto_cm: altoF, ancho_cm: anchoF,
         largo_cm: largoF, peso_gr: pesoF
                 };
+                datos.variaciones = (esProducto && window.pmVar && pmVar.activo) ? pmVarGet() : null;
                 if (esProducto) { try { const _e=(document.getElementById('productoEan')?.value||'').trim(); if(_e) datos.ean=_e; } catch(e){} }
 
                 let error;
@@ -1091,6 +1108,7 @@ async function publishProduct() {
             uploadedPhotos = [];
             fotosExistentes = [];
             editandoId = null;
+            try{ pmVarReset(); }catch(e){}
             document.getElementById('bannerEdicion').classList.add('hidden');
             document.getElementById('publishBtn').textContent = 'Publicar';
             setTipo('producto');
@@ -1127,6 +1145,7 @@ async function publishProduct() {
                 document.querySelector(`input[name="quienPagaEnvio"][value="${quien}"]`).checked = true;
             }
 
+            try{ pmVarLoad(p.variaciones); }catch(e){}
             fotosExistentes = (p.fotos || []).slice();
             uploadedPhotos = [];
             renderPhotoSlots();
@@ -1561,6 +1580,25 @@ async function subirPlanilla(ev){
   function boot(){ var t=document.getElementById('productTitle'); if(!t){ setTimeout(boot,600); return; } CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e){ e.addEventListener('input', guardar); e.addEventListener('change', guardar); } }); setTimeout(function(){ if(!t.value){ banner(); } }, 900); new MutationObserver(function(muts){ muts.forEach(function(m){ (m.addedNodes||[]).forEach(function(n){ var txt=(n.textContent||''); if(/con éxito|publicad|guardado con/i.test(txt)){ try{ pmLimpiarBorrador(); }catch(e){} } }); }); }).observe(document.body,{childList:true,subtree:true}); }
   if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
 })();
+</script>
+<script>
+window.pmVar = { activo:false, atributos:[], stocks:{}, precios:{}, _combos:[], _ats:[] };
+function pmVarEsc(s){ return String(s==null?"":s).replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;"); }
+function pmVarToggle(){ pmVar.activo=document.getElementById("chkVariaciones").checked; document.getElementById("varBox").classList.toggle("hidden",!pmVar.activo); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display=pmVar.activo?"none":""; if(pmVar.activo && !pmVar.atributos.length){ pmVar.atributos.push({nombre:"Color",opciones:[]}); pmVar.atributos.push({nombre:"Talle",opciones:[]}); } pmVarRender(); }
+function pmVarAddAtributo(nombre){ if(pmVar.atributos.some(function(a){return a.nombre.toLowerCase()===nombre.toLowerCase();}))return; pmVar.atributos.push({nombre:nombre,opciones:[]}); pmVarRender(); }
+function pmVarAddAtributoPropio(){ var n=prompt("Nombre de la variable (ej: Material, Sabor):"); if(n && n.trim()) pmVarAddAtributo(n.trim().slice(0,20)); }
+function pmVarDelAtributo(i){ pmVar.atributos.splice(i,1); pmVarRender(); }
+function pmVarAddOpcion(i,inputId){ var inp=document.getElementById(inputId); if(!inp)return; var v=(inp.value||"").trim(); if(!v)return; var a=pmVar.atributos[i]; if(!a)return; if(!a.opciones.some(function(o){return o.toLowerCase()===v.toLowerCase();})) a.opciones.push(v.slice(0,24)); inp.value=""; pmVarRender(); var again=document.getElementById(inputId); if(again) again.focus(); }
+function pmVarDelOpcion(i,j){ pmVar.atributos[i].opciones.splice(j,1); pmVarRender(); }
+function pmVarCombos(){ var ats=pmVar.atributos.filter(function(a){return a.opciones.length;}); if(!ats.length) return {ats:[],combos:[]}; var res=[[]]; ats.forEach(function(a){ var next=[]; res.forEach(function(pre){ a.opciones.forEach(function(o){ next.push(pre.concat([o])); }); }); res=next; }); return { ats:ats.map(function(a){return a.nombre;}), combos:res }; }
+function pmVarStockTotal(){ var cc=pmVarCombos(); var s=0; cc.combos.forEach(function(c){ s+=(pmVar.stocks[c.join(" | ")]||0); }); return s; }
+function pmVarSetStock(idx,val){ var c=pmVar._combos[idx]; if(!c)return; var n=parseInt(String(val||"").replace(/[^0-9]/g,""),10); pmVar.stocks[c.join(" | ")]=isNaN(n)?0:n; var el=document.getElementById("varStockTotal"); if(el) el.textContent=pmVarStockTotal(); }
+function pmVarSetPrecio(idx,val){ var c=pmVar._combos[idx]; if(!c)return; var n=parseInt(String(val||"").replace(/[^0-9]/g,""),10); pmVar.precios[c.join(" | ")]=(isNaN(n)||!n)?null:n; }
+function pmVarRender(){ var box=document.getElementById("varAtributos"); if(!box)return; var h=""; pmVar.atributos.forEach(function(a,i){ h+="<div style=\"margin-bottom:12px;\">"; h+="<div style=\"display:flex;align-items:center;gap:8px;\"><b style=\"color:#93c5fd;\">"+pmVarEsc(a.nombre)+"</b><button type=\"button\" onclick=\"pmVarDelAtributo("+i+")\" style=\"background:none;border:none;color:#f87171;cursor:pointer;font-size:.78rem;\">quitar variable</button></div>"; h+="<div style=\"display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;\">"; a.opciones.forEach(function(o,j){ h+="<span style=\"background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.4);border-radius:20px;padding:3px 10px;font-size:.85rem;color:#dbeafe;\">"+pmVarEsc(o)+" <b onclick=\"pmVarDelOpcion("+i+","+j+")\" style=\"cursor:pointer;color:#fca5a5;\">×</b></span>"; }); h+="</div>"; var iid="varop_"+i; h+="<div style=\"display:flex;gap:6px;\"><input type=\"text\" id=\""+iid+"\" placeholder=\"Agregar opción y Enter (ej: Negro / 40)\" style=\"flex:1;\" onkeydown=\"if(event.key===&#39;Enter&#39;){event.preventDefault();pmVarAddOpcion("+i+",&#39;"+iid+"&#39;);}\"><button type=\"button\" class=\"pm-varbtn\" onclick=\"pmVarAddOpcion("+i+",&#39;"+iid+"&#39;)\">Agregar</button></div>"; h+="</div>"; }); box.innerHTML=h; pmVarRenderGrid(); }
+function pmVarRenderGrid(){ var g=document.getElementById("varGrid"); if(!g)return; var cc=pmVarCombos(); pmVar._combos=cc.combos; pmVar._ats=cc.ats; if(!cc.combos.length){ g.innerHTML="<p class=\"envio-hint\">Agregá al menos una opción a cada variable para ver las combinaciones.</p>"; return; } var base=(typeof valorPrecio==="function"?valorPrecio():0)||0; var h="<div style=\"overflow-x:auto;\"><table style=\"width:100%;border-collapse:collapse;font-size:.85rem;\"><tr style=\"color:#93c5fd;text-align:left;\"><th style=\"padding:4px 6px;\">"+cc.ats.map(pmVarEsc).join(" / ")+"</th><th style=\"padding:4px 6px;\">Stock</th><th style=\"padding:4px 6px;\">Precio (opcional)</th></tr>"; cc.combos.forEach(function(c,idx){ var k=c.join(" | "); var st=(pmVar.stocks[k]!=null?pmVar.stocks[k]:""); var pr=(pmVar.precios[k]!=null?pmVar.precios[k]:""); h+="<tr><td style=\"padding:4px 6px;color:#e2e8f0;\">"+c.map(pmVarEsc).join(" / ")+"</td><td style=\"padding:4px 6px;\"><input type=\"text\" inputmode=\"numeric\" value=\""+st+"\" placeholder=\"0\" style=\"width:70px;\" oninput=\"pmVarSetStock("+idx+",this.value)\"></td><td style=\"padding:4px 6px;\"><input type=\"text\" inputmode=\"numeric\" value=\""+pr+"\" placeholder=\""+base+"\" style=\"width:90px;\" oninput=\"pmVarSetPrecio("+idx+",this.value)\"></td></tr>"; }); h+="</table></div><p class=\"envio-hint\" style=\"margin-top:8px;\">Stock total: <b id=\"varStockTotal\">"+pmVarStockTotal()+"</b> unidades. Dejá el precio vacío para usar el precio general.</p>"; g.innerHTML=h; }
+function pmVarGet(){ var cc=pmVarCombos(); if(!cc.combos.length) return null; var combinaciones=cc.combos.map(function(c){ var opts={}; cc.ats.forEach(function(nm,idx){ opts[nm]=c[idx]; }); var k=c.join(" | "); return { opciones:opts, stock:(pmVar.stocks[k]||0), precio:(pmVar.precios[k]||null) }; }); return { atributos:cc.ats, combinaciones:combinaciones }; }
+function pmVarLoad(v){ pmVarReset(); if(!v||!v.atributos||!v.combinaciones)return; pmVar.activo=true; pmVar.atributos=v.atributos.map(function(nm){return {nombre:nm,opciones:[]};}); v.combinaciones.forEach(function(cb){ v.atributos.forEach(function(nm){ var val=cb.opciones?cb.opciones[nm]:null; var a=pmVar.atributos.find(function(x){return x.nombre===nm;}); if(a && val!=null && a.opciones.indexOf(val)<0) a.opciones.push(val); }); var key=v.atributos.map(function(nm){return cb.opciones?cb.opciones[nm]:"";}).join(" | "); pmVar.stocks[key]=cb.stock||0; if(cb.precio) pmVar.precios[key]=cb.precio; }); var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=true; var vb=document.getElementById("varBox"); if(vb) vb.classList.remove("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display="none"; pmVarRender(); }
+function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_combos:[],_ats:[]}; var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=false; var vb=document.getElementById("varBox"); if(vb) vb.classList.add("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display=""; var va=document.getElementById("varAtributos"); if(va) va.innerHTML=""; var vg=document.getElementById("varGrid"); if(vg) vg.innerHTML=""; }
 </script>
 </body>
 </html>
