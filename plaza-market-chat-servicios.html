@@ -496,6 +496,19 @@
             try { input.setSelectionRange(n, n); } catch (e) {}
         }
 
+        // La consulta se cuenta recién cuando el comprador escribe (no al abrir el chat).
+        // La base cuenta 1 sola vez por persona y producto, aunque mande muchos mensajes.
+        let consultaRegistrada = false;
+        async function registrarConsultaSiCorresponde() {
+            if (consultaRegistrada || !SALA.startsWith('prod') || !miUserId) return;
+            const resto = SALA.slice(4);
+            const pid = parseInt(resto.split('_')[0], 10);
+            const buyerUid = resto.split('_')[1];
+            if (!pid || buyerUid !== miUserId) return; // solo el comprador genera la consulta
+            consultaRegistrada = true;
+            try { await db.rpc('registrar_consulta', { pid: pid }); } catch (e) { console.error(e); }
+        }
+
         // ============================================================
         // ENVIAR MENSAJE DE TEXTO
         // ============================================================
@@ -512,6 +525,7 @@
             }
 
             input.value = '';
+            await registrarConsultaSiCorresponde();
             const { error } = await db.from('mensajes').insert({
                 conversacion: SALA,
                 autor: miNombre,

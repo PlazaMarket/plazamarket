@@ -567,6 +567,20 @@
 
         // ---- Aviso de consultas nuevas (campana + sonido) ----
         let misProductosIds = new Set();
+        let consultasReales = null; // { idProducto: cantidad de charlas con al menos 1 mensaje }
+        function aplicarConsultasReales() {
+            if (!consultasReales || !miUserId) return false;
+            let cambio = false;
+            todos.forEach(p => {
+                if (p.usuario_id !== miUserId) return;
+                const n = consultasReales[String(p.id)] || 0;
+                if ((p.consultas || 0) !== n) { p.consultas = n; cambio = true; }
+            });
+            return cambio;
+        }
+        function refrescarConsultasReales() {
+            if (aplicarConsultasReales() && todos.length && typeof aplicarFiltros === 'function') aplicarFiltros();
+        }
 
         function sonarNotif() {
             try {
@@ -589,15 +603,21 @@
                 const { data: prods } = await db.from('productos').select('id').eq('usuario_id', miUserId);
                 const ids = (prods || []).map(p => p.id);
                 misProductosIds = new Set(ids.map(x => String(x)));
-                if (!ids.length) { pintarNotif(0); return; }
+                if (!ids.length) { consultasReales = {}; pintarNotif(0); return; }
                 const { data: cons } = await db.from('pm_consultas').select('producto_id, usuario_id').in('producto_id', ids);
                 const salas = (cons || []).map(c => 'prod' + c.producto_id + '_' + c.usuario_id);
-                if (!salas.length) { pintarNotif(0); return; }
+                if (!salas.length) { consultasReales = {}; refrescarConsultasReales(); pintarNotif(0); return; }
                 const { data: lec } = await db.from('pm_lecturas').select('conversacion, ultima_lectura').eq('usuario_id', miUserId).in('conversacion', salas);
                 const leidoMap = {};
                 (lec || []).forEach(l => { leidoMap[l.conversacion] = new Date(l.ultima_lectura).getTime(); });
                 const { data: msgs } = await db.from('mensajes').select('conversacion, autor, creado_en').in('conversacion', salas);
                 const noLeidas = new Set();
+                // Solo cuenta como consulta la charla donde alguien escribió de verdad
+                const conMensaje = new Set((msgs || []).map(m => m.conversacion));
+                const cr = {};
+                conMensaje.forEach(sala => { const pid = (sala.split('_')[0] || '').slice(4); cr[pid] = (cr[pid] || 0) + 1; });
+                consultasReales = cr;
+                refrescarConsultasReales();
                 (msgs || []).forEach(m => {
                     if (m.autor === miNombre) return;
                     const t = new Date(m.creado_en).getTime();
@@ -701,6 +721,22 @@
         }
 
         let favoritosSet = new Set();
+        // Notificación al celu del vendedor: "a alguien le gustó tu producto" (una sola vez por persona y producto)
+        function avisarFavorito(id) {
+            try {
+                const p = todos.find(x => Number(x.id) === Number(id));
+                if (!p || !p.usuario_id || p.usuario_id === miUserId) return;
+                const clave = 'pm_fav_avisado_' + miUserId + '_' + id;
+                try { if (localStorage.getItem(clave)) return; localStorage.setItem(clave, '1'); } catch (e) {}
+                const titulo = '❤️ ¡A alguien le gustó tu producto!';
+                const texto = 'Guardaron "' + p.titulo + '" en sus favoritos. Es un buen momento para revisar el precio y las fotos.';
+                const url = '/plaza-market-catalogo.html';
+                db.functions.invoke('enviar-push', { body: {
+                    user_id: p.usuario_id, title: titulo, body: texto, url: url,
+                    titulo: titulo, mensaje: texto, cuerpo: texto
+                } }).catch(() => {});
+            } catch (e) {}
+        }
         async function toggleFavorito(ev, id, el) {
             try { ev.stopPropagation(); ev.preventDefault(); } catch (e) {}
             if (!sesionActiva || !miUserId) { alert("Iniciá sesión (es gratis) para guardar tus favoritos ❤️"); return; }
@@ -715,6 +751,7 @@
                     const { error } = await db.from("pm_favoritos").upsert({ usuario_id: miUserId, producto_id: id });
                     if (error) throw error;
                     favoritosSet.add(id); el.textContent = "❤️"; el.classList.add("fav-on");
+                    avisarFavorito(id);
                 }
             } catch (e) { alert("No se pudo guardar el favorito: " + (e.message || e)); }
         }
@@ -746,6 +783,7 @@
                 return;
             }
             todos = data || [];
+            aplicarConsultasReales();
             renderHistorial();
             aplicarFiltros();
         }
@@ -1517,10 +1555,8 @@
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
                 return;
             }
-            // 1 consulta por persona interesada — la base no cuenta de más aunque vuelva a consultar.
-            // IMPORTANTE: esperamos (await) a que se registre ANTES de cambiar de página. Si no,
-            // el navegador cancela el pedido al navegar y la consulta se pierde.
-            try { await db.rpc('registrar_consulta', { pid: p.id }); } catch (e) { console.error(e); }
+            // La consulta se cuenta recién cuando el comprador ESCRIBE y envía su primer mensaje
+            // (eso lo hace el chat). Si abre el chat y se arrepiente, no cuenta como consulta.
             // Sala PRIVADA por comprador: cada uno tiene su charla con el vendedor, nadie ve la del otro
             const sala = 'prod' + p.id + '_' + miUserId;
             window.location.href = 'plaza-market-chat-servicios.html?sala=' + encodeURIComponent(sala);
@@ -1779,8 +1815,33 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
 </div>
 <script>
 (function(){
-  function getCart(){ try { return JSON.parse(localStorage.getItem('pmCart')||'[]'); } catch(e){ return []; } }
-  function saveCart(c){ localStorage.setItem('pmCart', JSON.stringify(c)); if(window.updateCartBadge) window.updateCartBadge(); }
+  // Carrito POR CUENTA: cada usuario tiene el suyo; si no hay sesión, uno temporal que vence en 3 días.
+  // El carrito viejo compartido ('pmCart') se descarta: era del navegador, no de la persona.
+  var CART_DIAS_ANON=3, CART_DIAS_USER=30;
+  function cartUid(){
+    try{
+      for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i);
+        if(/^sb-.*-auth-token$/.test(k)){ var s=JSON.parse(localStorage.getItem(k)||'null'); var u=s&&(s.user||(s.currentSession&&s.currentSession.user)); if(u&&u.id) return u.id; }
+      }
+    }catch(e){}
+    return null;
+  }
+  window.pmCartKey=function(){ var u=cartUid(); return u?('pmCart_u_'+u):'pmCart_anon'; };
+  function leer(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'[]'); return Array.isArray(c)?c:[]; }catch(e){ return []; } }
+  function getCart(){
+    try{ localStorage.removeItem('pmCart'); }catch(e){}
+    var uid=cartUid(), key=window.pmCartKey(), c=leer(key), ahora=Date.now();
+    var dias=uid?CART_DIAS_USER:CART_DIAS_ANON;
+    var limpio=c.filter(function(x){ return x && x.id && (!x.agregado || (ahora-x.agregado) < dias*86400000) && !(uid && x.vendedorId===uid); });
+    // Si recién inició sesión y tenía cosas en el carrito temporal, se las pasamos a su cuenta
+    if(uid){ var anon=leer('pmCart_anon').filter(function(x){ return x && x.id && x.agregado && (ahora-x.agregado) < CART_DIAS_ANON*86400000 && x.vendedorId!==uid; });
+      if(anon.length){ anon.forEach(function(a){ if(!limpio.some(function(x){return x.id===a.id;})) limpio.push(a); }); try{ localStorage.removeItem('pmCart_anon'); }catch(e){} }
+    }
+    if(limpio.length!==c.length){ try{ localStorage.setItem(key, JSON.stringify(limpio)); }catch(e){} }
+    return limpio;
+  }
+  window.pmGetCart=getCart;
+  function saveCart(c){ try{ localStorage.setItem(window.pmCartKey(), JSON.stringify(c)); }catch(e){} if(window.updateCartBadge) window.updateCartBadge(); }
   function pesosCart(n){ return '$'+(Number(n)||0).toLocaleString('es-AR'); }
   window.updateCartBadge=function(){ var b=document.getElementById('cartBadge'); if(!b) return; var n=getCart().length; b.textContent=n; b.style.display=n>0?'inline-block':'none'; };
   window.addAlCarrito=function(p){
@@ -1793,7 +1854,8 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
     var c=getCart();
     if(c.some(function(x){return x.id===p.id;})){ window.abrirCarrito(); return; }
     var foto=(p.fotos&&p.fotos.length)?p.fotos[0]:'';
-    c.push({ id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis, cantidad:1, variante:variante, varOpciones:varOpciones });
+    if(cartUid() && p.usuario_id===cartUid()){ alert('Este producto es tuyo: no lo podés agregar a tu propio carrito.'); return; }
+    c.push({ agregado:Date.now(), id:p.id, titulo:p.titulo, precio:Number(p.precio)||0, foto:foto, vendedorId:p.usuario_id||'', vendedorNombre:p.vendedor_nombre||'Vendedor', tipo:p.tipo||'producto', envioGratis:!!p.envio_gratis, cantidad:1, variante:variante, varOpciones:varOpciones });
     saveCart(c); window.abrirCarrito();
   };
   window.quitarDelCarrito=function(id){ saveCart(getCart().filter(function(x){return x.id!==id;})); window.renderCarrito(); };
@@ -1853,7 +1915,7 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
 </div>
 <script>
 (function(){
-  function LC(){ try{ return JSON.parse(localStorage.getItem('pmCart')||'[]'); }catch(e){ return []; } }
+  function LC(){ try{ return window.pmGetCart ? window.pmGetCart() : []; }catch(e){ return []; } }
   function soloDig(x){ return String(x||'').split('').filter(function(c){ return c>='0'&&c<='9'; }).join(''); }
   function money(n){ return '$'+(Number(n)||0).toLocaleString('es-AR'); }
   function esc(x){ return String(x||'').split('"').join('&quot;'); }

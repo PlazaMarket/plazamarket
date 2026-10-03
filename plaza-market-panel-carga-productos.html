@@ -392,7 +392,8 @@
                                 <input type="text" id="paquetePeso" inputmode="numeric" placeholder="Ej: 1500" oninput="onMedidaInput(event)">
                             </div>
                         </div>
-                        <p class="envio-hint">Medí la caja ya cerrada y pesala. Con los datos reales, tu comprador paga menos de la mitad de envío.</p>
+                        <p class="envio-hint">¿No sabés las medidas? No pasa nada: al elegir la categoría te completamos unas aproximadas. Si tu paquete es más grande o más pesado, cambialas — con los datos reales tu comprador paga menos de envío.</p>
+                        <style>#seccionMedidas input[data-auto="1"]{color:#93c5fd;font-style:italic;}</style>
                     </div>
 
                     <div id="desgloseComision" class="desglose hidden"></div>
@@ -583,7 +584,7 @@
         function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
         function valorStock() { return Number(soloDigitos(document.getElementById('productStock').value)) || 0; }
         function onStockInput(e) { e.target.value = soloDigitos(e.target.value); }
-        function onMedidaInput(e) { e.target.value = soloDigitos(e.target.value); }
+        function onMedidaInput(e) { e.target.value = soloDigitos(e.target.value); delete e.target.dataset.auto; }
         function valorMedida(id) { return Number(soloDigitos(document.getElementById(id).value)) || 0; }
 
         // ============================================================
@@ -1004,6 +1005,17 @@ function medidasPorCategoria(cat) {
   if (has('juguet','jugueter','peluche'))                                         return { alto:20, ancho:25, largo:30, peso:700 };
   if (has('hogar','deco','bazar','cocina','mueble','canast','jardin','reloj'))    return { alto:25, ancho:30, largo:35, peso:1500 };
   return { alto:15, ancho:25, largo:30, peso:1000 }; // universal (cualquier cosa)
+}
+
+// Al elegir la categoría, mostramos las medidas sugeridas en los casilleros.
+// Nunca pisa lo que el vendedor escribió a mano ni lo que se cargó al editar.
+function sugerirMedidas() {
+  const md = medidasPorCategoria(document.getElementById('productCategory').value);
+  [['paqueteAlto','alto'],['paqueteAncho','ancho'],['paqueteLargo','largo'],['paquetePeso','peso']].forEach(([id,k]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.value === '' || el.dataset.auto === '1') { el.value = String(md[k]); el.dataset.auto = '1'; }
+  });
 }
 
 async function publishProduct() {
@@ -1599,6 +1611,11 @@ function pmVarRenderGrid(){ var g=document.getElementById("varGrid"); if(!g)retu
 function pmVarGet(){ var cc=pmVarCombos(); if(!cc.combos.length) return null; var combinaciones=cc.combos.map(function(c){ var opts={}; cc.ats.forEach(function(nm,idx){ opts[nm]=c[idx]; }); var k=c.join(" | "); return { opciones:opts, stock:(pmVar.stocks[k]||0), precio:(pmVar.precios[k]||null) }; }); return { atributos:cc.ats, combinaciones:combinaciones }; }
 function pmVarLoad(v){ pmVarReset(); if(!v||!v.atributos||!v.combinaciones)return; pmVar.activo=true; pmVar.atributos=v.atributos.map(function(nm){return {nombre:nm,opciones:[]};}); v.combinaciones.forEach(function(cb){ v.atributos.forEach(function(nm){ var val=cb.opciones?cb.opciones[nm]:null; var a=pmVar.atributos.find(function(x){return x.nombre===nm;}); if(a && val!=null && a.opciones.indexOf(val)<0) a.opciones.push(val); }); var key=v.atributos.map(function(nm){return cb.opciones?cb.opciones[nm]:"";}).join(" | "); pmVar.stocks[key]=cb.stock||0; if(cb.precio) pmVar.precios[key]=cb.precio; }); var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=true; var vb=document.getElementById("varBox"); if(vb) vb.classList.remove("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display="none"; pmVarRender(); }
 function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_combos:[],_ats:[]}; var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=false; var vb=document.getElementById("varBox"); if(vb) vb.classList.add("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display=""; var va=document.getElementById("varAtributos"); if(va) va.innerHTML=""; var vg=document.getElementById("varGrid"); if(vg) vg.innerHTML=""; }
+</script>
+<script>
+// Medidas sugeridas por categoría. Va en un bloque aparte para que funcione
+// aunque otro script de la página tarde o falle.
+(function(){ var s=document.getElementById('productCategory'); if (s && typeof sugerirMedidas==='function') s.addEventListener('change', sugerirMedidas); })();
 </script>
 </body>
 </html>

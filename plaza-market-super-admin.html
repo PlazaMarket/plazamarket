@@ -115,8 +115,8 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="stat-card"><div class="stat-num" id="stVisHoy">—</div><div class="stat-lbl">🌐 Visitas hoy</div></div>
                 <div class="stat-card"><div class="stat-num" id="stVisSemana">—</div><div class="stat-lbl">🌐 Visitas (7 días)</div></div>
-                <div class="stat-card"><div class="stat-num" id="stVisMes">—</div><div class="stat-lbl">🌐 Visitas (30 días)</div></div>
-                <div class="stat-card"><div class="stat-num" id="stPvMes">—</div><div class="stat-lbl">📄 Páginas vistas (30 d)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVisMes">—</div><div class="stat-lbl">🌐 Visitas este mes</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPvMes">—</div><div class="stat-lbl">📄 Páginas vistas este mes</div></div>
             </div>
 
             <!-- De dónde son (por código de área del celular) -->
@@ -630,7 +630,7 @@
     // === Contadores de arriba con datos REALES (a prueba de balas con MutationObserver) ===
     var now=Date.now(); var an=new Date(now-3*3600*1000);
     var artMid=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),an.getUTCDate())+3*3600*1000;
-    var d7=now-7*86400000, d30=now-30*86400000;
+    var d7=now-7*86400000; var d30=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),1)+3*3600*1000; /* día 1 del mes, 00:00 hora Argentina */
     var cHoy=0,c7=0,c30=0;
     rows.forEach(function(x){var t=new Date(x.creado_en).getTime(); if(t>=artMid)cHoy++; if(t>=d7)c7++; if(t>=d30)c30++;});
     var reales={stVisHoy:String(cHoy), stVisSemana:String(c7), stVisMes:String(c30), stPvMes:String(c30)};
@@ -639,6 +639,22 @@
       el.textContent=reales[id];
       try{ var mo=new MutationObserver(function(){ if(el.textContent!==reales[id]) el.textContent=reales[id]; }); mo.observe(el,{childList:true,characterData:true,subtree:true}); }catch(e){}
     });
+    // Conteo exacto en el servidor (por si hay más visitas que las que trae la lista)
+    try{
+      var hdr={apikey:anon,Authorization:'Bearer '+(at||anon),Prefer:'count=exact',Range:'0-0'};
+      var contar=async function(desde){
+        var u='https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=creado_en&path=neq./__test__&or=(origen.is.null,origen.neq.Interno)&creado_en=gte.'+encodeURIComponent(new Date(desde).toISOString());
+        var r=await fetch(u,{headers:hdr}); var cr=r.headers.get('content-range')||''; var n=cr.split('/')[1];
+        return (n && n!=='*') ? parseInt(n,10) : null;
+      };
+      var res=await Promise.all([contar(artMid),contar(d7),contar(d30)]);
+      if(res[0]!==null) reales.stVisHoy=String(res[0]);
+      if(res[1]!==null) reales.stVisSemana=String(res[1]);
+      if(res[2]!==null){ reales.stVisMes=String(res[2]); reales.stPvMes=String(res[2]); }
+      Object.keys(reales).forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=reales[id]; });
+    }catch(e){}
+    // Si el panel queda abierto al pasar la medianoche (Argentina), se recarga solo para arrancar de 0
+    try{ setTimeout(function(){ location.reload(); }, (artMid+86400000)-Date.now()+5000); }catch(e){}
   }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
 </script>

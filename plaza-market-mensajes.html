@@ -210,6 +210,9 @@
             const { data: msgs } = await db.from('mensajes').select('conversacion, autor, texto, creado_en').in('conversacion', salas).order('creado_en', { ascending: true });
             const ultimo = {}; const noLeidosBase = {};
             (msgs || []).forEach(m => { ultimo[m.conversacion] = m; });
+            // Charlas que alguien abrió pero nunca escribió: no son consultas, no se muestran
+            for (let i = convs.length - 1; i >= 0; i--) { if (!ultimo[convs[i].sala]) convs.splice(i, 1); }
+            if (!convs.length) { cont.innerHTML = '<div class="vacio">Todavía no tenés mensajes.<br>Cuando alguien consulte tus productos, o vos consultes uno, aparece acá. 💬</div>'; return; }
             // Mis lecturas
             const { data: lec } = await db.from('pm_lecturas').select('conversacion, ultima_lectura').eq('usuario_id', miUserId).in('conversacion', salas);
             const leidoMap = {}; (lec || []).forEach(l => leidoMap[l.conversacion] = new Date(l.ultima_lectura).getTime());
