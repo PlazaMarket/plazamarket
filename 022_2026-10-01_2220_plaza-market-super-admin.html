@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Administrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body { background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%); min-height: 100vh; margin: 0; color: #E2E8F0; }
+        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%), radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%); pointer-events: none; z-index: 0; }
+        main, header { position: relative; z-index: 1; }
+        .brand-logo { width: 44px; height: 44px; flex-shrink: 0; }
+        .glass-card { background: rgba(255,255,255,0.035); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.09); border-radius: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        .btn-ghost-dark { background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14); font-weight: 600; cursor: pointer; text-decoration:none; }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
+        .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.1rem; padding: 1.1rem 1.25rem; }
+        .stat-card.dorada { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(5,150,105,0.08)); border-color: rgba(16,185,129,0.3); }
+        .stat-num { font-size: 1.7rem; font-weight: 800; color: #fff; line-height: 1.05; }
+        .stat-card.dorada .stat-num { color: #6EE7B7; }
+        .stat-lbl { font-size: 0.75rem; color: rgba(226,232,240,0.55); margin-top: 0.35rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(226,232,240,0.5); padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+        td { font-size: 0.82rem; padding: 0.7rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); color: #E2E8F0; vertical-align: middle; }
+        .row-img { width: 40px; height: 40px; object-fit: cover; border-radius: 0.5rem; background:#0B1120; }
+        .row-ph { width: 40px; height: 40px; border-radius: 0.5rem; background: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+        .btn-del { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #FCA5A5; border-radius: 0.6rem; padding: 0.35rem 0.7rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .btn-del:hover { background: rgba(239,68,68,0.25); }
+        .btn-admin { background: rgba(0,82,212,0.15); border: 1px solid rgba(59,130,246,0.5); color: #93C5FD; border-radius: 0.6rem; padding: 0.35rem 0.7rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .btn-admin:hover { background: rgba(0,82,212,0.28); }
+        .tabla-scroll { overflow-x: auto; }
+        .empty { text-align: center; padding: 1.5rem; color: rgba(226,232,240,0.4); font-size: 0.85rem; }
+        #authLoading { position: fixed; inset: 0; z-index: 200; background: #0B1120; display: flex; align-items: center; justify-content: center; gap: 0.7rem; color: #93C5FD; font-size: 0.9rem; }
+        .spinner-mini { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#3B82F6; border-radius:50%; animation:spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .badge { display:inline-block; font-size:0.68rem; font-weight:800; padding:0.2rem 0.55rem; border-radius:999px; white-space:nowrap; }
+        .si { color:#6EE7B7; font-weight:800; } .no { color:rgba(226,232,240,0.35); }
+        .pill-admin { background: rgba(88,28,135,0.35); border:1px solid rgba(167,139,250,0.4); color:#C4B5FD; font-size:0.7rem; font-weight:700; padding:0.25rem 0.7rem; border-radius:999px; }
+        .hdr-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+        .menu-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel { position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px); background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; transform: translateX(-100%); transition: transform 0.22s ease; }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
+        .menu-cerrar:hover { color: #fff; }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
+
+    <div id="app" class="hidden">
+        <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+            <header class="flex items-center justify-between gap-3">
+                <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                    <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+                </button>
+                <div class="flex items-center gap-3">
+                    <svg viewBox="0 0 100 116" class="brand-logo"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                    <div>
+                        <h1 class="text-base sm:text-xl font-bold text-white">Administrador <span class="pill-admin">DUEÑO</span></h1>
+                        <p class="text-xs text-slate-400 font-medium">Plaza Market · <span id="adminEmail">—</span></p>
+                    </div>
+                </div>
+                <a href="plaza-market-catalogo.html" class="hdr-btn">← Atrás</a>
+            </header>
+
+            <!-- Menú desplegable -->
+            <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+                <nav class="menu-panel">
+                    <button type="button" class="menu-cerrar" onclick="cerrarMenu()" aria-label="Cerrar menú">✕</button>
+                    <div class="menu-cuenta" id="menuCuenta">—</div>
+                    <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                    <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                    <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                    <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
+                    <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
+                    <a href="plaza-market-super-admin.html" class="menu-item">Administrador</a>
+                    <a href="#" class="menu-item menu-salir" onclick="salir(event)">Salir</a>
+                </nav>
+            </div>
+
+            <!-- KPIs de plata (lo más importante para el dueño) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card dorada"><div class="stat-num" id="stComision">—</div><div class="stat-lbl">💰 Comisión juntada (12%)</div></div>
+                <div class="stat-card dorada"><div class="stat-num" id="stComisionMes">—</div><div class="stat-lbl">📅 Comisión este mes</div></div>
+                <div class="stat-card"><div class="stat-num" id="stFacturado">—</div><div class="stat-lbl">🧾 Total facturado (pagado)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVentasPag">—</div><div class="stat-lbl">✅ Ventas pagadas</div></div>
+            </div>
+
+            <!-- KPIs de actividad -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card"><div class="stat-num" id="stUsuarios">—</div><div class="stat-lbl">👥 Usuarios registrados</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPublicaron">—</div><div class="stat-lbl">🧑‍💼 Publicaron (vendedores)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stCompradores">—</div><div class="stat-lbl">🛒 Compraron (compradores)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stConMp">—</div><div class="stat-lbl">💳 Con Mercado Pago</div></div>
+            </div>
+
+            <!-- KPIs extra -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card"><div class="stat-num" id="stProductos">—</div><div class="stat-lbl">📦 Publicaciones</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVistas">—</div><div class="stat-lbl">👁 Vistas totales</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPendientes">—</div><div class="stat-lbl">⏳ Órdenes pendientes</div></div>
+                <div class="stat-card"><div class="stat-num" id="stOrdenes">—</div><div class="stat-lbl">🧾 Órdenes totales</div></div>
+            </div>
+
+            <!-- Visitas del sitio (Cloudflare) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="stat-card"><div class="stat-num" id="stVisHoy">—</div><div class="stat-lbl">🌐 Visitas hoy</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVisSemana">—</div><div class="stat-lbl">🌐 Visitas (7 días)</div></div>
+                <div class="stat-card"><div class="stat-num" id="stVisMes">—</div><div class="stat-lbl">🌐 Visitas este mes</div></div>
+                <div class="stat-card"><div class="stat-num" id="stPvMes">—</div><div class="stat-lbl">📄 Páginas vistas este mes</div></div>
+            </div>
+
+            <!-- De dónde son (por código de área del celular) -->
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-1">📍 De dónde son</h2>
+                <p class="text-xs text-slate-400 mb-4">Según el código de área del celular de cada persona. Un mismo usuario puede ser vendedor y comprador a la vez.</p>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Zona</th><th>Área</th><th>Usuarios</th><th>Vendedores</th><th>Compradores</th></tr></thead>
+                        <tbody id="tablaZonas"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">🛒 Todas las ventas</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Tipo</th><th>Comprador</th><th>Vendedor</th><th>Monto</th><th>Tu comisión</th><th>Estado</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaVentas"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">📦 Todas las publicaciones</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th></th><th>Título</th><th>Categoría</th><th>Precio</th><th>Vendedor</th><th>Vistas / Consultas</th><th></th></tr></thead>
+                        <tbody id="tablaProductos"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Zona</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Rol</th><th></th></tr></thead>
+                        <tbody id="tablaUsuarios"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">🚩 Reportes de publicaciones</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Motivo</th><th>Reportó</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaReportes"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-4">⭐ Reseñas</h2>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Producto</th><th>Vendedor</th><th>Comentario</th><th>Autor</th><th>Fecha</th></tr></thead>
+                        <tbody id="tablaResenas"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const CATEGORY_LABELS = {
+            cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
+            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas y refacciones',
+            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza', masajes: 'Masajes y Bienestar'
+        };
+        const ESTADOS = {
+            pendiente: ['#FCD34D', 'rgba(250,204,21,0.14)', 'Pendiente'],
+            pagado:    ['#6EE7B7', 'rgba(16,185,129,0.15)', 'Pagado'],
+            rechazado: ['#FCA5A5', 'rgba(239,68,68,0.15)', 'Rechazado'],
+            devuelto:  ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Devuelto'],
+            cancelado: ['#CBD5E1', 'rgba(255,255,255,0.1)', 'Cancelado']
+        };
+        function badgeEstado(e) {
+            const x = ESTADOS[e] || ['#CBD5E1','rgba(255,255,255,0.1)', e || '—'];
+            return '<span class="badge" style="color:' + x[0] + ';background:' + x[1] + ';">' + x[2] + '</span>';
+        }
+
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function pesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+        function fechaCorta(iso) { return iso ? new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—'; }
+        let perfilMap = {}, prodMap = {}, adminSet = new Set(), miId = null;
+
+        // Códigos de área de Argentina → zona (para saber de dónde son, por el celular)
+        const AREAS = {
+            '11': 'CABA / Gran Buenos Aires',
+            '220': 'Merlo (Bs. As.)', '221': 'La Plata', '223': 'Mar del Plata', '236': 'Junín',
+            '237': 'Moreno (Bs. As.)', '249': 'Tandil', '260': 'San Rafael (Mendoza)', '261': 'Mendoza',
+            '263': 'San Martín (Mendoza)', '264': 'San Juan', '266': 'San Luis', '280': 'Chubut (costa)',
+            '291': 'Bahía Blanca', '297': 'Comodoro Rivadavia', '299': 'Neuquén',
+            '336': 'San Nicolás', '341': 'Rosario', '342': 'Santa Fe', '343': 'Paraná',
+            '345': 'Concordia (E. Ríos)', '348': 'Escobar/Pilar (Bs. As.)', '351': 'Córdoba',
+            '353': 'Villa María', '358': 'Río Cuarto', '362': 'Resistencia (Chaco)', '364': 'Chaco (interior)',
+            '370': 'Formosa', '376': 'Posadas (Misiones)', '379': 'Corrientes', '380': 'La Rioja',
+            '381': 'Tucumán', '383': 'Catamarca', '385': 'Santiago del Estero', '387': 'Salta', '388': 'Jujuy',
+            '2202': 'Bs. As. (interior)', '2494': 'Bs. As. (interior)', '2604': 'San Rafael (Mendoza)',
+            '2901': 'Ushuaia (T. del Fuego)', '2920': 'Viedma (Río Negro)', '2944': 'Bariloche',
+            '2954': 'Santa Rosa (La Pampa)', '2966': 'Río Gallegos (Santa Cruz)', '2984': 'Río Negro'
+        };
+        function soloNumeroNacional(valor) {
+            let d = String(valor || '').replace(/\D/g, '');
+            if (d.startsWith('54')) d = d.slice(2);
+            if (d.startsWith('9')) d = d.slice(1);
+            while (d.startsWith('0')) d = d.slice(1);
+            return d;
+        }
+        // Devuelve { area, zona } a partir del celular
+        function zonaDeTel(tel) {
+            const d = soloNumeroNacional(tel);
+            if (!d || d.length < 6) return { area: '—', zona: 'Sin dato' };
+            for (const len of [4, 3, 2]) {
+                const pref = d.slice(0, len);
+                if (AREAS[pref]) return { area: pref, zona: AREAS[pref] };
+            }
+            const pref = d.slice(0, 3);
+            return { area: pref, zona: 'Otra zona' };
+        }
+
+        async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
+
+        async function iniciar() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-super-admin.html';
+                return;
+            }
+            const { data: adminRow } = await db.from('pm_admins').select('id').eq('id', session.user.id).maybeSingle();
+            if (!adminRow) {
+                alert('Esta sección es solo para el administrador de Plaza Market.');
+                window.location.href = 'plaza-market-catalogo.html';
+                return;
+            }
+            miId = session.user.id;
+            document.getElementById('adminEmail').textContent = session.user.email;
+            document.getElementById('menuCuenta').textContent = '👤 ' + session.user.email;
+            document.getElementById('authLoading').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            await cargarTodo();
+        }
+
+        async function cargarVisitas() {
+            try {
+                const { data, error } = await db.functions.invoke('cc-analytics');
+                var set = function(id, v){ var e=document.getElementById(id); if(e) e.textContent = (v!=null? Number(v):0).toLocaleString('es-AR'); };
+                if (error || !data || !data.ok) { ['stVisHoy','stVisSemana','stVisMes','stPvMes'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent='—'; }); return; }
+                set('stVisHoy', data.hoy); set('stVisSemana', data.semana); set('stVisMes', data.mes); set('stPvMes', data.pageviewsMes);
+            } catch(e){}
+        }
+        async function cargarTodo() {
+            const [perfiles, productos, consultas, admins, ordenes, reportes, reviews] = await Promise.all([
+                db.from('pm_perfiles').select('*').order('creado_en', { ascending: false }),
+                db.from('productos').select('*').order('creado_en', { ascending: false }),
+                db.from('pm_consultas').select('*', { count: 'exact', head: true }),
+                db.from('pm_admins').select('id'),
+                db.from('pm_ordenes').select('*').order('creado_en', { ascending: false }),
+                db.from('pm_reportes').select('*').order('creado_en', { ascending: false }),
+                db.from('pm_reviews').select('*').order('creado_en', { ascending: false })
+            ]);
+
+            const us = perfiles.data || [];
+            const ps = productos.data || [];
+            const ords = ordenes.data || [];
+            perfilMap = {}; us.forEach(u => perfilMap[u.id] = u);
+            prodMap = {}; ps.forEach(p => prodMap[p.id] = p);
+            adminSet = new Set((admins.data || []).map(a => a.id));
+
+            // Conjuntos de actividad
+            const pagadas = ords.filter(o => o.estado === 'pagado');
+            const publicaronSet = new Set(ps.map(p => p.usuario_id).filter(Boolean));
+            const compradoresSet = new Set(pagadas.map(o => o.comprador_id).filter(Boolean));
+
+            // KPIs de plata
+            const ahora = new Date();
+            const comisionMes = pagadas
+                .filter(o => { const d = new Date(o.creado_en); return d.getMonth() === ahora.getMonth() && d.getFullYear() === ahora.getFullYear(); })
+                .reduce((a, o) => a + Number(o.comision || 0), 0);
+            document.getElementById('stComision').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.comision || 0), 0));
+            document.getElementById('stComisionMes').textContent = pesos(comisionMes);
+            document.getElementById('stFacturado').textContent = pesos(pagadas.reduce((a, o) => a + Number(o.monto || 0), 0));
+            document.getElementById('stVentasPag').textContent = pagadas.length;
+
+            // KPIs de actividad
+            document.getElementById('stUsuarios').textContent = us.length;
+            document.getElementById('stPublicaron').textContent = publicaronSet.size;
+            document.getElementById('stCompradores').textContent = compradoresSet.size;
+            document.getElementById('stConMp').textContent = us.filter(u => u.mp_conectado).length;
+            cargarVisitas();
+
+            // KPIs extra
+            document.getElementById('stProductos').textContent = ps.length;
+            document.getElementById('stVistas').textContent = ps.reduce((a, p) => a + (p.vistas || 0), 0);
+            document.getElementById('stPendientes').textContent = ords.filter(o => o.estado === 'pendiente').length;
+            document.getElementById('stOrdenes').textContent = ords.length;
+
+            renderVentas(ords);
+            renderZonas(us, publicaronSet, compradoresSet);
+            renderProductos(ps);
+            renderUsuarios(us);
+            renderReportes(reportes.data || []);
+            renderResenas(reviews.data || []);
+        }
+
+        function fechaCorta(x){ try{ return new Date(x).toLocaleDateString('es-AR'); }catch(e){ return ''; } }
+        function estrellas(n){ n=Number(n)||0; return '★'.repeat(n)+'☆'.repeat(5-n); }
+        function renderReportes(rows){
+            const tb=document.getElementById('tablaReportes');
+            if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="empty">No hay reportes. 👍</td></tr>'; return; }
+            tb.innerHTML=rows.map(r=>{
+                const pr=(prodMap[r.producto_id]||{});
+                const quien=((perfilMap[r.autor_id]||{}).nombre)||r.autor_nombre||'Alguien';
+                return '<tr><td>'+escaparHtml(pr.titulo||('#'+r.producto_id))+'</td><td>'+escaparHtml(r.motivo||'')+'</td><td>'+escaparHtml(quien)+'</td><td>'+fechaCorta(r.creado_en)+'</td></tr>';
+            }).join('');
+        }
+        function renderResenas(rows){
+            const tb=document.getElementById('tablaResenas');
+            if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="empty">Todavía no hay reseñas.</td></tr>'; return; }
+            tb.innerHTML=rows.map(r=>{
+                const pr=(prodMap[r.producto_id]||{});
+                const vend=((perfilMap[r.vendedor_id]||{}).nombre)||'Vendedor';
+                const autor=((perfilMap[r.autor_id]||{}).nombre)||r.autor_nombre||'Alguien';
+                return '<tr><td>'+escaparHtml(pr.titulo||('#'+r.producto_id))+'</td><td>'+estrellas(r.estrellas_producto)+'</td><td>'+escaparHtml(vend)+' '+estrellas(r.estrellas_vendedor)+'</td><td>'+escaparHtml(r.comentario||'')+'</td><td>'+escaparHtml(autor)+'</td><td>'+fechaCorta(r.creado_en)+'</td></tr>';
+            }).join('');
+        }
+        function renderZonas(us, publicaronSet, compradoresSet) {
+            const tb = document.getElementById('tablaZonas');
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            const mapa = {};
+            us.forEach(u => {
+                const z = zonaDeTel(u.telefono);
+                const clave = z.zona + '|' + z.area;
+                if (!mapa[clave]) mapa[clave] = { zona: z.zona, area: z.area, usuarios: 0, vendedores: 0, compradores: 0 };
+                mapa[clave].usuarios++;
+                if (publicaronSet.has(u.id)) mapa[clave].vendedores++;
+                if (compradoresSet.has(u.id)) mapa[clave].compradores++;
+            });
+            const filas = Object.values(mapa).sort((a, b) => b.usuarios - a.usuarios);
+            tb.innerHTML = filas.map(f =>
+                '<tr>' +
+                    '<td>' + escaparHtml(f.zona) + '</td>' +
+                    '<td style="color:rgba(226,232,240,0.5);">' + escaparHtml(f.area) + '</td>' +
+                    '<td style="font-weight:700;">' + f.usuarios + '</td>' +
+                    '<td>' + f.vendedores + '</td>' +
+                    '<td>' + f.compradores + '</td>' +
+                '</tr>'
+            ).join('');
+        }
+
+        function nombreDe(id) { const u = perfilMap[id]; return u ? escaparHtml(u.nombre || u.email || '—') : '<span style="color:rgba(226,232,240,0.4);">—</span>'; }
+
+        function renderVentas(ords) {
+            const tb = document.getElementById('tablaVentas');
+            if (!ords.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Todavía no hay ventas. Cuando alguien compre, aparecen acá.</td></tr>'; return; }
+            tb.innerHTML = ords.map(o => {
+                const prod = prodMap[o.producto_id];
+                const tit = prod ? escaparHtml(prod.titulo) : '<span style="color:rgba(226,232,240,0.4);">Publicación borrada</span>';
+                const tipo = o.tipo === 'sena' ? 'Seña' : 'Producto';
+                return '<tr>' +
+                    '<td>' + tit + '</td>' +
+                    '<td>' + tipo + '</td>' +
+                    '<td>' + nombreDe(o.comprador_id) + '</td>' +
+                    '<td>' + nombreDe(o.vendedor_id) + '</td>' +
+                    '<td>' + pesos(o.monto) + '</td>' +
+                    '<td style="color:#6EE7B7;font-weight:700;">' + pesos(o.comision) + '</td>' +
+                    '<td>' + badgeEstado(o.estado) + '</td>' +
+                    '<td style="white-space:nowrap;color:rgba(226,232,240,0.5);">' + fechaCorta(o.creado_en) + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function renderProductos(ps) {
+            const tb = document.getElementById('tablaProductos');
+            if (!ps.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">Todavía no hay publicaciones.</td></tr>'; return; }
+            tb.innerHTML = ps.map(p => {
+                const foto = (p.fotos && p.fotos[0]) ? '<img src="' + p.fotos[0] + '" class="row-img">' : '<div class="row-ph">' + (p.tipo === 'servicio' ? '🛠️' : '📦') + '</div>';
+                const vend = perfilMap[p.usuario_id];
+                const vendTxt = vend
+                    ? escaparHtml(vend.nombre || '—') + '<br><span style="color:rgba(226,232,240,0.45);font-size:0.72rem;">' + escaparHtml(vend.email || '') + '</span>'
+                    : '<span style="color:rgba(226,232,240,0.4);">Sin perfil</span>';
+                return '<tr>' +
+                    '<td>' + foto + '</td>' +
+                    '<td>' + escaparHtml(p.titulo) + '</td>' +
+                    '<td>' + (CATEGORY_LABELS[p.categoria] || p.categoria) + '</td>' +
+                    '<td>' + pesos(p.precio) + '</td>' +
+                    '<td>' + vendTxt + '</td>' +
+                    '<td>👁 ' + (p.vistas || 0) + ' · 💬 ' + (p.consultas || 0) + '</td>' +
+                    '<td><button class="btn-del" onclick="borrar(' + p.id + ', this)">🗑 Bajar</button></td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function renderUsuarios(us) {
+            const tb = document.getElementById('tablaUsuarios');
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            tb.innerHTML = us.map(u => {
+                const esAdmin = adminSet.has(u.id);
+                const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
+                const mp = u.mp_conectado ? '<span class="si">✓ Conectado</span>' : '<span class="no">— No</span>';
+                const z = zonaDeTel(u.telefono);
+                let accion = '';
+                if (u.id !== miId) {
+                    accion = esAdmin
+                        ? '<button class="btn-del" onclick="quitarAdmin(\'' + u.id + '\', this)">Quitar admin</button>'
+                        : '<button class="btn-admin" onclick="hacerAdmin(\'' + u.id + '\', this)">Hacer admin</button>';
+                }
+                return '<tr>' +
+                    '<td>' + escaparHtml(u.nombre || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.email || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.telefono || '—') + '</td>' +
+                    '<td style="font-size:0.76rem;">' + escaparHtml(z.zona) + '</td>' +
+                    '<td>' + escaparHtml(u.cp_origen || '—') + '</td>' +
+                    '<td>' + mp + '</td>' +
+                    '<td style="white-space:nowrap;">' + fechaCorta(u.creado_en) + '</td>' +
+                    '<td>' + rol + '</td>' +
+                    '<td>' + accion + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        async function hacerAdmin(id, btn) {
+            if (!confirm('¿Hacer administrador a esta persona? Va a poder ver y moderar todo Plaza Market.')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.from('pm_admins').insert({ id });
+            if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Hacer admin'; return; }
+            await cargarTodo();
+        }
+        async function quitarAdmin(id, btn) {
+            if (!confirm('¿Quitarle el rol de administrador a esta persona?')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.from('pm_admins').delete().eq('id', id);
+            if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Quitar admin'; return; }
+            await cargarTodo();
+        }
+        async function borrar(id, btn) {
+            if (!confirm('¿Seguro que querés BAJAR esta publicación? Se elimina para siempre.')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.from('productos').delete().eq('id', id);
+            if (error) { alert('No se pudo bajar: ' + error.message); btn.disabled = false; btn.textContent = '🗑 Bajar'; return; }
+            await cargarTodo();
+        }
+
+        window.addEventListener('DOMContentLoaded', iniciar);
+    </script>
+
+<div id="pmSinPublicarBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.3);border-radius:14px;">
+  <h2 style="color:#f8c471;font-size:18px;margin:0 0 8px;">🔔 Registrados que todavía NO publicaron</h2>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:10px;">Estos usuarios se anotaron pero no cargaron ningún producto. Son los que conviene recordarles que publiquen.</div>
+  <div id="pmSinPublicarList" style="color:#cbd5e1;font-size:14px;">Cargando…</div>
+</div>
+<script>
+(async function(){
+  var el=function(){return document.getElementById('pmSinPublicarList');};
+  try{
+    var t=0; while(typeof supabase==='undefined'&&t<60){await new Promise(function(r){setTimeout(r,100);});t++;}
+    if(typeof supabase==='undefined'){el().textContent='(No cargó Supabase)';return;}
+    var html=document.documentElement.innerHTML;
+    var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+    var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+    if(!anon||!ref){el().textContent='(No encontré la config)';return;}
+    var cli=supabase.createClient('https://'+ref+'.supabase.co',anon);
+    var perf=await cli.from('pm_perfiles').select('id,nombre,email,creado_en').order('creado_en',{ascending:false});
+    var prods=await cli.from('productos').select('usuario_id');
+    if(perf.error){el().textContent='Error: '+perf.error.message;return;}
+    var conProd={};(prods.data||[]).forEach(function(p){conProd[p.usuario_id]=true;});
+    var sin=(perf.data||[]).filter(function(u){return !conProd[u.id];});
+    if(sin.length===0){el().innerHTML='<span style="color:#22c55e">¡Todos los registrados ya publicaron! 🎉</span>';return;}
+    var rows=sin.map(function(u){
+      var dias=u.creado_en?Math.floor((Date.now()-new Date(u.creado_en).getTime())/86400000):'';
+      var fch=u.creado_en?new Date(u.creado_en).toLocaleDateString('es-AR'):'';
+      return '<tr style="border-top:1px solid rgba(255,255,255,.06)"><td style="padding:7px 6px;color:#fff">'+(u.nombre||'(sin nombre)')+'</td><td style="padding:7px 6px">'+(u.email||'')+'</td><td style="padding:7px 6px">'+fch+' ('+dias+' días)</td></tr>';
+    }).join('');
+    el().innerHTML='<div style="margin-bottom:8px;color:#f8c471"><b>'+sin.length+'</b> sin publicar</div><table style="width:100%;border-collapse:collapse;font-size:14px;color:#cbd5e1"><thead><tr style="text-align:left;color:#93a4c0"><th style="padding:6px">Nombre</th><th style="padding:6px">Email</th><th style="padding:6px">Registrado</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }catch(e){ if(el())el().textContent='No se pudo cargar: '+(e&&e.message||e); }
+})();
+</script>
+
+<div style="max-width:1100px;margin:0 auto 30px;padding:0 12px;">
+  <button id="pmBtnRecordar" style="background:#3d7bff;color:#fff;border:none;padding:12px 22px;border-radius:40px;font-size:15px;font-weight:bold;cursor:pointer;">📧 Enviar recordatorio por mail a los que no publicaron</button>
+  <span id="pmBtnRecordarMsg" style="margin-left:12px;color:#cbd5e1;font-size:14px;"></span>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('pmBtnRecordar'); if(!btn) return;
+  btn.addEventListener('click', async function(){
+    if(!confirm('¿Enviar el recordatorio por mail a los usuarios registrados que todavía no publicaron?')) return;
+    var msg=document.getElementById('pmBtnRecordarMsg');
+    btn.disabled=true; msg.textContent='Enviando…';
+    try{
+      var html=document.documentElement.innerHTML;
+      var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+      var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+      var r=await fetch('https://'+ref+'.functions.supabase.co/cc-recordatorios',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anon,'apikey':anon},body:'{}'});
+      var j=await r.json();
+      if(j.ok){ msg.textContent='✅ Enviados: '+j.enviados+' de '+j.total+(j.fallos?(' · Fallos: '+j.fallos):''); }
+      else { msg.textContent='❌ '+(j.error||'No se pudo'); }
+    }catch(e){ msg.textContent='❌ '+(e&&e.message||e); }
+    btn.disabled=false;
+  });
+})();
+</script>
+
+<div style="max-width:1100px;margin:0 auto 30px;padding:0 12px;">
+  <button id="pmBtnPush" style="background:#7c3aed;color:#fff;border:none;padding:12px 22px;border-radius:40px;font-size:15px;font-weight:bold;cursor:pointer;">🔔 Enviar notificación al celu a los que no publicaron</button>
+  <span id="pmBtnPushMsg" style="margin-left:12px;color:#cbd5e1;font-size:14px;"></span>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('pmBtnPush'); if(!btn) return;
+  btn.addEventListener('click', async function(){
+    if(!confirm('¿Enviar una notificación al celu a los usuarios registrados que todavía no publicaron?')) return;
+    var msg=document.getElementById('pmBtnPushMsg');
+    btn.disabled=true; msg.textContent='Enviando…';
+    try{
+      var html=document.documentElement.innerHTML;
+      var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+      var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+      var r=await fetch('https://'+ref+'.functions.supabase.co/cc-push-recordatorios',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anon,'apikey':anon},body:'{}'});
+      var j=await r.json();
+      if(j.ok){ msg.textContent='✅ Enviadas: '+j.enviados+' a '+j.usuarios+' usuario(s)'+(j.fallos?(' · '+j.fallos+' viejas limpiadas'):''); }
+      else { msg.textContent='❌ '+(j.error||'No se pudo'); }
+    }catch(e){ msg.textContent='❌ '+(e&&e.message||e); }
+    btn.disabled=false;
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+<div id="pmOrigenesBox" style="max-width:1100px;margin:24px auto;padding:14px;background:rgba(61,123,255,.06);border:1px solid rgba(61,123,255,.25);border-radius:14px;">
+  <h2 style="color:#8fb3ff;font-size:18px;margin:0 0 8px;">🌐 De dónde vienen las visitas</h2>
+  <div style="color:#93a4c0;font-size:13px;margin-bottom:12px;">Datos REALES. Tocá cada sección para abrirla y ver el detalle adentro. No te cuenta a vos ni a los logueados.</div>
+  <div id="pmTree">Cargando…</div>
+</div>
+<script>
+(async function(){
+  try{
+    var html=document.documentElement.innerHTML;
+    var anon=(html.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/)||[])[0];
+    var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
+    var keys=Object.keys(localStorage); var ak=keys.find(function(k){return /sb-.*-auth-token/.test(k);});
+    var at=null; try{var s=JSON.parse(localStorage.getItem(ak)); at=s.access_token||(s.currentSession&&s.currentSession.access_token);}catch(e){}
+    var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=20000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
+    var rows=await rr.json(); if(!Array.isArray(rows)) rows=[];
+    rows=rows.filter(function(x){return x.origen!=='Interno';});
+    function fh(iso){var d=new Date(new Date(iso).getTime()-3*3600*1000);var s=d.toISOString();return s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11,16)+' hs';}
+    function lab(o){o=o||'';
+      if(o==='Instagram')return '📷 Instagram';
+      if(o==='Facebook')return '📘 Facebook';
+      if(o==='TikTok')return '🎵 TikTok';
+      if(o==='WhatsApp')return '💬 WhatsApp';
+      if(o==='Google')return '🔎 Google';
+      if(o==='Directo')return '🔗 Directo / App';
+      if(o==='App Play Store')return '📲 App Play Store';
+      return '🌐 '+o.replace('Otro: ','');
+    }
+    var byO={}; rows.forEach(function(x){(byO[x.origen]=byO[x.origen]||[]).push(x.creado_en);});
+    function esc(s){return String(s).replace(/[^a-zA-Z0-9]/g,'');}
+    function item(o){
+      var arr=(byO[o]||[]).slice().sort().reverse();
+      var det = arr.length? arr.slice(0,60).map(function(c){return '· '+fh(c);}).join('<br>') : 'Todavía nadie entró por acá.';
+      return '<div class="pmItem" style="cursor:pointer;display:flex;justify-content:space-between;padding:9px 6px;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+lab(o)+'</span><span style="font-weight:bold;color:#8fb3ff">'+arr.length+' <span style="color:#93a4c0;font-size:11px;font-weight:normal">▾</span></span></div>'
+        +'<div class="pmDet" style="display:none;padding:2px 14px 10px;color:#cbd5e1;font-size:13px;line-height:1.7">'+det+'</div>';
+    }
+    function suma(list){var t=0;list.forEach(function(o){t+=(byO[o]||[]).length;});return t;}
+    function seccion(titulo,cuerpo){
+      return '<div class="pmSec" style="cursor:pointer;background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-weight:500;color:#cbd5e1">'+titulo+'</span><span style="color:#8fb3ff">▾</span></div>'
+        +'<div class="pmBody" style="display:none;padding:0 6px 8px">'+cuerpo+'</div>';
+    }
+    var redes=['Instagram','Facebook','TikTok','WhatsApp'];
+    var enlacesBase=['Google','Directo','App Play Store'];
+    var otros=Object.keys(byO).filter(function(o){return redes.indexOf(o)<0 && enlacesBase.indexOf(o)<0;});
+    var enlaces=enlacesBase.concat(otros);
+    // meses
+    var meses={}; rows.forEach(function(x){var a=new Date(new Date(x.creado_en).getTime()-3*3600*1000);var k=a.toISOString().slice(0,7);(meses[k]=meses[k]||[]).push(x.origen);});
+    var MN={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+    var mk=Object.keys(meses).sort().reverse();
+    function mesItem(k){
+      var pp=k.split('-'); var arr=meses[k];
+      var porOrigen={}; arr.forEach(function(o){porOrigen[o]=(porOrigen[o]||0)+1;});
+      var det=Object.keys(porOrigen).sort(function(a,b){return porOrigen[b]-porOrigen[a];}).map(function(o){return '· '+lab(o)+': '+porOrigen[o];}).join('<br>')||'Sin visitas';
+      return '<div class="pmItem" style="cursor:pointer;display:flex;justify-content:space-between;padding:9px 6px;border-top:1px solid rgba(255,255,255,.06)"><span style="color:#fff">'+(MN[pp[1]]||k)+' '+pp[0]+'</span><span style="font-weight:bold;color:#8fb3ff">'+arr.length+' <span style="color:#93a4c0;font-size:11px;font-weight:normal">▾</span></span></div>'
+        +'<div class="pmDet" style="display:none;padding:2px 14px 10px;color:#cbd5e1;font-size:13px;line-height:1.7">'+det+'</div>';
+    }
+    var tree=
+      seccion('📣 Redes sociales &nbsp;<span style="color:#8fb3ff;font-weight:bold">'+suma(redes)+'</span>', redes.map(item).join(''))+
+      seccion('🔗 Enlaces y otros &nbsp;<span style="color:#8fb3ff;font-weight:bold">'+suma(enlaces)+'</span>', enlaces.map(item).join(''))+
+      seccion('📅 Total de visitas por mes', mk.length? mk.map(mesItem).join('') : '<div style="color:#93a4c0;padding:8px 6px">Todavía sin datos (arranca hoy)</div>');
+    var cont=document.getElementById('pmTree'); cont.innerHTML=tree;
+    cont.addEventListener('click', function(ev){
+      var sec=ev.target.closest('.pmSec'); var it=ev.target.closest('.pmItem');
+      if(sec){ var b=sec.nextElementSibling; if(b&&b.classList.contains('pmBody')){ b.style.display=(b.style.display==='none')?'block':'none'; var ar=sec.querySelector('span:last-child'); if(ar) ar.textContent=(b.style.display==='none')?'▾':'▴'; } return; }
+      if(it){ var d=it.nextElementSibling; if(d&&d.classList.contains('pmDet')){ d.style.display=(d.style.display==='none')?'block':'none'; } }
+    });
+    // === Contadores de arriba con datos REALES (a prueba de balas con MutationObserver) ===
+    var now=Date.now(); var an=new Date(now-3*3600*1000);
+    var artMid=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),an.getUTCDate())+3*3600*1000;
+    var d7=now-7*86400000; var d30=Date.UTC(an.getUTCFullYear(),an.getUTCMonth(),1)+3*3600*1000; /* día 1 del mes, 00:00 hora Argentina */
+    var cHoy=0,c7=0,c30=0;
+    rows.forEach(function(x){var t=new Date(x.creado_en).getTime(); if(t>=artMid)cHoy++; if(t>=d7)c7++; if(t>=d30)c30++;});
+    var reales={stVisHoy:String(cHoy), stVisSemana:String(c7), stVisMes:String(c30), stPvMes:String(c30)};
+    Object.keys(reales).forEach(function(id){
+      var el=document.getElementById(id); if(!el) return;
+      el.textContent=reales[id];
+      try{ var mo=new MutationObserver(function(){ if(el.textContent!==reales[id]) el.textContent=reales[id]; }); mo.observe(el,{childList:true,characterData:true,subtree:true}); }catch(e){}
+    });
+    // Conteo exacto en el servidor (por si hay más visitas que las que trae la lista)
+    try{
+      var hdr={apikey:anon,Authorization:'Bearer '+(at||anon),Prefer:'count=exact',Range:'0-0'};
+      var contar=async function(desde){
+        var u='https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=creado_en&path=neq./__test__&or=(origen.is.null,origen.neq.Interno)&creado_en=gte.'+encodeURIComponent(new Date(desde).toISOString());
+        var r=await fetch(u,{headers:hdr}); var cr=r.headers.get('content-range')||''; var n=cr.split('/')[1];
+        return (n && n!=='*') ? parseInt(n,10) : null;
+      };
+      var res=await Promise.all([contar(artMid),contar(d7),contar(d30)]);
+      if(res[0]!==null) reales.stVisHoy=String(res[0]);
+      if(res[1]!==null) reales.stVisSemana=String(res[1]);
+      if(res[2]!==null){ reales.stVisMes=String(res[2]); reales.stPvMes=String(res[2]); }
+      Object.keys(reales).forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=reales[id]; });
+    }catch(e){}
+    // Si el panel queda abierto al pasar la medianoche (Argentina), se recarga solo para arrancar de 0
+    try{ setTimeout(function(){ location.reload(); }, (artMid+86400000)-Date.now()+5000); }catch(e){}
+  }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
+})();
+</script>
+</body>
+</html>

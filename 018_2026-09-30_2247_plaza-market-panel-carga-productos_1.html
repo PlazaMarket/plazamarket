@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Panel de Carga de Productos</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #E2E8F0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(0, 82, 212, 0.22) 0%, transparent 45%),
+                radial-gradient(circle at 85% 12%, rgba(88, 28, 135, 0.24) 0%, transparent 45%),
+                radial-gradient(circle at 50% 95%, rgba(57, 73, 171, 0.18) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main, header { position: relative; z-index: 1; }
+
+        :root {
+            --primary: #0052D4;
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+
+        button, input, select, textarea { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 82, 212, 0.4);
+            flex-shrink: 0;
+        }
+
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.45rem 1rem; border-radius: 999px;
+            background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+            color: #6EE7B7; font-size: 0.72rem; font-weight: 700;
+        }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; animation: pulseDot 1.8s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .glass-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        label { color: rgba(226,232,240,0.75); font-size: 0.8rem; font-weight: 700; }
+
+        input, select, textarea {
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9;
+            border-radius: 0.85rem;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+        }
+        input::placeholder, textarea::placeholder { color: rgba(226,232,240,0.32); }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.2);
+            background: rgba(255,255,255,0.06);
+        }
+        select option { background: #131B2E; color: #F1F5F9; }
+        textarea { resize: vertical; min-height: 90px; }
+
+        /* Selector Producto / Servicio */
+        .tipo-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.5rem; }
+        .tipo-btn {
+            background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+            color: rgba(226,232,240,0.65); border-radius: 0.85rem; padding: 0.85rem;
+            font-size: 0.83rem; font-weight: 700; cursor: pointer;
+        }
+        .tipo-btn:hover { background: rgba(255,255,255,0.07); }
+        .tipo-btn.activo {
+            background: linear-gradient(135deg, rgba(0,82,212,0.25), rgba(88,28,135,0.28));
+            border-color: #3B82F6; color: white;
+        }
+
+        /* Desglose de comisión */
+        .desglose {
+            margin-top: 0.75rem; background: rgba(16,185,129,0.06);
+            border: 1px solid rgba(16,185,129,0.22); border-radius: 0.85rem; padding: 0.85rem 1rem;
+        }
+        .desglose-fila { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 0.18rem 0; color: rgba(226,232,240,0.7); }
+        .desglose-fila.total { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.4rem; padding-top: 0.5rem; }
+        .desglose-fila.total span:last-child { color: #6EE7B7; font-weight: 800; font-size: 0.95rem; }
+        .desglose-nota { font-size: 0.68rem; color: rgba(226,232,240,0.45); margin-top: 0.55rem; line-height: 1.5; }
+
+        .envio-hint { font-size: 0.7rem; color: rgba(226,232,240,0.45); margin-top: 0.45rem; line-height: 1.5; }
+        .medida-label { display: block; font-size: 0.68rem; font-weight: 600; color: rgba(226,232,240,0.5); margin-bottom: 0.3rem; }
+
+        .envio-opciones { display: grid; gap: 0.6rem; margin-top: 0.9rem; }
+        .envio-opcion {
+            display: flex; align-items: flex-start; gap: 0.7rem; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 0.85rem; padding: 0.85rem 1rem;
+        }
+        .envio-opcion:hover { background: rgba(255,255,255,0.06); }
+        .envio-opcion input[type="radio"] { width: auto; accent-color: #3B82F6; margin-top: 0.15rem; flex-shrink: 0; }
+        .envio-opcion.elegida { border-color: #3B82F6; background: rgba(0,82,212,0.12); }
+        .opcion-titulo { font-size: 0.82rem; font-weight: 700; color: #E2E8F0; }
+        .opcion-detalle { font-size: 0.74rem; color: rgba(226,232,240,0.55); margin-top: 0.2rem; display: block; }
+        .opcion-neto { color: #6EE7B7; font-weight: 700; }
+
+        .category-block-warning {
+            background: rgba(239,68,68,0.12); border: 1.5px solid rgba(239,68,68,0.4);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.82rem; color: #FCA5A5;
+            font-weight: 600; margin-top: 0.75rem; line-height: 1.5;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            color: white; font-weight: 700;
+            box-shadow: 0 4px 20px rgba(0, 82, 212, 0.4);
+            border: none; cursor: pointer;
+        }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-primary:disabled { background: #475569; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        .btn-ghost-dark {
+            background: rgba(255,255,255,0.04); color: #CBD5E1; border: 1.5px solid rgba(255,255,255,0.14);
+            font-weight: 600; cursor: pointer; text-decoration: none;
+        }
+        .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
+
+        .photo-slot {
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 1rem; padding: 1rem; text-align: center;
+        }
+        .photo-slot.photo-slot-rejected { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
+        .photo-slot-real-img { width: 100%; height: 90px; object-fit: cover; border-radius: 0.75rem; margin-bottom: 0.6rem; display: block; }
+        .photo-scanning { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.68rem; color: #93C5FD; font-weight: 700; }
+        .photo-approved-badge { font-size: 0.68rem; font-weight: 800; color: #34D399; }
+        .photo-rejected-badge { font-size: 0.68rem; font-weight: 800; color: #F87171; }
+        .photo-reject-reason { font-size: 0.63rem; color: #FCA5A5; margin-top: 0.4rem; line-height: 1.4; }
+        .photo-remove-btn { font-size: 0.65rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.5rem; }
+        .photo-remove-btn:hover { color: #FCA5A5; }
+        .spinner-mini {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state, .empty-state-inline { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: rgba(226,232,240,0.4); }
+        .empty-state-inline { grid-column: 1 / -1; }
+
+        /* Zona grande para agregar fotos */
+        .dropzone {
+            border: 2px dashed rgba(255,255,255,0.22);
+            border-radius: 1.1rem; padding: 2.2rem 1rem; text-align: center; cursor: pointer;
+            background: rgba(255,255,255,0.02); margin-top: 0.6rem;
+        }
+        .dropzone:hover, .dropzone.arrastrando {
+            border-color: #3B82F6; background: rgba(0,82,212,0.12);
+        }
+        .dz-mas {
+            width: 52px; height: 52px; margin: 0 auto 0.7rem; border-radius: 50%;
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 300; line-height: 1;
+        }
+        .dz-titulo { font-size: 0.95rem; font-weight: 700; color: #E2E8F0; }
+        .dz-sub { font-size: 0.75rem; color: rgba(226,232,240,0.45); margin-top: 0.3rem; line-height: 1.5; }
+        .dz-contador { font-size: 0.72rem; color: #93C5FD; margin-top: 0.5rem; font-weight: 600; }
+
+        .product-card-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem; border-radius: 0.85rem; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.6rem;
+        }
+        .product-row-img { width: 52px; height: 52px; object-fit: cover; border-radius: 0.6rem; flex-shrink: 0; }
+        .product-row-icon {
+            width: 52px; height: 52px; border-radius: 0.6rem; flex-shrink: 0; font-size: 1.4rem;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+        }
+        .product-title { font-weight: 700; color: white; font-size: 0.85rem; }
+        .product-meta { font-size: 0.72rem; color: rgba(226,232,240,0.5); margin-top: 0.15rem; }
+        .badge-small { font-size: 0.65rem; font-weight: 700; color: #34D399; background: rgba(16,185,129,0.12); padding: 0.2rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+        .btn-delete { font-size: 0.68rem; color: rgba(226,232,240,0.4); background: none; border: none; cursor: pointer; margin-top: 0.3rem; display: block; }
+        .btn-delete:hover { color: #FCA5A5; }
+        .btn-editar {
+            background: rgba(0,82,212,0.15); border: 1.5px solid rgba(59,130,246,0.5); color: #93C5FD;
+            border-radius: 0.7rem; padding: 0.55rem 1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        }
+        .btn-editar:hover { background: rgba(0,82,212,0.28); }
+
+        .consulta-row { display:flex; align-items:center; gap:0.8rem; padding:0.8rem 1rem; border-radius:0.85rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); margin-bottom:0.6rem; text-decoration:none; }
+        .consulta-row:hover { background:rgba(255,255,255,0.07); }
+        .consulta-avatar { width:42px; height:42px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#0052D4,#583C87); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .consulta-nombre { font-weight:700; color:#fff; font-size:0.88rem; display:flex; align-items:center; gap:0.45rem; }
+        .consulta-prod { font-size:0.72rem; color:#93C5FD; margin-top:0.1rem; }
+        .consulta-prev { font-size:0.75rem; color:rgba(226,232,240,0.5); margin-top:0.15rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .consulta-flecha { color:rgba(226,232,240,0.4); font-size:1.3rem; flex-shrink:0; }
+        .badge-nuevo { background:#EF4444; color:#fff; font-size:0.68rem; font-weight:800; min-width:18px; height:18px; padding:0 5px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; }
+
+        .toast {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            background: #0F172A; border: 1.5px solid rgba(255,255,255,0.14); border-radius: 1.1rem;
+            padding: 1.1rem 1.25rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 1000; max-width: 380px; color: #E2E8F0;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        .hidden { display: none !important; }
+
+        #authLoading {
+            position: fixed; inset: 0; z-index: 200; background: #0B1120;
+            display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+            color: #93C5FD; font-size: 0.85rem;
+        }
+
+        /* Menú de navegación (3 rayitas) */
+        .hdr-btn {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            color: #E2E8F0; border-radius: 0.7rem; width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            position: relative; font-size: 0.8rem; font-weight: 600; text-decoration: none;
+        }
+        .hdr-btn:hover { background: rgba(255,255,255,0.1); }
+        .ham { display: block; width: 20px; height: 2px; background: #E2E8F0; border-radius: 2px; margin: 2.5px 0; }
+        .menu-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(11,17,32,0.6); backdrop-filter: blur(4px); display: none; }
+        .menu-overlay.abierto { display: block; }
+        .menu-panel {
+            position: absolute; top: 0; left: 0; height: 100%; width: min(80vw, 300px);
+            background: #131B2E; border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.5); padding: 1.25rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            transform: translateX(-100%); transition: transform 0.22s ease; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .menu-overlay.abierto .menu-panel { transform: translateX(0); }
+        .menu-cerrar { align-self: flex-end; background: none; border: none; color: rgba(226,232,240,0.55); font-size: 1.4rem; cursor: pointer; padding: 0 0.4rem; line-height: 1; margin: -0.3rem -0.3rem 0.3rem 0; }
+        .menu-cerrar:hover { color: #fff; }
+        .menu-cuenta { color: #93C5FD; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem; }
+        .menu-item { display: block; padding: 0.9rem; border-radius: 0.7rem; color: #E2E8F0; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.06); }
+        .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
+    </style>
+<style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
+</head>
+<body>
+    <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
+
+    <div id="app" class="hidden">
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+            <header class="flex items-center justify-between gap-3">
+                <button class="hdr-btn" onclick="toggleMenu()" aria-label="Menú" title="Menú" style="font-size:1.25rem;">
+                    <span><span class="ham"></span><span class="ham"></span><span class="ham"></span></span>
+                </button>
+                <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+                    <svg viewBox="0 0 100 116" width="32" height="38" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                    <div>
+                        <h1 class="text-lg font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                        <p class="text-xs text-slate-400 font-medium" id="subEncabezado">Mi panel</p>
+                    </div>
+                </a>
+                <a href="plaza-market-catalogo.html" onclick="volverAtras(event)" class="hdr-btn">← Atrás</a>
+            </header>
+
+            <!-- Menú desplegable -->
+            <div id="menuOverlay" class="menu-overlay" onclick="cerrarMenu(event)">
+                <nav class="menu-panel">
+                    <button type="button" class="menu-cerrar" onclick="cerrarMenu()" aria-label="Cerrar menú">✕</button>
+                    <div class="menu-cuenta" id="menuCuenta">—</div>
+                    <a href="plaza-market-catalogo.html" class="menu-item">Catálogo</a>
+                    <a href="plaza-market-panel-carga-productos.html" class="menu-item">Vender</a>
+                    <a href="plaza-market-mensajes.html" class="menu-item">Mensajes</a>
+                    <a href="plaza-market-mis-operaciones.html" class="menu-item">Mis ventas y compras</a>
+                    <a href="plaza-market-perfil.html" class="menu-item">Mi perfil</a>
+                    <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
+                    <a href="#" class="menu-item menu-salir" onclick="handleLogout(event)">Salir</a>
+                </nav>
+            </div>
+
+            <div class="status-pill" style="align-self:flex-start;"><span class="pulse-dot"></span> IA de Moderación Activa 24hs</div>
+
+            <section class="glass-card p-6 sm:p-7" id="seccionCobros">
+                <h2 class="text-lg font-bold text-white mb-1">💳 Cobros con Mercado Pago</h2>
+                <p class="text-sm text-slate-400 mb-4">Para poder cobrar tus ventas por Plaza Market, conectá tu cuenta de Mercado Pago. Se hace una sola vez.</p>
+                <div id="cobrosEstado"><p class="empty-state">Verificando...</p></div>
+            </section>
+
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">Cargar Nueva Publicación</h2>
+                <p class="text-sm text-slate-400 mb-5">La IA revisa el rubro en el momento (no se permiten rubros prohibidos) — no hace falta esperar una aprobación manual.</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label>¿Qué estás publicando?</label>
+                        <div class="tipo-toggle">
+                            <button type="button" id="btnTipoProducto" class="tipo-btn activo" onclick="setTipo('producto')">📦 Producto físico</button>
+                            <button type="button" id="btnTipoServicio" class="tipo-btn" onclick="setTipo('servicio')">🛠️ Servicio</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>Título</label>
+                        <input type="text" id="productTitle" placeholder="Ej: Perfume Lattafa Yara 100ml" class="mt-2" oninput="checkTitleAndDescription()">
+                    </div>
+
+                    <div>
+                        <label>Descripción</label>
+                        <textarea id="productDescription" placeholder="Contale a los compradores sobre tu producto o servicio..." class="mt-2" oninput="checkTitleAndDescription()"></textarea>
+                        <div id="categoryBlockWarning" class="category-block-warning hidden"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label>Categoría</label>
+                            <select id="productCategory" class="mt-2"></select>
+                <div class="mb-4"><label>Marca <span style="color:#f87171;">*</span> <span style="color:#94a3b8;font-weight:400;font-size:.8rem;">(tu marca o subcategoría)</span></label>
+                    <input type="text" id="productMarca" list="marcasList" autocomplete="off" placeholder="Ej: Lattafa, Afnan, Rasasi..." class="mt-2" maxlength="60"><datalist id="marcasList"></datalist></div>
+                <div class="mb-4"><label>Condición</label>
+                    <select id="productCondicion" class="mt-2"><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
+                        </div>
+                        <div>
+                            <label id="labelPrecio">Precio Unitario (ARS)</label>
+                            <input type="text" id="productPrice" inputmode="numeric" placeholder="$8.499" class="mt-2" oninput="onPrecioInput(event)">
+                        </div>
+                    </div>
+
+                    <div id="seccionStock">
+                        <label>¿Cuántas unidades tenés en stock?</label>
+                        <input type="text" id="productStock" inputmode="numeric" placeholder="Ej: 5" class="mt-2" oninput="onStockInput(event)">
+                        <p class="envio-hint">Cuando el stock llegue a 0, la publicación se muestra como <strong>“Agotado”</strong> hasta que lo repongas.</p>
+                    </div>
+
+                    <div id="seccionVariaciones" style="margin-top:1rem;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+    <input type="checkbox" id="chkVariaciones" onchange="pmVarToggle()" style="width:auto;margin:0;"> Este producto tiene <span style="color:#93c5fd;">variaciones</span> (ej: talle, color)
+  </label>
+  <div id="varBox" class="hidden" style="margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.03);">
+    <p class="envio-hint" style="margin-top:0;">Agregá las opciones de cada variable y cargá el stock de cada combinación. El stock total se calcula solo.</p>
+    <div id="varAtributos"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributo('Color')">+ Color</button>
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributo('Talle')">+ Talle</button>
+      <button type="button" class="pm-varbtn" onclick="pmVarAddAtributoPropio()">+ Otra variable</button>
+    </div>
+    <div id="varGrid"></div>
+  </div>
+</div>
+<style>.pm-varbtn{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#93c5fd;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.85rem;}.pm-varbtn:hover{background:rgba(59,130,246,.28);}#varBox input[type=text]{padding:6px 8px;border-radius:8px;}</style>
+                    <div id="seccionMedidas">
+                        <div class="mb-4"><label>🔖 Código de barras (opcional)</label><input type="text" id="productoEan" inputmode="numeric" placeholder="Ej: 7791234567890" class="mt-2"><p class="text-xs text-gray-400 mt-1">¿Tu producto tiene código de barras? Cargalo y aparecés en más búsquedas. Si es hecho a mano o no tiene, dejalo vacío.</p></div><label>📦 Medidas del paquete</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                            <div>
+                                <label class="medida-label">Alto (cm)</label>
+                                <input type="text" id="paqueteAlto" inputmode="numeric" placeholder="Ej: 20" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Ancho (cm)</label>
+                                <input type="text" id="paqueteAncho" inputmode="numeric" placeholder="Ej: 15" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Largo (cm)</label>
+                                <input type="text" id="paqueteLargo" inputmode="numeric" placeholder="Ej: 30" oninput="onMedidaInput(event)">
+                            </div>
+                            <div>
+                                <label class="medida-label">Peso (gramos)</label>
+                                <input type="text" id="paquetePeso" inputmode="numeric" placeholder="Ej: 1500" oninput="onMedidaInput(event)">
+                            </div>
+                        </div>
+                        <p class="envio-hint">¿No sabés las medidas? No pasa nada: al elegir la categoría te completamos unas aproximadas. Si tu paquete es más grande o más pesado, cambialas — con los datos reales tu comprador paga menos de envío.</p>
+                        <style>#seccionMedidas input[data-auto="1"]{color:#93c5fd;font-style:italic;}</style>
+                    </div>
+
+                    <div id="desgloseComision" class="desglose hidden"></div>
+
+                    <div id="seccionEnvio">
+                        <label>🚚 Envío del producto</label>
+                        <div class="mt-2">
+                            <input type="text" id="costoEnvio" inputmode="numeric" placeholder="$0" oninput="onEnvioInput(event)" style="display:none">
+                            <p class="envio-hint">El costo del envío lo calcula <strong>automáticamente Pickit</strong> según el código postal del comprador. Plaza Market <strong>no cobra comisión sobre el envío</strong>.</p>
+
+                            <div class="envio-opciones">
+                                <label class="envio-opcion elegida" id="opcionComprador">
+                                    <input type="radio" name="quienPagaEnvio" value="comprador" checked onchange="actualizarDesglose()">
+                                    <div>
+                                        <span class="opcion-titulo">El envío lo paga el comprador</span>
+                                        <span class="opcion-detalle" id="txtOpcionComprador">El costo de Pickit se suma al total que paga el comprador.</span>
+                                    </div>
+                                </label>
+
+                                <label class="envio-opcion" id="opcionVendedor">
+                                    <input type="radio" name="quienPagaEnvio" value="vendedor" onchange="actualizarDesglose()">
+                                    <div>
+                                        <span class="opcion-titulo">Envío gratis (el envío lo pagás vos)</span>
+                                        <span class="opcion-detalle" id="txtOpcionVendedor">Vos te hacés cargo del envío; el comprador no paga envío.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>📸 Fotos</label>
+                        <input type="file" id="photoFileInput" accept="image/*" multiple class="hidden" onchange="handlePhotoFileSelected(event)">
+
+                        <div id="dropzone" class="dropzone">
+                            <div class="dz-mas">+</div>
+                            <p class="dz-titulo">Agregar fotos</p>
+                            <p class="dz-sub">Hacé clic acá, o arrastrá las imágenes desde tu computadora.<br>Podés subir varias juntas.</p>
+                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos</p>
+                        </div>
+
+                        <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
+                    </div>
+
+                    <div id="bannerEdicion" class="hidden" style="background:rgba(0,82,212,0.12);border:1px solid rgba(59,130,246,0.4);border-radius:0.85rem;padding:0.8rem 1rem;font-size:0.82rem;color:#BFDBFE;">
+                        <p style="margin:0 0 0.6rem;">✏️ Estás <strong>editando</strong> una publicación. Cambiá lo que quieras y guardá.</p>
+                        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+                            <button type="button" onclick="cancelarEdicion()" class="btn-ghost-dark px-3 py-1.5 rounded-lg text-xs">Cancelar</button>
+                            <button type="button" onclick="eliminarEnEdicion()" style="background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.5);color:#FCA5A5;border-radius:0.6rem;padding:0.35rem 0.9rem;font-size:0.75rem;font-weight:700;cursor:pointer;">🗑 Eliminar esta publicación</button>
+                        </div>
+                    </div>
+
+                    <button id="publishBtn" onclick="publishProduct()" class="btn-primary w-full py-3.5 rounded-xl text-sm">
+                        Publicar
+                    </button>
+                </div>
+            </section>
+
+            <section class="glass-card p-6 sm:p-7">
+                <h2 class="text-lg font-bold text-white mb-1">📦 Mis Publicaciones</h2>
+                <p class="text-sm text-slate-400 mb-5">Todo lo que publicaste, guardado de verdad.</p>
+                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1rem 1.1rem;margin-bottom:1.3rem;">
+                    <p style="color:#fff;font-weight:700;font-size:.98rem;margin-bottom:.15rem;">💲 Ajustá tus precios</p>
+                    <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.85rem;">Aumentá o cambiá precios en masa. <strong style="color:#cbd5e1;">Solo se modifica el precio</strong> — el resto queda intacto.</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.7rem;">
+                        <select id="apTipo" style="background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                            <option value="pct">Porcentaje %</option>
+                            <option value="monto">Monto $</option>
+                        </select>
+                        <input id="apValor" type="number" placeholder="Ej: 10" style="width:110px;background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                        <select id="apAlcance" onfocus="poblarAlcancePrecios()" style="background:#0f172a;border:1px solid rgba(255,255,255,.14);color:#e2e8f0;border-radius:9px;padding:.5rem .6rem;font-size:.88rem;">
+                            <option value="todos">Todos mis productos</option>
+                        </select>
+                        <button type="button" onclick="ajusteRapido()" style="background:linear-gradient(160deg,#60a5fa,#6366f1);border:none;color:#fff;font-weight:700;border-radius:9px;padding:.5rem 1.1rem;font-size:.88rem;cursor:pointer;">Aplicar</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;">
+                        <button type="button" onclick="descargarPlanilla()" style="background:#1e293b;border:1px solid rgba(255,255,255,.14);color:#7dd3fc;font-weight:600;border-radius:9px;padding:.5rem .9rem;font-size:.85rem;cursor:pointer;">⬇️ Descargar planilla (Excel)</button>
+                        <input type="file" id="planillaInput" accept=".xlsx,.xls" style="display:none" onchange="subirPlanilla(event)">
+                        <button type="button" onclick="document.getElementById('planillaInput').click()" style="background:#1e293b;border:1px solid rgba(255,255,255,.14);color:#a78bfa;font-weight:600;border-radius:9px;padding:.5rem .9rem;font-size:.85rem;cursor:pointer;">⬆️ Subir planilla con precios nuevos</button>
+                    </div>
+                    <p style="color:#64748b;font-size:.75rem;margin-top:.55rem;">En la planilla, editá <strong style="color:#94a3b8;">solo la columna "Precio"</strong>. Las demás no se tocan (aunque las cambies, el sistema las ignora).</p>
+                    <div id="preciosAviso" style="margin-top:.5rem;font-size:.85rem;"></div>
+                </div>
+                
+                <div id="panelImportAdmin" style="display:none; margin:0 0 1.25rem; padding:1rem 1.1rem; border:1px solid rgba(96,165,250,.35); border-radius:14px; background:rgba(30,58,138,.12);">
+  <h3 style="font-weight:800;color:#fff;margin-bottom:.2rem;font-size:1rem;">&#128229; Importar cat&aacute;logo <span style="font-size:.7rem;font-weight:600;color:#93c5fd;">&middot; solo ArPerfum/admin</span></h3>
+  <p style="font-size:.85rem;color:#cbd5e1;margin-bottom:.7rem;">Sub&iacute; tu planilla de perfumes (export&aacute; tu Google Sheet: Archivo &rarr; Descargar &rarr; Microsoft Excel .xlsx). Detecto solo las columnas por su nombre. Ves un <b>preview</b> antes de crear nada. Consejo: prob&aacute; primero con 2-3 filas.</p>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+    <label style="background:#1e40af;color:#fff;padding:.5rem .8rem;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700;">&#128196; Elegir archivo (.xlsx/.csv)
+      <input id="importFile" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importLeerArchivo(event)">
+    </label>
+    <button type="button" onclick="importDescargarPlantilla()" style="background:transparent;border:1px solid rgba(255,255,255,.25);color:#cbd5e1;padding:.5rem .8rem;border-radius:9px;font-size:.85rem;cursor:pointer;">Descargar plantilla vac&iacute;a</button>
+  </div>
+  <div id="importPreview" style="margin-top:.8rem;"></div>
+</div>
+
+                <div id="myProductsList"><p class="empty-state">Cargando...</p></div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+
+        // La comisión de Plaza Market. Se calcula SOLO sobre el precio
+        // del producto o servicio. El envío nunca paga comisión.
+        const COMISION = 0.12;
+
+        // Seña obligatoria para reservar un servicio. Tiene que ser
+        // SIEMPRE mayor que la comisión, si no la plataforma queda en rojo.
+        const SENA = 0.20;
+
+        // Lo que cobra Mercado Pago por procesar el cobro con Checkout.
+        // Dato oficial del panel de MP: 6,60% con acreditación AL INSTANTE,
+        // igual para débito, crédito y dinero en cuenta. Ese 6,60% NO incluye
+        // IVA, así que se le suma el 21%: 6,60 × 1,21 = 7,986%.
+        // Si algún día se cambia el plazo de acreditación, cambiar este número:
+        // 10 días = 4,60% | 18 días = 3,55% | 35 días = 1,56% (siempre + IVA).
+        const COSTO_MP = 0.0799;
+
+        // Datos para conectar la cuenta de Mercado Pago del vendedor.
+        // OJO: este es el Client ID de PRODUCCION (el de pruebas es otro y no funciona).
+        const MP_CLIENT_ID_PUBLICO = '4939099177024519';
+        const MP_REDIRECT = 'https://plazamarket.com.ar/plaza-market-mp-conectado.html';
+
+        // Las categorías cambian según lo que se publique.
+        const CATEGORIAS = {
+            producto: [
+                ['consolas', 'Consolas y Videojuegos'],
+                ['muebles', 'Muebles y Jardín'],
+                ['bazar', 'Bazar y Cocina'],
+                ['bebes', 'Bebés (ropa, cochecitos, juguetes)'],
+                ['salud', 'Salud y Cuidado Personal'],
+                ['deportes', 'Deportes y Fitness'],
+                ['mascotas', 'Mascotas (accesorios, alimentos, juguetes)'],
+                ['herramientas', 'Herramientas'],
+                ['instrumentos', 'Instrumentos Musicales'],
+                ['libreria', 'Arte, Librería y Mercería'],
+                ['antiguedades', 'Antigüedades y Coleccionables'],
+                ['cotillon', 'Souvenirs, Cotillón y Fiestas'],
+                ['perfumeria', 'Perfumería'],
+                ['cosmetica', 'Cosmética'],
+                ['indumentaria', 'Indumentaria'],
+                ['construccion', 'Materiales de construcción'],
+                ['pintura', 'Pinturas y revestimientos'], ['calzado', 'Calzado']
+            ],
+            servicio: [
+                ['estetica', 'Estética y Belleza (barbería, peluquería, uñas, pestañas, cejas)'],
+                ['masajes', 'Masajes y Bienestar'],
+                ['servicios', 'Servicios Profesionales (electricista, plomero, gasista, contador)'],
+                ['reformas', 'Reformas y refacciones'],
+                ['construccion', 'Construcción (mano de obra)']
+            ]
+        };
+
+        const { createClient } = window.supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let usuarioActual = null;
+        let tipoActual = 'producto';
+        let misProductos = [];
+        let editandoId = null;
+        let fotosExistentes = [];
+        let miNombreVendedor = '';
+
+        // ============================================================
+        // FORMATO DE PESOS
+        // ============================================================
+        function soloDigitos(s) { return (s || '').replace(/\D/g, ''); }
+        function formatearPesos(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+
+        function onPrecioInput(e) {
+            const d = soloDigitos(e.target.value);
+            e.target.value = d ? formatearPesos(d) : '';
+            actualizarDesglose();
+        }
+        function onEnvioInput(e) {
+            const d = soloDigitos(e.target.value);
+            e.target.value = d ? formatearPesos(d) : '';
+            actualizarDesglose();
+        }
+        function valorPrecio() { return Number(soloDigitos(document.getElementById('productPrice').value)) || 0; }
+        function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
+        function valorStock() { return Number(soloDigitos(document.getElementById('productStock').value)) || 0; }
+        function onStockInput(e) { e.target.value = soloDigitos(e.target.value); }
+        function onMedidaInput(e) { e.target.value = soloDigitos(e.target.value); delete e.target.dataset.auto; }
+        function valorMedida(id) { return Number(soloDigitos(document.getElementById(id).value)) || 0; }
+
+        // ============================================================
+        // DESGLOSE EN VIVO
+        // ============================================================
+        function envioLoPagaVendedor() {
+            const r = document.querySelector('input[name="quienPagaEnvio"]:checked');
+            return r && r.value === 'vendedor';
+        }
+
+        function actualizarDesglose() {
+            const caja = document.getElementById('desgloseComision');
+            const precio = valorPrecio();
+            const esServicio = tipoActual === 'servicio';
+
+            if (!precio) { caja.classList.add('hidden'); return; }
+
+            const comision = Math.round(precio * COMISION);
+            const notaMp = `El costo de Mercado Pago es el <strong>mismo</strong> con débito, crédito o dinero en cuenta (6,60% + IVA, cobrando al instante).
+                    <br><br>Aparte, Mercado Pago retiene <strong>Ingresos Brutos (SIRTAC)</strong>. Esa retención <strong>no está descontada acá</strong> porque es distinta para cada vendedor:
+                    va de <strong>0,01% a 5%</strong> según tu provincia y tu actividad (3% si no estás en el padrón). Y no es plata perdida: <strong>se recupera</strong> en tu declaración.
+                    <br><br>Si el comprador paga con una tarjeta <strong>extranjera</strong>, el costo sube un 3%.`;
+
+            let filas = '';
+            let nota = '';
+
+            if (esServicio) {
+                // En servicios, por la plataforma pasa SOLO la seña.
+                // Por eso Mercado Pago cobra sobre la seña, no sobre el precio total.
+                const sena = Math.round(precio * SENA);
+                const costoMp = Math.round(sena * COSTO_MP);
+                const netoSena = sena - costoMp - comision;
+                const alEntregar = precio - sena;
+                filas = `
+                <div class="desglose-fila"><span>Precio del servicio</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Seña que paga el cliente para reservar (${(SENA * 100).toFixed(0)}%)</span><span>${formatearPesos(sena)}</span></div>
+                <div class="desglose-fila"><span>Mercado Pago sobre la seña (${(COSTO_MP * 100).toFixed(2)}%)</span><span>−${formatearPesos(costoMp)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila"><span>Te queda de la seña</span><span>${formatearPesos(netoSena)}</span></div>
+                <div class="desglose-fila"><span>Cobrás al dar el servicio</span><span>${formatearPesos(alEntregar)}</span></div>
+                <div class="desglose-fila total"><span><strong>Te quedan en total</strong></span><span>${formatearPesos(netoSena + alEntregar)}</span></div>`;
+                nota = `La reserva con seña es <strong>obligatoria</strong>: es la única forma de cobrar la comisión sin manejar efectivo. De esa seña sale la comisión, y el resto lo cobrás vos al dar el servicio.
+                    <br><br>${notaMp}
+                    <br><br>⚠️ <strong>Todavía no está activo el cobro.</strong> Hoy la reserva se coordina por chat.`;
+            } else {
+                const costoMp = Math.round(precio * COSTO_MP);
+                const neto = precio - costoMp - comision;
+                filas = `
+                <div class="desglose-fila"><span>Precio publicado</span><span>${formatearPesos(precio)}</span></div>
+                <div class="desglose-fila"><span>Mercado Pago (${(COSTO_MP * 100).toFixed(2)}%)</span><span>−${formatearPesos(costoMp)}</span></div>
+                <div class="desglose-fila"><span>Comisión Plaza Market (${(COMISION * 100).toFixed(0)}%)</span><span>−${formatearPesos(comision)}</span></div>
+                <div class="desglose-fila total"><span><strong>Te quedan</strong></span><span>${formatearPesos(neto)}</span></div>`;
+                nota = `La comisión de Plaza Market se calcula <strong>solo sobre el precio, nunca sobre el envío</strong>.
+                    <br><br>${notaMp}
+                    <br><br>El <strong>envío se calcula automáticamente con Correo Argentino y Pickit</strong> según el código postal del comprador, y el comprador elige la opción que prefiera. Se suma al total.`;
+            }
+
+            caja.innerHTML = filas + `<p class="desglose-nota">${nota}</p>`;
+            caja.classList.remove('hidden');
+        }
+
+        // ============================================================
+        // PRODUCTO / SERVICIO
+        // ============================================================
+        function cargarCategorias(tipo) {
+            const sel = document.getElementById('productCategory');
+            sel.innerHTML = '<option value="">Seleccioná una categoría</option>' +
+                CATEGORIAS[tipo].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+        }
+
+        function setTipo(tipo) {
+            tipoActual = tipo;
+            document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
+            document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
+            document.getElementById('seccionEnvio').classList.add('hidden');
+            document.getElementById('seccionStock').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionMedidas').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('seccionEnvio').classList.toggle('hidden', tipo === 'servicio');
+            document.getElementById('labelPrecio').textContent =
+                tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
+            cargarCategorias(tipo);
+            actualizarDesglose();
+        }
+
+        // ============================================================
+        // SESIÓN
+        // ============================================================
+        async function verificarSesion() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-panel-carga-productos.html';
+                return;
+            }
+            usuarioActual = session.user;
+            localStorage.setItem('pm_uid', usuarioActual.id);
+            document.getElementById('authLoading').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            setTipo('producto');
+            activarDropzone();
+            renderPhotoSlots();
+            await cargarMisProductos();
+
+            const { data: perf } = await supabaseClient.from('pm_perfiles').select('nombre, mp_conectado').eq('id', usuarioActual.id).maybeSingle();
+            miNombreVendedor = (perf && perf.nombre) || usuarioActual.email;
+            document.getElementById('menuCuenta').textContent = '👤 ' + miNombreVendedor;
+            const sub = document.getElementById('subEncabezado'); if (sub) sub.textContent = 'Hola, ' + miNombreVendedor + ' · Vender';
+            renderCobros(!!(perf && perf.mp_conectado));
+            supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle().then(({ data }) => {
+                if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
+            });
+        }
+
+        // ============================================================
+        // CONECTAR MERCADO PAGO (para poder cobrar)
+        // ============================================================
+        function urlConectarMp() {
+            return 'https://auth.mercadopago.com/authorization'
+                + '?client_id=' + MP_CLIENT_ID_PUBLICO
+                + '&response_type=code&platform_id=mp'
+                + '&state=pm' + Date.now()
+                + '&redirect_uri=' + MP_REDIRECT;
+        }
+
+        function conectarMercadoPago(e) {
+            if (e) e.preventDefault();
+            window.location.href = urlConectarMp();
+        }
+
+        function renderCobros(conectado) {
+            const c = document.getElementById('cobrosEstado');
+            if (!c) return;
+            if (conectado) {
+                c.innerHTML = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.85rem;padding:0.9rem 1rem;">'
+                    + '<p style="margin:0;color:#6EE7B7;font-weight:700;font-size:0.88rem;">✅ Tu Mercado Pago está conectado</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Listo, no tenés que hacer nada más. Cuando el cobro esté activo, vas a poder recibir la plata de tus ventas.</p>'
+                    + '</div>';
+            } else {
+                c.innerHTML = '<div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.9rem;">'
+                    + '<p style="margin:0;color:#FCD34D;font-weight:700;font-size:0.88rem;">Todavía no conectaste tu Mercado Pago</p>'
+                    + '<p style="margin:0.4rem 0 0;color:rgba(226,232,240,0.6);font-size:0.78rem;line-height:1.5;">Es un solo paso. Te lleva a Mercado Pago, iniciás sesión con tu cuenta y le das permiso a Plaza Market. <strong>No se mueve ni un peso</strong>: solo queda enlazada tu cuenta para poder cobrar.</p>'
+                    + '</div>'
+                    + '<button type="button" onclick="conectarMercadoPago(event)" class="btn-primary w-full py-3 rounded-xl text-sm">Conectar mi Mercado Pago</button>';
+            }
+        }
+
+        function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
+        function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
+
+        async function handleLogout(e) {
+            if (e) e.preventDefault();
+            localStorage.removeItem('pm_uid');
+            await supabaseClient.auth.signOut();
+            window.location.href = 'plaza-market-acceso-emprendedores.html';
+        }
+
+        function volverAtras(e) {
+            if (e) e.preventDefault();
+            if (document.referrer && history.length > 1) history.back();
+            else window.location.href = 'plaza-market-catalogo.html';
+        }
+
+        // ============================================================
+        // FILTRO DE RUBROS PROHIBIDOS
+        // ============================================================
+        function normalizeText(text) {
+            return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        const BLOCKED_KEYWORDS = [
+            'auto', 'autos', 'camioneta', 'camionetas', 'moto', 'motos', 'motocicleta', 'motocicletas',
+            'vehiculo', 'vehiculos', 'coche', 'coches',
+            'repuesto', 'repuestos', 'autoparte', 'autopartes', 'carroceria',
+            'embrague', 'amortiguador', 'amortiguadores', 'desarmadero', 'caja de cambios', 'motor',
+            'bujia', 'bujias', 'tapa de cilindro', 'tapa de cilindros',
+            'inmueble', 'inmuebles', 'inmobiliaria', 'terreno', 'terrenos', 'lote', 'lotes',
+            'departamento en venta', 'alquiler de depto', 'venta de casa', 'alquiler de propiedad',
+            'alquiler', 'alquilo', 'casa quinta', 'vendo casa',
+            'vip', 'hot', 'activos', 'pasivos',
+            'trans vip', 'gay vip', 'travesti vip',
+            'escort', 'escorts', 'puta', 'putas', 'gato', 'gatos', 'gaturras', 'telo', 'madama',
+            'proxeneta', 'prostitucion', 'servicios sexuales', 'citas de adultos',
+            'chicas vip', 'senoritas independientes', 'independientes vip',
+            'caballeros con caballeros', 'dotado', 'dotados',
+            'alquiler de chicas', 'alquiler de mujeres', 'alquilo chica', 'alquilo mujer',
+            'chica de compania', 'acompanantes', 'acompanamiento terapeutico',
+            'trato de novios', 'salidas pagas', 'presencias vip',
+            'masajes sensitivos', 'masajes descontracturantes caballeros', 'masajes con final feliz',
+            'final feliz', 'masajes relajantes varones', 'masajes intimos', 'masajistas independientes',
+            'masajes corporales hombres', 'atencion a caballeros',
+            'sexo', 'sexual', 'sexualidad', 'coito', 'masturbacion', 'orgasmo', 'porno', 'pornografia',
+            'pornografico', 'pornografica', 'erotico', 'erotica', 'shemales',
+            'videos hot', 'pack hot', 'telegram hot', 'fotos hot', 'onlyfans',
+            'comida', 'alimento', 'alimentos', 'alimenticio', 'alimenticios', 'gastronomico', 'gastronomia',
+            'pan', 'panes', 'pancito', 'pancitos', 'pan casero', 'pan dulce', 'pan integral', 'pan lactal',
+            'pan artesanal', 'panificado', 'panificados', 'panificacion', 'panificaciones',
+            'torta', 'tortas', 'factura', 'facturas', 'alfajor', 'alfajores', 'reposteria',
+            'budin', 'budines', 'empanada', 'empanadas', 'milanesa', 'milanesas',
+            'bizcocho', 'bizcochos', 'bizcochuelo', 'medialuna', 'medialunas', 'chipa', 'chipacito', 'chipacitos',
+            'scon', 'scones', 'galleta', 'galletas', 'galletita', 'galletitas', 'cookie', 'cookies',
+            'cupcake', 'cupcakes', 'muffin', 'muffins', 'brownie', 'brownies', 'mousse', 'flan',
+            'bombon', 'bombones', 'trufa', 'trufas', 'postre', 'postres', 'pastel casero', 'pasteles caseros',
+            'canoncito', 'canoncitos', 'crema pastelera', 'canoli', 'canolis', 'profiterol', 'profiteroles',
+            'lionesa', 'lionesas',
+            'pizza', 'pizzas', 'sandwich', 'sandwiches', 'hamburguesa', 'hamburguesas', 'choripan',
+            'bocadito', 'bocaditos', 'canape', 'canapes',
+            'vianda', 'viandas', 'comida casera', 'meal prep', 'tupper de comida',
+            'dulce de leche casero', 'mermelada casera', 'conserva casera', 'conservas caseras',
+            'queso artesanal', 'quesos artesanales', 'yogurt casero', 'fiambre casero', 'embutido casero',
+            'helado', 'helados', 'heladeria', 'keto', 'catering', 'delivery de comida'
+        ];
+
+        const BLOCKED_PATTERN = (function () {
+            const escaped = BLOCKED_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'i');
+        })();
+
+        function checkBlockedCategory(text) {
+            const match = normalizeText(text).match(BLOCKED_PATTERN);
+            return match ? match[1] : null;
+        }
+
+        function checkTitleAndDescription() {
+            const combined = document.getElementById('productTitle').value + ' ' + document.getElementById('productDescription').value;
+            const warningBox = document.getElementById('categoryBlockWarning');
+            const publishBtn = document.getElementById('publishBtn');
+            const blocked = checkBlockedCategory(combined);
+
+            if (blocked) {
+                warningBox.classList.remove('hidden');
+                warningBox.textContent = '🚫 Este rubro no está permitido en Plaza Market para garantizar la seguridad y confianza de la comunidad.';
+                publishBtn.disabled = true;
+                return false;
+            }
+            warningBox.classList.add('hidden');
+            publishBtn.disabled = false;
+            return true;
+        }
+
+        const CATEGORY_LABELS = {
+            cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
+            construccion: 'Construcción', pintura: 'Pintura', calzado: 'Calzado', reformas: 'Reformas y refacciones',
+            servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza',
+            masajes: 'Masajes y Bienestar'
+        };
+
+        // ============================================================
+        // FILTRO DE FOTOS (OCR REAL)
+        // ============================================================
+        const NUMBER_WORDS = new Set(['cero','uno','una','dos','tres','cuatro','cinco','seis','siete','ocho','nueve']);
+        const FILLER_WORDS_PHOTO = new Set(['y','el','mi','numero','es','de','nro','tel']);
+
+        function hasDigitPhonePattern(text) {
+            const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of matches) { if (m.replace(/\D/g, '').length >= 7) return true; }
+            return (text.match(/\d{7,}/g) || []).length > 0;
+        }
+
+        function hasSpelledOutPhonePattern(text) {
+            const words = normalizeText(text).match(/[a-z]+/g) || [];
+            let run = 0, maxRun = 0;
+            for (const w of words) {
+                if (NUMBER_WORDS.has(w)) { run++; maxRun = Math.max(maxRun, run); }
+                else if (!FILLER_WORDS_PHOTO.has(w)) { run = 0; }
+            }
+            return maxRun >= 5;
+        }
+
+        function hasSocialMediaPattern(text) { return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text); }
+
+        let uploadedPhotos = [];
+        const MAX_FOTOS = 10;
+
+        async function agregarArchivos(files) {
+            const restantes = MAX_FOTOS - uploadedPhotos.length - fotosExistentes.length;
+            if (restantes <= 0) {
+                showToast(`❌ Llegaste al máximo de ${MAX_FOTOS} fotos`, 'error');
+                return;
+            }
+
+            const imagenes = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (imagenes.length < files.length) {
+                showToast('❌ Por ahora solo se aceptan fotos, no videos', 'error');
+            }
+
+            const aAgregar = imagenes.slice(0, restantes);
+            if (imagenes.length > restantes) {
+                showToast(`⚠️ Se agregaron ${restantes}. El máximo es ${MAX_FOTOS} fotos.`, 'info');
+            }
+
+            const nuevas = aAgregar.map(file => ({
+                id: Date.now() + Math.random(),
+                file,
+                imageUrl: URL.createObjectURL(file),
+                scanned: true, approved: true, reason: null
+            }));
+
+            uploadedPhotos.push(...nuevas);
+            renderPhotoSlots();
+            if (nuevas.length) showToast(`✅ ${nuevas.length} foto${nuevas.length === 1 ? '' : 's'} agregada${nuevas.length === 1 ? '' : 's'}`, 'success');
+        }
+
+        function handlePhotoFileSelected(event) {
+            agregarArchivos(event.target.files);
+            event.target.value = '';
+        }
+
+        function activarDropzone() {
+            const dz = document.getElementById('dropzone');
+            dz.addEventListener('click', () => document.getElementById('photoFileInput').click());
+            ['dragenter', 'dragover'].forEach(ev =>
+                dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('arrastrando'); }));
+            ['dragleave', 'drop'].forEach(ev =>
+                dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('arrastrando'); }));
+            dz.addEventListener('drop', e => {
+                if (e.dataTransfer && e.dataTransfer.files.length) agregarArchivos(e.dataTransfer.files);
+            });
+        }
+
+        async function scanPhotoReal(photo, file) {
+            try {
+                const worker = await Tesseract.createWorker('spa');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                const extracted = text || '';
+                let reason = null;
+                if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
+                else if (hasSpelledOutPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
+                else if (hasSocialMediaPattern(extracted)) reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+
+                photo.scanned = true;
+                photo.approved = !reason;
+                photo.reason = reason;
+                renderPhotoSlots();
+                showToast(reason ? `🚫 Foto rechazada: ${reason}` : '✅ Foto aprobada — sin datos de contacto detectados', reason ? 'error' : 'success');
+            } catch (err) {
+                photo.scanned = true; photo.approved = false;
+                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó.';
+                renderPhotoSlots();
+                showToast('⚠️ No se pudo analizar la foto', 'error');
+                console.error(err);
+            }
+        }
+
+        function removePhoto(photoId) {
+            uploadedPhotos = uploadedPhotos.filter(p => p.id !== photoId);
+            renderPhotoSlots();
+        }
+
+        function quitarFotoExistente(i) {
+            fotosExistentes.splice(i, 1);
+            renderPhotoSlots();
+        }
+
+        function moverFotoNueva(id, dir){ const i=uploadedPhotos.findIndex(function(p){return p.id===id;}); if(i<0)return; const j=i+dir; if(j<0||j>=uploadedPhotos.length)return; const t=uploadedPhotos[i]; uploadedPhotos[i]=uploadedPhotos[j]; uploadedPhotos[j]=t; renderPhotoSlots(); }
+        function moverFotoExistente(i, dir){ const j=i+dir; if(j<0||j>=fotosExistentes.length)return; const t=fotosExistentes[i]; fotosExistentes[i]=fotosExistentes[j]; fotosExistentes[j]=t; renderPhotoSlots(); }
+        function renderPhotoSlots() {
+            const container = document.getElementById('photoSlotsContainer');
+            if (!container) return;
+
+            const total = uploadedPhotos.length + fotosExistentes.length;
+            const contador = document.getElementById('contadorFotos');
+            if (contador) contador.textContent = `${total} de ${MAX_FOTOS} fotos`;
+
+            const existentesHtml = fotosExistentes.map((url, i) => `
+                <div class="photo-slot">
+                    <img src="${url}" alt="Foto" class="photo-slot-real-img">
+                    <div class="photo-approved-badge">✓ Ya cargada</div>
+                    ${i===0?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
+                </div>`).join('');
+
+            if (total === 0) { container.innerHTML = ''; return; }
+
+            container.innerHTML = existentesHtml + uploadedPhotos.map((p,idx) => {
+                let statusBlock;
+                if (!p.scanned) statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
+                else if (p.approved) statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
+                else statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
+                return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
+                    <img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">
+                    ${statusBlock}
+                    ${(idx===0 && fotosExistentes.length===0)?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
+                </div>`;
+            }).join('');
+        }
+
+        // ============================================================
+        // SUBIR FOTOS AL DEPÓSITO
+        // ============================================================
+        async function subirFotosAprobadas() {
+            const urls = [];
+            for (const p of uploadedPhotos.filter(p => p.approved)) {
+                const ext = (p.file.name.split('.').pop() || 'jpg').toLowerCase();
+                const nombre = `${usuarioActual.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+                const { error } = await supabaseClient.storage.from('productos').upload(nombre, p.file, { contentType: p.file.type });
+                if (error) throw error;
+                urls.push(supabaseClient.storage.from('productos').getPublicUrl(nombre).data.publicUrl);
+            }
+            return urls;
+        }
+
+        // ============================================================
+        // PUBLICAR
+        // ============================================================
+        // ============================================================
+// MEDIDAS POR DEFECTO SEGUN CATEGORIA (para no medir a mano)
+// El vendedor puede cargar las suyas; si las deja vacias, usamos estas.
+// ============================================================
+function medidasPorCategoria(cat) {
+  const c = String(cat || '').toLowerCase();
+  const has = (...w) => w.some(x => c.includes(x));
+  if (has('perfum','cosmet','estetic','maquill','belleza','fragan','skincare')) return { alto:12, ancho:10, largo:8,  peso:400 };
+  if (has('calzado','zapat','bota','zapatilla','sneaker'))                        return { alto:13, ancho:22, largo:33, peso:900 };
+  if (has('indument','ropa','remera','textil','moda','vestir','pantalon'))        return { alto:5,  ancho:25, largo:30, peso:400 };
+  if (has('joy','bijou','accesor','anillo','aros','pulsera','reloj de puls'))     return { alto:6,  ancho:12, largo:15, peso:250 };
+  if (has('libro','papel','revista','cuaderno','libreria'))                       return { alto:4,  ancho:18, largo:25, peso:500 };
+  if (has('electro','tecno','celular','audio','gadget','tecnolog'))               return { alto:12, ancho:20, largo:25, peso:800 };
+  if (has('juguet','jugueter','peluche'))                                         return { alto:20, ancho:25, largo:30, peso:700 };
+  if (has('hogar','deco','bazar','cocina','mueble','canast','jardin','reloj'))    return { alto:25, ancho:30, largo:35, peso:1500 };
+  return { alto:15, ancho:25, largo:30, peso:1000 }; // universal (cualquier cosa)
+}
+
+// Al elegir la categoría, mostramos las medidas sugeridas en los casilleros.
+// Nunca pisa lo que el vendedor escribió a mano ni lo que se cargó al editar.
+function sugerirMedidas() {
+  const md = medidasPorCategoria(document.getElementById('productCategory').value);
+  [['paqueteAlto','alto'],['paqueteAncho','ancho'],['paqueteLargo','largo'],['paquetePeso','peso']].forEach(([id,k]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.value === '' || el.dataset.auto === '1') { el.value = String(md[k]); el.dataset.auto = '1'; }
+  });
+}
+
+async function publishProduct() {
+            const title = document.getElementById('productTitle').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
+            const category = document.getElementById('productCategory').value;
+            const price = valorPrecio();
+            const esProducto = tipoActual === 'producto';
+            const envioGratis = envioLoPagaVendedor();   // el envío se coordina por chat hasta integrar el correo
+            const costoEnvio = 0;
+
+            if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
+            if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
+        if (!(document.getElementById('productMarca') && document.getElementById('productMarca').value.trim())) { showToast('❌ Ingresá la marca (ej: Lattafa, Afnan)', 'error'); return; }
+            if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
+
+            const stockRaw = soloDigitos(document.getElementById('productStock').value);
+            if (esProducto && stockRaw === '' && !(window.pmVar && pmVar.activo)) {
+                showToast('❌ Poné cuántas unidades tenés en stock (0 = agotado)', 'error');
+                return;
+            }
+            const stock = esProducto ? ((window.pmVar && pmVar.activo) ? pmVarStockTotal() : Number(stockRaw)) : null;
+
+            const altoCm = valorMedida('paqueteAlto');
+            const anchoCm = valorMedida('paqueteAncho');
+            const largoCm = valorMedida('paqueteLargo');
+            const pesoGr = valorMedida('paquetePeso');
+            // Si es producto y faltan medidas, usamos las de la categoria (opcional para el vendedor)
+    const _md = medidasPorCategoria(category);
+    const altoF  = esProducto ? (Number(altoCm)  || _md.alto)  : null;
+    const anchoF = esProducto ? (Number(anchoCm) || _md.ancho) : null;
+    const largoF = esProducto ? (Number(largoCm) || _md.largo) : null;
+    const pesoF  = esProducto ? (Number(pesoGr)  || _md.peso)  : null;
+
+            if (checkBlockedCategory(`${title} ${description}`)) {
+                showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
+                return;
+            }
+
+            const totalFotos = uploadedPhotos.length + fotosExistentes.length;
+            if (totalFotos === 0) { showToast('❌ Agregá al menos una foto', 'error'); return; }
+            if (uploadedPhotos.some(p => !p.scanned)) { showToast('⏳ Esperá a que la IA analice tus fotos', 'info'); return; }
+            if (fotosExistentes.length === 0 && uploadedPhotos.filter(p => p.approved).length === 0) {
+                showToast('❌ Ninguna foto pasó el filtro. Subí al menos una foto limpia.', 'error'); return;
+            }
+
+            const btn = document.getElementById('publishBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-mini"></span> ' + (editandoId ? 'Guardando...' : 'Publicando...');
+
+            try {
+                const nuevasUrls = await subirFotosAprobadas();
+                const fotos = fotosExistentes.concat(nuevasUrls);
+
+                const marca = (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '').trim().slice(0,60);
+    const condicion = (document.getElementById('productCondicion') ? document.getElementById('productCondicion').value : 'nuevo');
+    const datos = {
+                    titulo: title, descripcion: description, categoria: category, marca: marca || null, condicion: condicion, precio: price,
+                    fotos: fotos, tipo: tipoActual, envio_gratis: envioGratis, costo_envio: costoEnvio, stock: stock,
+                    alto_cm: altoF, ancho_cm: anchoF,
+        largo_cm: largoF, peso_gr: pesoF
+                };
+                datos.variaciones = (esProducto && window.pmVar && pmVar.activo) ? pmVarGet() : null;
+                if (esProducto) { try { const _e=(document.getElementById('productoEan')?.value||'').trim(); if(_e) datos.ean=_e; } catch(e){} }
+
+                let error;
+                if (editandoId) {
+                    ({ error } = await supabaseClient.from('productos').update(datos).eq('id', editandoId));
+                } else {
+                    datos.usuario_id = usuarioActual.id;
+                    ({ error } = await supabaseClient.from('productos').insert(datos));
+                }
+                if (error) throw error;
+
+                showToast(editandoId ? `✅ Cambios guardados` : `✅ "${title}" publicado con éxito`, 'success');
+                limpiarFormulario();
+                await cargarMisProductos();
+            } catch (err) {
+                console.error(err);
+                showToast(`🚫 No se pudo guardar: ${err.message || 'error desconocido'}`, 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = editandoId ? 'Guardar cambios' : 'Publicar';
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('productTitle').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productCategory').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productStock').value = '';
+            document.getElementById('paqueteAlto').value = '';
+            document.getElementById('paqueteAncho').value = '';
+            document.getElementById('paqueteLargo').value = '';
+            document.getElementById('paquetePeso').value = '';
+            document.getElementById('productoEan').value = '';
+            document.getElementById('costoEnvio').value = '';
+            document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
+            document.getElementById('categoryBlockWarning').classList.add('hidden');
+            document.getElementById('desgloseComision').classList.add('hidden');
+            uploadedPhotos = [];
+            fotosExistentes = [];
+            editandoId = null;
+            try{ pmVarReset(); }catch(e){}
+            document.getElementById('bannerEdicion').classList.add('hidden');
+            document.getElementById('publishBtn').textContent = 'Publicar';
+            setTipo('producto');
+            renderPhotoSlots();
+        }
+
+        function cancelarEdicion() {
+            limpiarFormulario();
+            showToast('Edición cancelada', 'info');
+        }
+
+        function editarProducto(id) {
+            const p = misProductos.find(x => x.id === id);
+            if (!p) return;
+
+            editandoId = id;
+            setTipo(p.tipo);
+            document.getElementById('productTitle').value = p.titulo || '';
+            document.getElementById('productDescription').value = p.descripcion || '';
+            document.getElementById('productCategory').value = p.categoria || '';
+            document.getElementById('productPrice').value = p.precio ? formatearPesos(p.precio) : '';
+            var _m=document.getElementById('productMarca'); if(_m) _m.value = p.marca || '';
+            var _c=document.getElementById('productCondicion'); if(_c) _c.value = p.condicion || 'nuevo';
+
+            if (p.tipo === 'producto') {
+                document.getElementById('productStock').value = (p.stock ?? '') === '' ? '' : String(p.stock);
+                document.getElementById('paqueteAlto').value = p.alto_cm ? String(p.alto_cm) : '';
+                document.getElementById('paqueteAncho').value = p.ancho_cm ? String(p.ancho_cm) : '';
+                document.getElementById('paqueteLargo').value = p.largo_cm ? String(p.largo_cm) : '';
+                document.getElementById('paquetePeso').value = p.peso_gr ? String(p.peso_gr) : '';
+                document.getElementById('productoEan').value = p.ean || '';
+                document.getElementById('costoEnvio').value = p.costo_envio ? formatearPesos(p.costo_envio) : '';
+                const quien = p.envio_gratis ? 'vendedor' : 'comprador';
+                document.querySelector(`input[name="quienPagaEnvio"][value="${quien}"]`).checked = true;
+            }
+
+            try{ pmVarLoad(p.variaciones); }catch(e){}
+            fotosExistentes = (p.fotos || []).slice();
+            uploadedPhotos = [];
+            renderPhotoSlots();
+            actualizarDesglose();
+            checkTitleAndDescription();
+
+            document.getElementById('bannerEdicion').classList.remove('hidden');
+            document.getElementById('publishBtn').textContent = 'Guardar cambios';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('✏️ Editá lo que quieras y apretá "Guardar cambios"', 'info');
+        }
+
+        // ============================================================
+        // MIS PUBLICACIONES
+        // ============================================================
+        async function cargarMisProductos() {
+            const container = document.getElementById('myProductsList');
+            const { data, error } = await supabaseClient
+                .from('productos').select('*')
+                .eq('usuario_id', usuarioActual.id)
+                .order('creado_en', { ascending: false });
+
+            if (error) { container.innerHTML = `<p class="empty-state">⚠️ Error al cargar: ${error.message}</p>`; return; }
+            misProductos = data || [];
+            if (!data || data.length === 0) { container.innerHTML = '<p class="empty-state">Todavía no publicaste nada.</p>'; return; }
+
+            container.innerHTML = data.map(p => {
+                const foto = (p.fotos && p.fotos[0])
+                    ? `<img src="${p.fotos[0]}" class="product-row-img" alt="">`
+                    : `<div class="product-row-icon">${p.tipo === 'servicio' ? '🛠️' : '📦'}</div>`;
+                const fecha = new Date(p.creado_en).toLocaleString('es-AR');
+                const comision = Math.round(Number(p.precio) * COMISION);
+                // Mismo criterio que el desglose de arriba: en servicios Mercado Pago
+                // cobra solo sobre la seña; en productos, sobre el precio completo.
+                let recibis;
+                if (p.tipo === 'servicio') {
+                    const senaP = Math.round(Number(p.precio) * SENA);
+                    recibis = Number(p.precio) - comision - Math.round(senaP * COSTO_MP);
+                } else {
+                    recibis = Number(p.precio) - comision - Math.round(Number(p.precio) * COSTO_MP);
+                }
+
+                let envioTxt = '';
+                if (p.tipo === 'servicio') {
+                    envioTxt = `Servicio · seña ${formatearPesos(Math.round(Number(p.precio) * SENA))}`;
+                } else {
+                    envioTxt = '+ envío';
+                }
+
+                let stockTxt = '';
+                if (p.tipo === 'producto') {
+                    stockTxt = (p.stock > 0)
+                        ? ` · Stock: ${p.stock}`
+                        : ` · <span style="color:#FCA5A5;font-weight:700;">AGOTADO</span>`;
+                }
+
+                return `<div class="product-card-row">
+                    <div class="flex items-center gap-3">
+                        ${foto}
+                        <div>
+                            <p class="product-title">${p.activa === false ? '<span style="display:inline-block;background:#fde68a;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">\u23f8\ufe0f Pausada</span>' : ''}${escaparHtml(p.titulo)}</p>
+                            <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}${stockTxt}</p>
+                            <p class="product-meta">Recibís ${formatearPesos(recibis)} · ${fecha}</p>
+                            <p class="product-meta" style="color:#93C5FD;margin-top:0.3rem;">👁 ${p.vistas || 0} vistas · 💬 ${p.consultas || 0} consultas</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Reactivar' : '\u23f8\ufe0f Pausar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function togglePausa(id, estaPausada) {
+            const nuevoActiva = estaPausada;
+            try {
+                const { error } = await supabaseClient.from('productos').update({ activa: nuevoActiva }).eq('id', id);
+                if (error) { showToast('\u274c No se pudo: ' + error.message, 'error'); return; }
+                showToast(nuevoActiva ? '\u25b6\ufe0f Publicaci\u00f3n reactivada' : '\u23f8\ufe0f Publicaci\u00f3n pausada', 'success');
+                if (typeof cargarMisProductos === 'function') cargarMisProductos();
+            } catch (e) { showToast('\u274c Error: ' + (e.message || e), 'error'); }
+        }
+
+        async function eliminarEnEdicion() {
+            if (!editandoId) return;
+            if (!confirm('¿Seguro que querés eliminar esta publicación? No se puede deshacer.')) return;
+            const id = editandoId;
+            const { error } = await supabaseClient.from('productos').delete().eq('id', id);
+            if (error) { showToast(`🚫 No se pudo eliminar: ${error.message}`, 'error'); return; }
+            showToast('🗑 Publicación eliminada', 'info');
+            limpiarFormulario();
+            await cargarMisProductos();
+        }
+
+        function escaparHtml(t) { return String(t || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // ============================================================
+        // TOAST
+        // ============================================================
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '🚫';
+            toast.innerHTML = `<div class="flex gap-3 items-start">
+                <span class="text-xl flex-shrink-0">${icon}</span>
+                <div class="flex-1"><p class="font-semibold text-sm">${message}</p></div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-slate-300">✕</button>
+            </div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5500);
+        }
+
+        // ============================================================
+        // ARRANQUE
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', verificarSesion);
+    </script>
+
+<!-- Tour guiado Plaza Market -->
+<script>window.PM_TOUR={"key":"pm_tour_vender_v2","steps":[{"sel":null,"title":"🏪 Esto es \"Vender\"","text":"Acá publicás tus productos o servicios para venderlos en Plaza Market. Te muestro cómo, rapidito."},{"sel":"#seccionCobros","title":"💳 Conectá tu Mercado Pago","text":"Una sola vez: conectás tu cuenta y ya podés cobrar. Plaza Market cobra 12% de comisión, SOLO sobre el precio, nunca sobre el envío."},{"sel":"#btnTipoProducto","title":"📦 ¿Producto o Servicio?","text":"Elegí qué vas a publicar."},{"sel":"#productTitle","title":"📝 Título, marca y estado","text":"Poné un título claro, la descripción, la marca (obligatoria) y si es Nuevo o Usado."},{"sel":"#productCategory","title":"🏷️ Rubro, precio y stock","text":"Elegí el rubro, poné el precio (vas a ver al instante cuánto te queda limpio) y el stock."},{"sel":"#seccionMedidas","title":"📏 Medidas y peso (opcional)","text":"Si no las cargás, ponemos una medida estándar según el rubro y el envío igual se calcula."},{"sel":"#dropzone","title":"📸 Subí buenas fotos","text":"La primera foto es la portada. Fotos claras venden más."},{"sel":"#publishBtn","title":"✅ ¡Publicá!","text":"Y listo. Después, en \"Mis Publicaciones\" podés editar, pausar/reactivar y ajustar precios en masa (por rubro, marca o con una planilla Excel)."}]}</script>
+<script src="pm-tour.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+/* ===== Gestion de precios en masa - Plaza Market (solo cambia el PRECIO) ===== */
+function _pmProds(){ return (typeof misProductos!=='undefined' && misProductos ? misProductos : []).filter(function(p){ return p && p.id!=null && p.precio!=null; }); }
+function poblarAlcancePrecios(){
+    var sel=document.getElementById('apAlcance'); if(!sel) return;
+    var prods=[]; try{ if(typeof misProductos!=='undefined' && Array.isArray(misProductos)) prods=misProductos; }catch(e){}
+    var labels=(typeof CATEGORY_LABELS!=='undefined')?CATEGORY_LABELS:{};
+    var cats=[]; prods.forEach(function(p){ if(p && p.categoria && cats.indexOf(p.categoria)===-1) cats.push(p.categoria); });
+    if(!cats.length){ cats=['perfumeria','cosmetica','indumentaria','construccion','pintura','calzado']; }
+    var marcas=[]; prods.forEach(function(p){ var m=(p&&p.marca?String(p.marca).trim():''); if(m && marcas.indexOf(m)===-1) marcas.push(m); });
+    marcas.sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;});
+    var val=sel.value;
+    var html='<option value="todos">Todos mis productos</option>';
+    cats.forEach(function(cat){ html+='<option value="cat:'+cat+'">Categoría: '+(labels[cat]||cat)+'</option>'; });
+    marcas.forEach(function(m){ html+='<option value="marca:'+m.replace(/"/g,'&quot;')+'">Marca: '+m+'</option>'; });
+    sel.innerHTML=html;
+    if(val){ for(var o=0;o<sel.options.length;o++){ if(sel.options[o].value===val){ sel.value=val; break; } } }
+  }
+async function ajusteRapido(){
+  var aviso=document.getElementById('preciosAviso');
+  var tipo=document.getElementById('apTipo').value;
+  var valor=Number(document.getElementById('apValor').value);
+  var alcance=document.getElementById('apAlcance').value;
+  if(typeof usuarioActual==='undefined' || !usuarioActual){ aviso.style.color='#fca5a5'; aviso.textContent='Iniciá sesión para ajustar precios.'; return; }
+  if(!valor || isNaN(valor)){ aviso.style.color='#fca5a5'; aviso.textContent='Poné un número (por ejemplo 10).'; return; }
+  var objetivo=_pmProds();
+  if(alcance.indexOf('cat:')===0){ var c=alcance.slice(4); objetivo=objetivo.filter(function(p){ return p.categoria===c; }); }
+  if(!objetivo.length){ aviso.style.color='#fca5a5'; aviso.textContent='No hay productos en ese alcance.'; return; }
+  function nuevo(p){ var np = (tipo==='pct') ? Math.round(Number(p.precio)*(1+valor/100)) : Math.round(Number(p.precio)+valor); return np>0?np:1; }
+  var signo=valor>=0?'+':'';
+  var detalle=(tipo==='pct') ? (signo+valor+'%') : (signo+'$'+Math.abs(valor));
+  if (alcance === 'todos') { objetivo = _pmProds(); detalle = 'todos'; } else if (alcance.indexOf('cat:') === 0) { var _cc = alcance.slice(4); objetivo = _pmProds().filter(function(p){ return p.categoria === _cc; }); detalle = 'categoría ' + _cc; } else if (alcance.indexOf('marca:') === 0) { var _mm = alcance.slice(6); objetivo = _pmProds().filter(function(p){ return (p.marca||'') === _mm; }); detalle = 'marca ' + _mm; }
+    if(!confirm('Vas a ajustar el precio de '+objetivo.length+' producto(s) ('+detalle+'). Solo se cambia el precio. ¿Confirmás?')) return;
+  aviso.style.color='#93c5fd'; aviso.textContent='Actualizando precios...';
+  var ok=0, err=0;
+  for(var i=0;i<objetivo.length;i++){
+    var p=objetivo[i], np=nuevo(p);
+    var res=await supabaseClient.from('productos').update({ precio: np }).eq('id', p.id).eq('usuario_id', usuarioActual.id);
+    if(res.error) err++; else { ok++; p.precio=np; }
+  }
+  aviso.style.color= err ? '#fca5a5' : '#86efac';
+  aviso.textContent='✅ '+ok+' precio(s) actualizados'+(err?(' · '+err+' con error'):'')+'.';
+  if(typeof cargarMisProductos==='function') cargarMisProductos();
+}
+function descargarPlanilla(){
+    try{
+      var prods = _pmProds();
+      if(typeof ExcelJS === 'undefined'){ if(typeof showToast==='function') showToast('El generador esta cargando, proba de nuevo en 2 segundos','error'); return; }
+      var labels = (typeof CATEGORY_LABELS!=='undefined') ? CATEGORY_LABELS : {};
+      var wb = new ExcelJS.Workbook();
+      var ws = wb.addWorksheet('Precios');
+      ws.columns = [
+        { header:'ID (NO EDITAR)', key:'id', width:14 },
+        { header:'Producto (no editar)', key:'prod', width:34 },
+        { header:'Categoria (no editar)', key:'cat', width:18 },
+        { header:'Precio', key:'precio', width:14 },
+        { header:'Stock (no editar)', key:'stock', width:16 }
+      ];
+      prods.forEach(function(p){ ws.addRow({ id:p.id, prod:p.titulo, cat:(labels[p.categoria]||p.categoria), precio:p.precio, stock:p.stock }); });
+      ws.getRow(1).font = { bold:true };
+      // Bloquear TODAS las celdas explicitamente (ExcelJS no lo hace por defecto)
+      ws.eachRow(function(row){ row.eachCell(function(cell){ cell.protection = { locked:true }; }); });
+      // Luego destrabar SOLO la columna Precio (datos)
+      ws.getColumn(4).eachCell(function(cell, rowNumber){
+        if(rowNumber > 1){
+          cell.protection = { locked:false };
+          cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFF6D6' } };
+        }
+      });
+      ws.protect('', { selectLockedCells:true, selectUnlockedCells:true }).then(function(){
+        return wb.xlsx.writeBuffer();
+      }).then(function(buf){
+        var blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'precios-plaza-market.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      }).catch(function(e){ if(typeof showToast==='function') showToast('No pude generar la planilla: '+e.message,'error'); });
+    }catch(e){ if(typeof showToast==='function') showToast('No pude generar la planilla: '+e.message,'error'); }
+  }
+async function subirPlanilla(ev){
+  var aviso=document.getElementById('preciosAviso');
+  var file=ev.target.files && ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  if(typeof usuarioActual==='undefined' || !usuarioActual){ aviso.style.color='#fca5a5'; aviso.textContent='Iniciá sesión para subir precios.'; return; }
+  aviso.style.color='#93c5fd'; aviso.textContent='Leyendo la planilla...';
+  try{
+    var buf=await file.arrayBuffer();
+    var wb=XLSX.read(buf,{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    var mios={}; _pmProds().forEach(function(p){ mios[String(p.id)]=Number(p.precio); });
+    var cambios=[];
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i], keys=Object.keys(r);
+      var idKey=keys.find(function(k){ return /^\s*id/i.test(k); });
+      var precioKey=keys.find(function(k){ return /precio/i.test(k); });
+      if(!idKey || !precioKey) continue;
+      var id=String(r[idKey]).trim();
+      var precio=Math.round(Number(String(r[precioKey]).replace(/[^0-9.-]/g,'')));
+      if(!(id in mios)) continue;
+      if(!(precio>0)) continue;
+      if(mios[id]===precio) continue;
+      cambios.push({ id: Number(id), precio: precio });
+    }
+    if(!cambios.length){ aviso.style.color='#fca5a5'; aviso.textContent='No encontré precios nuevos válidos (revisá que hayas cambiado la columna "Precio").'; return; }
+    if(!confirm('Vas a actualizar el precio de '+cambios.length+' producto(s). Solo se cambia el precio. ¿Confirmás?')){ aviso.textContent=''; return; }
+    aviso.style.color='#93c5fd'; aviso.textContent='Actualizando precios...';
+    var ok=0, err=0;
+    for(var j=0;j<cambios.length;j++){
+      var c=cambios[j];
+      var res=await supabaseClient.from('productos').update({ precio: c.precio }).eq('id', c.id).eq('usuario_id', usuarioActual.id);
+      if(res.error) err++; else ok++;
+    }
+    aviso.style.color= err ? '#fca5a5' : '#86efac';
+    aviso.textContent='✅ '+ok+' precio(s) actualizados desde la planilla'+(err?(' · '+err+' con error'):'')+'.';
+    if(typeof cargarMisProductos==='function') cargarMisProductos();
+  }catch(e){ aviso.style.color='#fca5a5'; aviso.textContent='No pude leer la planilla. Subí el .xlsx que descargaste de acá.'; }
+}
+</script>
+
+<script>
+/* ============================================================
+   IMPORTADOR DE CATALOGO (solo ArPerfum / admin via pm_admins)
+   Sube Excel/CSV -> preview -> crea productos en masa.
+   Reusa el mismo insert que publishProduct + medidasPorCategoria.
+   ============================================================ */
+(function(){
+  var CATS_VALIDAS = ['perfumeria','cosmetica','indumentaria','construccion','pintura','calzado'];
+  window.__importRows = [];
+  window.__esAdmin = false;
+
+  // Mostrar el panel solo si el usuario esta en pm_admins
+  var _tries = 0;
+  var _iv = setInterval(async function(){
+    _tries++;
+    try {
+      if (typeof usuarioActual !== 'undefined' && usuarioActual && usuarioActual.id && typeof supabaseClient !== 'undefined') {
+        clearInterval(_iv);
+        var r = await supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle();
+        if (r && r.data) {
+          window.__esAdmin = true;
+          var p = document.getElementById('panelImportAdmin');
+          if (p) p.style.display = 'block';
+        }
+      }
+    } catch (e) {}
+    if (_tries > 40) clearInterval(_iv);
+  }, 500);
+
+  function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+
+  function _mapCols(headers){
+    var map = {};
+    headers.forEach(function(h,i){
+      var n = _norm(h);
+      if (map.titulo==null && /(titulo|nombre|producto|articulo|perfume)/.test(n)) map.titulo=i;
+      else if (map.precio==null && /(precio|valor|importe|monto)/.test(n)) map.precio=i;
+      else if (map.stock==null && /(stock|cantidad|unidades|cant)/.test(n)) map.stock=i;
+      else if (map.descripcion==null && /(descripcion|detalle|nota)/.test(n)) map.descripcion=i;
+      else if (map.categoria==null && /(categoria|rubro)/.test(n)) map.categoria=i;
+      else if (map.imagen==null && /(imagen|foto|url|link)/.test(n)) map.imagen=i;
+    });
+    return map;
+  }
+
+  function _precio(v){
+    var s = String(v==null?'':v).replace(/[^\d.,]/g,'');
+    if (s.indexOf(',')>-1 && s.indexOf('.')>-1) s = s.replace(/\./g,'').replace(',','.');
+    else if (s.indexOf(',')>-1) s = s.replace(',','.');
+    return Math.round(parseFloat(s)||0);
+  }
+
+  window.importDescargarPlantilla = function(){
+    try {
+      var ws = XLSX.utils.aoa_to_sheet([
+        ['Titulo','Descripcion','Categoria','Precio','Stock','Imagen (URL)'],
+        ['Perfume Ejemplo 100ml','Eau de parfum, fragancia amaderada','perfumeria',35000,5,'']
+      ]);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Catalogo');
+      XLSX.writeFile(wb, 'plantilla-catalogo-plaza-market.xlsx');
+    } catch(e){ if(typeof showToast==='function') showToast('No pude generar la plantilla','error'); }
+  };
+
+  window.importLeerArchivo = function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var prev = document.getElementById('importPreview');
+    var rd = new FileReader();
+    rd.onload = function(e){
+      try {
+        var wb = XLSX.read(e.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        if (!aoa.length) { prev.innerHTML = '<p style="color:#fca5a5">La planilla esta vacia.</p>'; return; }
+        var headers = aoa[0];
+        var map = _mapCols(headers);
+        if (map.titulo==null || map.precio==null) {
+          prev.innerHTML = '<p style="color:#fca5a5">No encontre columnas de <b>Titulo</b> y <b>Precio</b>. Revisa los encabezados (ej: Titulo, Precio).</p>';
+          return;
+        }
+        var rows = [], saltadas = 0;
+        for (var i=1; i<aoa.length; i++) {
+          var r = aoa[i];
+          if (!r || r.every(function(c){ return String(c).trim()===''; })) continue;
+          var titulo = String(r[map.titulo]==null?'':r[map.titulo]).trim();
+          var precio = _precio(r[map.precio]);
+          if (!titulo || !(precio>0)) { saltadas++; continue; }
+          var categoria = map.categoria!=null ? _norm(r[map.categoria]) : '';
+          if (CATS_VALIDAS.indexOf(categoria)===-1) categoria = 'perfumeria';
+          var stock = map.stock!=null ? (parseInt(r[map.stock],10)||1) : 1;
+          var descripcion = map.descripcion!=null ? String(r[map.descripcion]==null?'':r[map.descripcion]).trim() : '';
+          var imagen = map.imagen!=null ? String(r[map.imagen]==null?'':r[map.imagen]).trim() : '';
+          rows.push({ titulo: titulo.slice(0,120), descripcion: descripcion.slice(0,1000), categoria: categoria, precio: precio, stock: stock, imagen: imagen });
+        }
+        window.__importRows = rows;
+        var esc = (typeof escaparHtml==='function') ? escaparHtml : function(x){ return String(x); };
+        var fp = (typeof formatearPesos==='function') ? formatearPesos : function(x){ return '$'+x; };
+        var html = '<p style="color:#bbf7d0;font-size:.85rem;">Detecte <b>'+rows.length+'</b> productos para crear.' + (saltadas ? ' <span style="color:#fcd34d">('+saltadas+' filas salteadas por falta de titulo o precio)</span>' : '') + '</p>';
+        html += '<div style="max-height:230px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px;margin:.5rem 0;"><table style="width:100%;font-size:.78rem;border-collapse:collapse;">';
+        html += '<tr style="position:sticky;top:0;background:#0f172a;color:#93c5fd;"><th style="text-align:left;padding:.35rem .5rem;">Titulo</th><th style="padding:.35rem;">Cat.</th><th style="padding:.35rem;">Precio</th><th style="padding:.35rem;">Stock</th><th style="padding:.35rem;">Foto</th></tr>';
+        rows.slice(0,50).forEach(function(p){
+          html += '<tr style="border-top:1px solid rgba(255,255,255,.06);color:#e2e8f0;"><td style="padding:.3rem .5rem;">'+esc(p.titulo)+'</td><td style="padding:.3rem;text-align:center;">'+p.categoria+'</td><td style="padding:.3rem;text-align:right;">'+fp(p.precio)+'</td><td style="padding:.3rem;text-align:center;">'+p.stock+'</td><td style="padding:.3rem;text-align:center;">'+(p.imagen?'✅':'—')+'</td></tr>';
+        });
+        html += '</table></div>';
+        if (rows.length) html += '<button type="button" onclick="importConfirmar()" style="background:linear-gradient(160deg,#22c55e,#16a34a);border:none;color:#fff;font-weight:800;padding:.6rem 1rem;border-radius:10px;cursor:pointer;">✅ Confirmar e importar '+rows.length+' productos</button>';
+        prev.innerHTML = html;
+      } catch(err){ prev.innerHTML = '<p style="color:#fca5a5">No pude leer el archivo: '+err.message+'</p>'; }
+    };
+    rd.readAsArrayBuffer(f);
+  };
+
+  window.importConfirmar = async function(){
+    if (!window.__esAdmin) { if(typeof showToast==='function') showToast('Solo disponible para admin','error'); return; }
+    var rows = window.__importRows || [];
+    if (!rows.length) return;
+    if (typeof usuarioActual==='undefined' || !usuarioActual || !usuarioActual.id) { if(typeof showToast==='function') showToast('Ingresa con tu cuenta','error'); return; }
+    if (!confirm('Vas a crear '+rows.length+' productos en tu catalogo. Continuar?')) return;
+    var prev = document.getElementById('importPreview');
+    var ok=0, fail=0;
+    for (var k=0; k<rows.length; k++) {
+      var p = rows[k];
+      try {
+        var md = (typeof medidasPorCategoria==='function') ? medidasPorCategoria(p.categoria) : {alto:15,ancho:25,largo:30,peso:1000};
+        var datos = {
+          titulo: p.titulo, descripcion: p.descripcion || p.titulo, categoria: p.categoria, precio: p.precio,
+          fotos: p.imagen ? [p.imagen] : [], tipo: 'producto', envio_gratis: false, costo_envio: 0, stock: p.stock,
+          alto_cm: md.alto, ancho_cm: md.ancho, largo_cm: md.largo, peso_gr: md.peso, usuario_id: usuarioActual.id
+        };
+        var res = await supabaseClient.from('productos').insert([datos]);
+        if (res && res.error) throw res.error;
+        ok++;
+      } catch(e){ fail++; }
+      prev.innerHTML = '<p style="color:#93c5fd">Importando... '+(ok+fail)+'/'+rows.length+' ('+ok+' ok, '+fail+' con error)</p>';
+    }
+    prev.innerHTML = '<p style="color:#bbf7d0;font-weight:700;">✅ Listo: '+ok+' productos creados'+(fail?(', '+fail+' con error'):'')+'.</p>';
+    if (typeof cargarMisProductos==='function') cargarMisProductos();
+    if (typeof showToast==='function') showToast('Importacion terminada: '+ok+' creados','success');
+  };
+})();
+</script>
+
+<script>
+(function(){var t=0,iv=setInterval(async function(){t++;if(typeof supabaseClient!=='undefined'){clearInterval(iv);try{var r=await supabaseClient.from('productos').select('marca').not('marca','is',null).limit(500);var dl=document.getElementById('marcasList');if(!dl||!r||!r.data)return;var seen={},html='';r.data.forEach(function(x){var m=(x.marca||'').trim();if(m&&!seen[m.toLowerCase()]){seen[m.toLowerCase()]=1;html+='<option value="'+m.replace(/"/g,'&quot;')+'"></option>';}});dl.innerHTML=html;}catch(e){}}if(t>40)clearInterval(iv);},500);})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<style>#photoSlotsContainer .photo-slot{cursor:grab;}#photoSlotsContainer .photo-slot:active{cursor:grabbing;}.sortable-ghost{opacity:.35;}.sortable-chosen{outline:2px dashed #60a5fa;}#pmDragHint{font-size:.8rem;color:#93c5fd;margin:4px 0 8px;}</style>
+<script>
+(function(){
+  function reordenar(){
+    var cont=document.getElementById('photoSlotsContainer'); if(!cont) return;
+    var imgs=[].slice.call(cont.querySelectorAll('.photo-slot .photo-slot-real-img'));
+    var ne=[], nn=[];
+    imgs.forEach(function(img){
+      var src=img.getAttribute('src');
+      if(typeof fotosExistentes!=='undefined' && fotosExistentes.indexOf(src)>-1){ ne.push(src); return; }
+      if(typeof uploadedPhotos!=='undefined'){ var p=uploadedPhotos.find(function(x){return x.imageUrl===src;}); if(p){ nn.push(p); } }
+    });
+    try{
+      if(typeof fotosExistentes!=='undefined' && ne.length===fotosExistentes.length){ fotosExistentes.length=0; ne.forEach(function(u){fotosExistentes.push(u);}); }
+      if(typeof uploadedPhotos!=='undefined' && nn.length===uploadedPhotos.length){ uploadedPhotos.length=0; nn.forEach(function(p){uploadedPhotos.push(p);}); }
+    }catch(e){}
+    if(typeof renderPhotoSlots==='function') renderPhotoSlots();
+  }
+  function hint(cont){ if(document.getElementById('pmDragHint')) return; var h=document.createElement('p'); h.id='pmDragHint'; h.textContent='✋ Arrastrá las fotos para reordenarlas. La primera (⭐ Portada) es la que se ve primero.'; if(cont.parentNode) cont.parentNode.insertBefore(h, cont); }
+  function init(){ var cont=document.getElementById('photoSlotsContainer'); if(!cont) return; if(!cont._pmSort && typeof Sortable!=='undefined'){ cont._pmSort=Sortable.create(cont,{animation:150,delay:130,delayOnTouchOnly:true,onEnd:reordenar}); } if(cont.children.length) hint(cont); }
+  function boot(){ var c=document.getElementById('photoSlotsContainer'); if(c){ new MutationObserver(init).observe(c,{childList:true}); init(); } else { setTimeout(boot,500); } }
+  if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+<script>
+(function(){
+  var CAMPOS=['productTitle','productDescription','productCategory','productPrice','productMarca','productCondicion','productStock','paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso','productoEan','costoEnvio'];
+  var KEY='pm_borrador_vender';
+  function leer(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+  function guardar(){
+    if(typeof editandoId!=='undefined' && editandoId) return;
+    var d={}, algo=false;
+    CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e){ d[id]=e.value; if(e.value && String(e.value).trim()) algo=true; } });
+    if(algo){ d._ts=Date.now(); try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(x){} }
+  }
+  window.pmLimpiarBorrador=function(){ try{ localStorage.removeItem(KEY); }catch(e){} var b=document.getElementById('pmBorradorBanner'); if(b) b.remove(); };
+  window.pmContinuarBorrador=function(){ var d=leer(); if(!d) return; CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e && d[id]!=null){ e.value=d[id]; try{ e.dispatchEvent(new Event('input',{bubbles:true})); e.dispatchEvent(new Event('change',{bubbles:true})); }catch(x){} } }); var b=document.getElementById('pmBorradorBanner'); if(b) b.remove(); };
+  function banner(){ var d=leer(); if(!d) return; if(document.getElementById('pmBorradorBanner')) return; var titulo=(d.productTitle||'').replace(/</g,'&lt;'); var div=document.createElement('div'); div.id='pmBorradorBanner'; div.style.cssText='background:#1e293b;border:1px solid #f59e0b;border-radius:10px;padding:12px 14px;margin:10px 0;color:#e2e8f0;font-size:.9rem;'; div.innerHTML='📝 Tenés un <b>borrador sin terminar</b>'+(titulo?(': "'+titulo+'"'):'')+'. <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button type="button" id="pmBorrCont" style="background:#22c55e;border:none;color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;">Continuar</button><button type="button" id="pmBorrDel" style="background:transparent;border:1px solid #f87171;color:#fca5a5;padding:7px 14px;border-radius:8px;cursor:pointer;">Eliminar</button></div>'; var t=document.getElementById('productTitle'); var anchor=t?(t.closest('form')||t.parentNode):document.body; (anchor.parentNode||document.body).insertBefore(div, anchor); document.getElementById('pmBorrCont').onclick=pmContinuarBorrador; document.getElementById('pmBorrDel').onclick=pmLimpiarBorrador; }
+  function boot(){ var t=document.getElementById('productTitle'); if(!t){ setTimeout(boot,600); return; } CAMPOS.forEach(function(id){ var e=document.getElementById(id); if(e){ e.addEventListener('input', guardar); e.addEventListener('change', guardar); } }); setTimeout(function(){ if(!t.value){ banner(); } }, 900); new MutationObserver(function(muts){ muts.forEach(function(m){ (m.addedNodes||[]).forEach(function(n){ var txt=(n.textContent||''); if(/con éxito|publicad|guardado con/i.test(txt)){ try{ pmLimpiarBorrador(); }catch(e){} } }); }); }).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+<script>
+window.pmVar = { activo:false, atributos:[], stocks:{}, precios:{}, _combos:[], _ats:[] };
+function pmVarEsc(s){ return String(s==null?"":s).replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;"); }
+function pmVarToggle(){ pmVar.activo=document.getElementById("chkVariaciones").checked; document.getElementById("varBox").classList.toggle("hidden",!pmVar.activo); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display=pmVar.activo?"none":""; if(pmVar.activo && !pmVar.atributos.length){ pmVar.atributos.push({nombre:"Color",opciones:[]}); pmVar.atributos.push({nombre:"Talle",opciones:[]}); } pmVarRender(); }
+function pmVarAddAtributo(nombre){ if(pmVar.atributos.some(function(a){return a.nombre.toLowerCase()===nombre.toLowerCase();}))return; pmVar.atributos.push({nombre:nombre,opciones:[]}); pmVarRender(); }
+function pmVarAddAtributoPropio(){ var n=prompt("Nombre de la variable (ej: Material, Sabor):"); if(n && n.trim()) pmVarAddAtributo(n.trim().slice(0,20)); }
+function pmVarDelAtributo(i){ pmVar.atributos.splice(i,1); pmVarRender(); }
+function pmVarAddOpcion(i,inputId){ var inp=document.getElementById(inputId); if(!inp)return; var v=(inp.value||"").trim(); if(!v)return; var a=pmVar.atributos[i]; if(!a)return; if(!a.opciones.some(function(o){return o.toLowerCase()===v.toLowerCase();})) a.opciones.push(v.slice(0,24)); inp.value=""; pmVarRender(); var again=document.getElementById(inputId); if(again) again.focus(); }
+function pmVarDelOpcion(i,j){ pmVar.atributos[i].opciones.splice(j,1); pmVarRender(); }
+function pmVarCombos(){ var ats=pmVar.atributos.filter(function(a){return a.opciones.length;}); if(!ats.length) return {ats:[],combos:[]}; var res=[[]]; ats.forEach(function(a){ var next=[]; res.forEach(function(pre){ a.opciones.forEach(function(o){ next.push(pre.concat([o])); }); }); res=next; }); return { ats:ats.map(function(a){return a.nombre;}), combos:res }; }
+function pmVarStockTotal(){ var cc=pmVarCombos(); var s=0; cc.combos.forEach(function(c){ s+=(pmVar.stocks[c.join(" | ")]||0); }); return s; }
+function pmVarSetStock(idx,val){ var c=pmVar._combos[idx]; if(!c)return; var n=parseInt(String(val||"").replace(/[^0-9]/g,""),10); pmVar.stocks[c.join(" | ")]=isNaN(n)?0:n; var el=document.getElementById("varStockTotal"); if(el) el.textContent=pmVarStockTotal(); }
+function pmVarSetPrecio(idx,val){ var c=pmVar._combos[idx]; if(!c)return; var n=parseInt(String(val||"").replace(/[^0-9]/g,""),10); pmVar.precios[c.join(" | ")]=(isNaN(n)||!n)?null:n; }
+function pmVarRender(){ var box=document.getElementById("varAtributos"); if(!box)return; var h=""; pmVar.atributos.forEach(function(a,i){ h+="<div style=\"margin-bottom:12px;\">"; h+="<div style=\"display:flex;align-items:center;gap:8px;\"><b style=\"color:#93c5fd;\">"+pmVarEsc(a.nombre)+"</b><button type=\"button\" onclick=\"pmVarDelAtributo("+i+")\" style=\"background:none;border:none;color:#f87171;cursor:pointer;font-size:.78rem;\">quitar variable</button></div>"; h+="<div style=\"display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;\">"; a.opciones.forEach(function(o,j){ h+="<span style=\"background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.4);border-radius:20px;padding:3px 10px;font-size:.85rem;color:#dbeafe;\">"+pmVarEsc(o)+" <b onclick=\"pmVarDelOpcion("+i+","+j+")\" style=\"cursor:pointer;color:#fca5a5;\">×</b></span>"; }); h+="</div>"; var iid="varop_"+i; h+="<div style=\"display:flex;gap:6px;\"><input type=\"text\" id=\""+iid+"\" placeholder=\"Agregar opción y Enter (ej: Negro / 40)\" style=\"flex:1;\" onkeydown=\"if(event.key===&#39;Enter&#39;){event.preventDefault();pmVarAddOpcion("+i+",&#39;"+iid+"&#39;);}\"><button type=\"button\" class=\"pm-varbtn\" onclick=\"pmVarAddOpcion("+i+",&#39;"+iid+"&#39;)\">Agregar</button></div>"; h+="</div>"; }); box.innerHTML=h; pmVarRenderGrid(); }
+function pmVarRenderGrid(){ var g=document.getElementById("varGrid"); if(!g)return; var cc=pmVarCombos(); pmVar._combos=cc.combos; pmVar._ats=cc.ats; if(!cc.combos.length){ g.innerHTML="<p class=\"envio-hint\">Agregá al menos una opción a cada variable para ver las combinaciones.</p>"; return; } var base=(typeof valorPrecio==="function"?valorPrecio():0)||0; var h="<div style=\"overflow-x:auto;\"><table style=\"width:100%;border-collapse:collapse;font-size:.85rem;\"><tr style=\"color:#93c5fd;text-align:left;\"><th style=\"padding:4px 6px;\">"+cc.ats.map(pmVarEsc).join(" / ")+"</th><th style=\"padding:4px 6px;\">Stock</th><th style=\"padding:4px 6px;\">Precio (opcional)</th></tr>"; cc.combos.forEach(function(c,idx){ var k=c.join(" | "); var st=(pmVar.stocks[k]!=null?pmVar.stocks[k]:""); var pr=(pmVar.precios[k]!=null?pmVar.precios[k]:""); h+="<tr><td style=\"padding:4px 6px;color:#e2e8f0;\">"+c.map(pmVarEsc).join(" / ")+"</td><td style=\"padding:4px 6px;\"><input type=\"text\" inputmode=\"numeric\" value=\""+st+"\" placeholder=\"0\" style=\"width:70px;\" oninput=\"pmVarSetStock("+idx+",this.value)\"></td><td style=\"padding:4px 6px;\"><input type=\"text\" inputmode=\"numeric\" value=\""+pr+"\" placeholder=\""+base+"\" style=\"width:90px;\" oninput=\"pmVarSetPrecio("+idx+",this.value)\"></td></tr>"; }); h+="</table></div><p class=\"envio-hint\" style=\"margin-top:8px;\">Stock total: <b id=\"varStockTotal\">"+pmVarStockTotal()+"</b> unidades. Dejá el precio vacío para usar el precio general.</p>"; g.innerHTML=h; }
+function pmVarGet(){ var cc=pmVarCombos(); if(!cc.combos.length) return null; var combinaciones=cc.combos.map(function(c){ var opts={}; cc.ats.forEach(function(nm,idx){ opts[nm]=c[idx]; }); var k=c.join(" | "); return { opciones:opts, stock:(pmVar.stocks[k]||0), precio:(pmVar.precios[k]||null) }; }); return { atributos:cc.ats, combinaciones:combinaciones }; }
+function pmVarLoad(v){ pmVarReset(); if(!v||!v.atributos||!v.combinaciones)return; pmVar.activo=true; pmVar.atributos=v.atributos.map(function(nm){return {nombre:nm,opciones:[]};}); v.combinaciones.forEach(function(cb){ v.atributos.forEach(function(nm){ var val=cb.opciones?cb.opciones[nm]:null; var a=pmVar.atributos.find(function(x){return x.nombre===nm;}); if(a && val!=null && a.opciones.indexOf(val)<0) a.opciones.push(val); }); var key=v.atributos.map(function(nm){return cb.opciones?cb.opciones[nm]:"";}).join(" | "); pmVar.stocks[key]=cb.stock||0; if(cb.precio) pmVar.precios[key]=cb.precio; }); var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=true; var vb=document.getElementById("varBox"); if(vb) vb.classList.remove("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display="none"; pmVarRender(); }
+function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_combos:[],_ats:[]}; var chk=document.getElementById("chkVariaciones"); if(chk) chk.checked=false; var vb=document.getElementById("varBox"); if(vb) vb.classList.add("hidden"); var ss=document.getElementById("seccionStock"); if(ss) ss.style.display=""; var va=document.getElementById("varAtributos"); if(va) va.innerHTML=""; var vg=document.getElementById("varGrid"); if(vg) vg.innerHTML=""; }
+</script>
+<script>
+// Medidas sugeridas por categoría. Va en un bloque aparte para que funcione
+// aunque otro script de la página tarde o falle.
+(function(){ var s=document.getElementById('productCategory'); if (s && typeof sugerirMedidas==='function') s.addEventListener('change', sugerirMedidas); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaza Market — Chat de Reserva de Servicios</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; -webkit-font-smoothing: antialiased; }
+        body {
+            background: linear-gradient(160deg, #0B1120 0%, #131B2E 45%, #1A1F3A 75%, #0B1120 100%);
+            min-height: 100vh; margin: 0; color: #E2E8F0;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(circle at 18% 15%, rgba(0,82,212,0.2) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, rgba(88,28,135,0.22) 0%, transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        main { position: relative; z-index: 1; }
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #0052D4 0%, #3949AB 50%, #583C87 100%);
+            border-radius: 0.9rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,82,212,0.4); flex-shrink: 0;
+        }
+        .info-note {
+            background: rgba(0,82,212,0.08); border: 1px solid rgba(0,82,212,0.25);
+            border-radius: 0.85rem; padding: 0.85rem 1rem; font-size: 0.78rem; color: #BFDBFE; line-height: 1.55;
+        }
+        .chat-card {
+            background: rgba(255,255,255,0.035); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.09); border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4); overflow: hidden;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, rgba(0,82,212,0.15), rgba(88,28,135,0.18));
+            padding: 1rem 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .chat-avatar {
+            width: 42px; height: 42px; border-radius: 0.75rem; flex-shrink: 0;
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            font-weight: 800; display: flex; align-items: center; justify-content: center;
+        }
+        #chatMessages { padding: 1.25rem; min-height: 320px; max-height: 420px; overflow-y: auto; }
+        .msg-row { display: flex; margin-bottom: 0.85rem; }
+        .msg-row.mine { justify-content: flex-end; }
+        .msg-bubble {
+            max-width: 75%; padding: 0.65rem 0.95rem; border-radius: 1rem; font-size: 0.85rem; line-height: 1.5;
+        }
+        .msg-row:not(.mine) .msg-bubble { background: rgba(255,255,255,0.07); color: #E2E8F0; border-radius: 1rem 1rem 1rem 0.25rem; }
+        .msg-row.mine .msg-bubble {
+            background: linear-gradient(135deg, #0052D4, #583C87); color: white;
+            border-radius: 1rem 1rem 0.25rem 1rem;
+        }
+        .msg-author { font-size: 0.68rem; color: #93C5FD; margin-bottom: 0.2rem; font-weight: 600; }
+        .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+        .msg-row:not(.mine) .msg-meta { justify-content: flex-start; }
+        .msg-time { font-size: 0.62rem; color: rgba(226,232,240,0.45); }
+        .msg-row.mine .msg-time { color: rgba(255,255,255,0.75); }
+        .msg-tick { font-size: 0.72rem; color: rgba(255,255,255,0.75); letter-spacing: -3px; padding-right: 2px; }
+        .msg-tick.leido { color: #38BDF8; }
+        .msg-bubble img { max-width: 220px; border-radius: 0.6rem; margin-top: 0.3rem; display: block; }
+        .msg-empty { text-align: center; color: #64748B; font-size: 0.82rem; padding: 2rem 1rem; }
+        .msg-blocked-note {
+            font-size: 0.72rem; color: #FCA5A5; background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.3); border-radius: 0.7rem; padding: 0.6rem 0.85rem;
+            margin-bottom: 0.85rem;
+        }
+        .msg-info-note {
+            font-size: 0.72rem; color: #BFDBFE; background: rgba(0,82,212,0.1);
+            border: 1px solid rgba(0,82,212,0.3); border-radius: 0.7rem; padding: 0.6rem 0.85rem;
+            margin-bottom: 0.85rem; text-align: center;
+        }
+        .chat-input-bar {
+            padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex; gap: 0.6rem; align-items: flex-end;
+        }
+        textarea#chatInput {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+            color: #F1F5F9; border-radius: 0.85rem; padding: 0.7rem 0.9rem; font-size: 0.85rem;
+            resize: none; min-height: 44px; max-height: 100px;
+        }
+        textarea#chatInput:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(0,82,212,0.2); }
+        .btn-icon {
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+            border-radius: 0.75rem; width: 44px; height: 44px; flex-shrink: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #E2E8F0;
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); }
+        .btn-send {
+            background: linear-gradient(135deg, #0052D4, #3949AB, #583C87); color: white; font-weight: 700;
+            border-radius: 0.75rem; padding: 0 1.1rem; height: 44px; flex-shrink: 0; cursor: pointer; border: none;
+            font-size: 0.8rem;
+        }
+        .btn-send:disabled { background: #475569; cursor: not-allowed; }
+        .ocr-status {
+            font-size: 0.72rem; color: #93C5FD; display: flex; align-items: center; gap: 0.4rem;
+            padding: 0 1.25rem 0.75rem;
+        }
+        .spinner-mini {
+            width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #3B82F6;
+            border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+
+        /* Portada para pedir el nombre */
+        .gate-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(11,17,32,0.85); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+        }
+        .gate-box {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1.25rem; padding: 1.75rem; max-width: 380px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5); text-align: center;
+        }
+        .gate-box h2 { color: #fff; font-size: 1.15rem; font-weight: 800; margin: 0 0 0.4rem; }
+        .gate-box p { color: #94A3B8; font-size: 0.8rem; margin: 0 0 1.1rem; line-height: 1.5; }
+        .gate-box input {
+            width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.14); color: #F1F5F9; border-radius: 0.75rem;
+            padding: 0.7rem 0.9rem; font-size: 0.9rem; margin-bottom: 0.9rem;
+        }
+        .gate-box input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(0,82,212,0.2); }
+        .gate-box button {
+            width: 100%; background: linear-gradient(135deg, #0052D4, #3949AB, #583C87);
+            color: #fff; font-weight: 700; border: none; border-radius: 0.75rem;
+            padding: 0.75rem; font-size: 0.9rem; cursor: pointer;
+        }
+        .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748B; display: inline-block; }
+        .conn-dot.on { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
+    </style>
+</head>
+<body>
+
+    <!-- Portada: pedimos el nombre una sola vez -->
+    <div id="gateNombre" class="gate-overlay">
+        <div class="gate-box">
+            <h2>¿Cómo te llamás?</h2>
+            <p>Tu nombre aparece en el chat para que la otra persona sepa quién le escribe.</p>
+            <input id="gateInput" placeholder="Ej: Tincho" onkeydown="if(event.key==='Enter'){guardarNombre();}">
+            <button onclick="guardarNombre()">Entrar al chat</button>
+        </div>
+    </div>
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+        <header class="flex items-center justify-between gap-3">
+            <a href="plaza-market-catalogo.html" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+                <svg viewBox="0 0 100 116" width="34" height="40" style="flex-shrink:0;"><path d="M50 8 C31 8 16 23 16 42 C16 66 50 108 50 108 C50 108 84 66 84 42 C84 23 69 8 50 8 Z" fill="#0057E7"/><circle cx="50" cy="40" r="13" fill="#fff"/></svg>
+                <div>
+                    <h1 class="text-xl font-bold" style="line-height:1.05;"><span style="color:#60A5FA;">Plaza</span> <span class="text-white">Market</span></h1>
+                    <p class="text-xs text-slate-400 font-medium">Chat de reserva · protegido</p>
+                </div>
+            </a>
+            <a href="plaza-market-catalogo.html" onclick="volverAtras(event)" style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.14); color:#E2E8F0; font-weight:600; text-decoration:none; padding:0.5rem 0.9rem; border-radius:0.7rem; font-size:0.8rem; white-space:nowrap;">← Atrás</a>
+        </header>
+
+        <div class="info-note">
+            💡 <strong>Chat en vivo real.</strong> Los mensajes se guardan y le llegan al instante a la otra persona.
+            Además, un filtro de seguridad bloquea números de teléfono (escritos en dígitos o en palabras) y también
+            los detecta dentro de fotos — así la conversación de reserva se mantiene dentro de Plaza Market.
+        </div>
+
+        <div class="chat-card">
+            <div class="chat-header">
+                <div class="chat-avatar">💬</div>
+                <div class="flex-1">
+                    <p class="font-bold text-sm text-white" id="tituloChat">Conversación privada</p>
+                    <p class="text-xs font-semibold" style="color:#93C5FD;" id="prodChat"></p>
+                    <p class="text-xs text-slate-400">
+                        <span id="connDot" class="conn-dot"></span>
+                        Vos: <span id="miNombreLabel" class="text-slate-300 font-semibold">—</span>
+                    </p>
+                </div>
+            </div>
+
+            <div id="panelEnvioVendedor" class="hidden" style="margin:0 0 12px; padding:12px 14px; background:rgba(37,99,235,0.12); border:1px solid rgba(59,130,246,0.35); border-radius:12px; font-size:13px; color:#cbd5e1; line-height:1.5;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <strong style="color:#e2e8f0;">📦 Hacé los envíos sin dolores de cabeza</strong>
+                    <button onclick="cerrarPanelEnvio()" title="No mostrar de nuevo" style="background:none; border:none; color:#94a3b8; font-size:20px; line-height:1; cursor:pointer; padding:0;">&times;</button>
+                </div>
+                <p style="margin:6px 0 0;">Registrate gratis en <strong>Andreani</strong> (una sola vez). Después, en cada venta tocás el botón <strong>📦</strong> de abajo y le pasás al comprador un link: él pone su código postal y <strong>paga el envío directo</strong>. Así no tenés que calcular ni cobrarle el envío a nadie — te sacás de encima la parte más molesta. 🙌</p>
+                <a href="https://personas.andreani.com" target="_blank" rel="noopener" style="display:inline-block; margin-top:9px; padding:7px 12px; background:#2563eb; color:#fff; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">Entrar a Andreani →</a>
+            </div>
+
+            <div id="chatMessages">
+                <div class="msg-empty" id="msgEmpty">Cargando mensajes...</div>
+            </div>
+
+            <div id="ocrStatus" class="ocr-status hidden">
+                <span class="spinner-mini"></span> Analizando la imagen en tu navegador...
+            </div>
+
+            <div class="chat-input-bar">
+                <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)">
+                <button class="btn-icon" onclick="document.getElementById('imageInput').click()" title="Adjuntar foto">📎</button>
+                <button class="btn-icon" onclick="insertarLinkEnvio()" title="Pegar link de envío (Andreani)">📦</button>
+                <textarea id="chatInput" placeholder="Escribí tu mensaje..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); enviarTexto();}"></textarea>
+                <button class="btn-send" onclick="enviarTexto()">Enviar</button>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-slate-600 pb-4">
+            Esta es una conversación <strong>privada</strong> entre vos y la otra persona. Nadie más la ve.
+            El envío de fotos todavía no está disponible — por ahora, coordiná todo por texto. Lo estamos preparando.
+        </p>
+
+    </main>
+
+    <script>
+        // ============================================================
+        // CONEXIÓN CON SUPABASE
+        // ============================================================
+        const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Sala: viene de la URL (?sala=xxx).
+        const params = new URLSearchParams(location.search);
+        const SALA = (params.get('sala') || 'general').trim();
+
+        let miNombre = '';
+        let miUserId = null;
+
+        // Estado para los tildes (enviado / recibido / leído)
+        let otherLastRead = 0;   // hasta cuándo leyó la otra persona (ms)
+        let otherPresent = false; // ¿la otra persona está en el chat ahora?
+        let entregadoHasta = 0;   // hasta cuándo sabemos que le llegó (ms)
+        const misMensajes = [];   // { creadoMs, el } de mis mensajes, para pintar tildes
+
+        function horaDe(iso) {
+            try { return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); }
+            catch (e) { return ''; }
+        }
+        function estadoDe(creadoMs) {
+            if (otherLastRead >= creadoMs) return 'leido';
+            if (otherPresent || creadoMs <= entregadoHasta) return 'entregado';
+            return 'enviado';
+        }
+        function pintarTick(item) {
+            if (!item.el) return;
+            const st = estadoDe(item.creadoMs);
+            if (st === 'leido') { item.el.textContent = '✓✓'; item.el.className = 'msg-tick leido'; }
+            else if (st === 'entregado') { item.el.textContent = '✓✓'; item.el.className = 'msg-tick'; }
+            else { item.el.textContent = '✓'; item.el.className = 'msg-tick'; }
+        }
+        function actualizarTicks() { misMensajes.forEach(pintarTick); }
+
+        // Cuánto leyó la OTRA persona (para arrancar con los tildes al día)
+        async function cargarLecturaOtro() {
+            try {
+                const { data } = await db.from('pm_lecturas').select('usuario_id, ultima_lectura').eq('conversacion', SALA);
+                (data || []).forEach(r => {
+                    if (r.usuario_id !== miUserId && r.ultima_lectura) {
+                        const t = new Date(r.ultima_lectura).getTime();
+                        if (t > otherLastRead) otherLastRead = t;
+                    }
+                });
+            } catch (e) {}
+        }
+
+        // Escuchar cuando la otra persona lee (para pasar a tildes azules en vivo)
+        function escucharLecturas() {
+            db.channel('lecturas-' + SALA)
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'pm_lecturas', filter: 'conversacion=eq.' + SALA },
+                    (payload) => {
+                        const r = payload.new;
+                        if (r && r.usuario_id !== miUserId && r.ultima_lectura) {
+                            const t = new Date(r.ultima_lectura).getTime();
+                            if (t > otherLastRead) { otherLastRead = t; actualizarTicks(); }
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        // Sonido corto de aviso cuando llega un mensaje
+        function sonar() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sine'; o.frequency.value = 680; g.gain.value = 0.07;
+                o.start(); o.stop(ctx.currentTime + 0.16);
+            } catch (e) {}
+        }
+
+        // Marcar esta conversación como leída (para los "no leídos")
+        async function marcarLeido() {
+            if (!miUserId) return;
+            try {
+                await db.from('pm_lecturas').upsert({ usuario_id: miUserId, conversacion: SALA, ultima_lectura: new Date().toISOString() });
+            } catch (e) {}
+        }
+
+        function guardarNombre() {} // ya no se usa: la identidad viene de la cuenta
+
+        function volverAtras(e) {
+            if (e) e.preventDefault();
+            if (document.referrer && history.length > 1) history.back();
+            else window.location.href = 'plaza-market-catalogo.html';
+        }
+
+        // ============================================================
+        // DETECCIÓN DE NÚMEROS DE TELÉFONO — EN DÍGITOS Y EN PALABRAS
+        // ============================================================
+        function normalizeText(text) {
+            return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        }
+
+        const NUMBER_WORDS = new Set([
+            'cero', 'uno', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
+        ]);
+        const FILLER_WORDS = new Set(['y', 'el', 'mi', 'numero', 'es', 'de', 'nro', 'tel']);
+
+        function hasDigitPhonePattern(text) {
+            const matches = text.match(/\d[\d\s\-.]{4,}\d/g) || [];
+            for (const m of matches) {
+                const digitsOnly = m.replace(/\D/g, '');
+                if (digitsOnly.length >= 7) return true;
+            }
+            const plain = text.match(/\d{7,}/g) || [];
+            return plain.length > 0;
+        }
+
+        function hasSpelledOutPhonePattern(text) {
+            const normalized = normalizeText(text);
+            const words = normalized.match(/[a-z]+/g) || [];
+            let run = 0, maxRun = 0;
+            for (const w of words) {
+                if (NUMBER_WORDS.has(w)) {
+                    run++;
+                    maxRun = Math.max(maxRun, run);
+                } else if (FILLER_WORDS.has(w)) {
+                    // no rompe la racha
+                } else {
+                    run = 0;
+                }
+            }
+            return maxRun >= 5;
+        }
+
+        function hasSocialMediaPattern(text) {
+            return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text);
+        }
+
+        function checkTextForContactInfo(text) {
+            // El link de envío de Andreani tiene números largos: lo sacamos antes de
+            // buscar teléfonos para que no se confunda con uno. Un teléfono suelto se sigue detectando.
+            const limpio = text
+                .replace(/https?:\/\/\S*andreani\S*/gi, ' ')
+                .replace(/\bandreani\.[a-z0-9.\/_-]*/gi, ' ');
+            if (hasDigitPhonePattern(limpio)) return 'Se detectó un número de teléfono escrito en dígitos.';
+            if (hasSpelledOutPhonePattern(limpio)) return 'Se detectó un número de teléfono escrito con palabras.';
+            if (hasSocialMediaPattern(text)) return 'Se detectó una posible referencia a una red social externa.';
+            return null;
+        }
+
+        // ============================================================
+        // MOSTRAR MENSAJES EN PANTALLA
+        // ============================================================
+        function quitarVacio() {
+            const e = document.getElementById('msgEmpty');
+            if (e) e.remove();
+        }
+
+        function renderMensaje(m) {
+            quitarVacio();
+            const container = document.getElementById('chatMessages');
+            const mine = m.autor === miNombre;
+            const row = document.createElement('div');
+            row.className = 'msg-row' + (mine ? ' mine' : '');
+            const safeTexto = String(m.texto).replace(/</g, '&lt;');
+            const autorHtml = mine ? '' :
+                `<div class="msg-author">${String(m.autor).replace(/</g, '&lt;')}</div>`;
+            const hora = horaDe(m.creado_en);
+            const tickHtml = mine ? ' <span class="msg-tick">✓</span>' : '';
+            row.innerHTML = `<div class="msg-bubble">${autorHtml}${safeTexto}` +
+                `<div class="msg-meta"><span class="msg-time">${hora}</span>${tickHtml}</div></div>`;
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+            if (mine) {
+                const item = { creadoMs: new Date(m.creado_en).getTime(), el: row.querySelector('.msg-tick') };
+                misMensajes.push(item);
+                pintarTick(item);
+            }
+        }
+
+        function appendMessage(html, mine) {
+            quitarVacio();
+            const container = document.getElementById('chatMessages');
+            const row = document.createElement('div');
+            row.className = 'msg-row' + (mine ? ' mine' : '');
+            row.innerHTML = `<div class="msg-bubble">${html}</div>`;
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendInfoNote(texto) {
+            quitarVacio();
+            const container = document.getElementById('chatMessages');
+            const note = document.createElement('div');
+            note.className = 'msg-info-note';
+            note.textContent = texto;
+            container.appendChild(note);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendBlockedNote(reason) {
+            quitarVacio();
+            const container = document.getElementById('chatMessages');
+            const note = document.createElement('div');
+            note.className = 'msg-blocked-note';
+            note.textContent = `🚫 Mensaje bloqueado: ${reason} Por tu seguridad, la conversación de reserva se mantiene dentro de Plaza Market.`;
+            container.appendChild(note);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ============================================================
+        // CARGAR Y ESCUCHAR MENSAJES (TIEMPO REAL)
+        // ============================================================
+        async function cargarMensajes() {
+            const { data, error } = await db
+                .from('mensajes')
+                .select('*')
+                .eq('conversacion', SALA)
+                .order('creado_en', { ascending: true })
+                .limit(200);
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+            misMensajes.length = 0;
+            if (error) {
+                console.error(error);
+                container.innerHTML = '<div class="msg-empty">⚠️ Error de conexión:<br><b style="color:#FCA5A5;">' +
+                    (error.message || 'desconocido') + '</b><br>código: ' + (error.code || '—') + '</div>';
+                return;
+            }
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="msg-empty" id="msgEmpty">Todavía no hay mensajes. ¡Escribí el primero! 👋</div>';
+                return;
+            }
+            data.forEach(renderMensaje);
+        }
+
+        function escucharEnVivo() {
+            const keyMia = miUserId || 'anon';
+            const canal = db.channel('sala-' + SALA, { config: { presence: { key: keyMia } } });
+            canal
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'mensajes', filter: 'conversacion=eq.' + SALA },
+                    (payload) => {
+                        const m = payload.new;
+                        renderMensaje(m);
+                        if (m.autor !== miNombre) { sonar(); marcarLeido(); }
+                    }
+                )
+                .on('presence', { event: 'sync' }, () => {
+                    const state = canal.presenceState();
+                    otherPresent = Object.keys(state).some(k => k !== keyMia);
+                    if (otherPresent) entregadoHasta = Date.now();
+                    actualizarTicks();
+                })
+                .subscribe(async (status) => {
+                    const dot = document.getElementById('connDot');
+                    if (status === 'SUBSCRIBED') {
+                        dot.classList.add('on');
+                        try { await canal.track({ uid: keyMia, at: Date.now() }); } catch (e) {}
+                    } else {
+                        dot.classList.remove('on');
+                    }
+                });
+        }
+
+        // Cierra el cartel de Andreani y recuerda que ya no hay que mostrarlo.
+        function cerrarPanelEnvio() {
+            const p = document.getElementById('panelEnvioVendedor');
+            if (p) p.classList.add('hidden');
+            try { localStorage.setItem('pm_panel_envio_oculto', '1'); } catch (e) {}
+        }
+
+        // Pega en el mensaje una plantilla para mandar el link de envío de Andreani.
+        function insertarLinkEnvio() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            input.value = '📦 Para el envío: entrá a este link de Andreani, poné tu código postal, elegí sucursal o domicilio y pagás el envío directo 👉 ';
+            input.focus();
+            const n = input.value.length;
+            try { input.setSelectionRange(n, n); } catch (e) {}
+        }
+
+        // La consulta se cuenta recién cuando el comprador escribe (no al abrir el chat).
+        // La base cuenta 1 sola vez por persona y producto, aunque mande muchos mensajes.
+        let consultaRegistrada = false;
+        async function registrarConsultaSiCorresponde() {
+            if (consultaRegistrada || !SALA.startsWith('prod') || !miUserId) return;
+            const resto = SALA.slice(4);
+            const pid = parseInt(resto.split('_')[0], 10);
+            const buyerUid = resto.split('_')[1];
+            if (!pid || buyerUid !== miUserId) return; // solo el comprador genera la consulta
+            consultaRegistrada = true;
+            try { await db.rpc('registrar_consulta', { pid: pid }); } catch (e) { console.error(e); }
+        }
+
+        // ============================================================
+        // ENVIAR MENSAJE DE TEXTO
+        // ============================================================
+        async function enviarTexto() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const blockReason = checkTextForContactInfo(text);
+            if (blockReason) {
+                appendBlockedNote(blockReason);
+                input.value = '';
+                return;
+            }
+
+            input.value = '';
+            await registrarConsultaSiCorresponde();
+            const { error } = await db.from('mensajes').insert({
+                conversacion: SALA,
+                autor: miNombre,
+                texto: text
+            });
+            if (error) {
+                console.error(error);
+                appendBlockedNote('No se pudo enviar. Error: "' + (error.message || 'desconocido') +
+                    '" (código ' + (error.code || '—') + ').');
+            }
+        }
+
+        // ============================================================
+        // IMÁGENES CON LECTURA REAL DE TEXTO (OCR) — por ahora local
+        // ============================================================
+        async function handleImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            event.target.value = '';
+            // El envío de fotos entre usuarios todavía no está habilitado.
+            // Damos un aviso claro para que nadie crea que la foto se envió.
+            appendInfoNote('📷 Por ahora no se pueden enviar fotos por el chat (lo estamos preparando). La otra persona no la va a recibir — coordiná por texto.');
+        }
+
+        // ============================================================
+        // ARRANQUE — requiere cuenta, identidad automática
+        // ============================================================
+        // Mostrar de qué producto y con quién es la conversación
+        async function cargarContexto() {
+            if (!SALA.startsWith('prod')) return;
+            const resto = SALA.slice(4);           // '<pid>_<uuidComprador>'
+            const pid = parseInt(resto.split('_')[0], 10);
+            const buyerUid = resto.split('_')[1];
+            if (!pid || !buyerUid) return;
+            try {
+                const { data: prod } = await db.from('productos').select('titulo, usuario_id').eq('id', pid).maybeSingle();
+                if (!prod) return;
+                const otherId = (miUserId === buyerUid) ? prod.usuario_id : buyerUid;
+
+                // ¿El que mira es el vendedor (dueño del producto)? Solo a él le mostramos
+                // el cartel para que se registre en Andreani. Si ya lo cerró, no lo mostramos.
+                const soyVendedor = (miUserId === prod.usuario_id);
+                if (soyVendedor) {
+                    let oculto = false;
+                    try { oculto = localStorage.getItem('pm_panel_envio_oculto') === '1'; } catch (e) {}
+                    if (!oculto) {
+                        const panel = document.getElementById('panelEnvioVendedor');
+                        if (panel) panel.classList.remove('hidden');
+                    }
+                }
+
+                let otherName = 'Usuario';
+                const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', otherId).maybeSingle();
+                if (perf && perf.nombre) otherName = perf.nombre;
+                document.getElementById('tituloChat').textContent = otherName;
+                document.getElementById('prodChat').textContent = '💬 ' + prod.titulo;
+            } catch (e) {}
+        }
+
+        (async () => {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'plaza-market-acceso-emprendedores.html?next=' + encodeURIComponent('plaza-market-chat-servicios.html?sala=' + SALA);
+                return;
+            }
+            miUserId = session.user.id;
+            const { data: perf } = await db.from('pm_perfiles').select('nombre').eq('id', miUserId).maybeSingle();
+            miNombre = (perf && perf.nombre) || session.user.email || 'Vos';
+            document.getElementById('gateNombre').classList.add('hidden');
+            document.getElementById('miNombreLabel').textContent = miNombre;
+            await cargarContexto();
+            await cargarLecturaOtro();
+            await cargarMensajes();
+            escucharEnVivo();
+            escucharLecturas();
+            marcarLeido();
+        })();
+    </script>
+</body>
+</html>
