@@ -285,6 +285,32 @@
             .modal-flecha { width: 40px; height: 40px; font-size: 1.3rem; }
         }
 
+        /* Celular: letra más grande y con más contraste (para quien ve poco o usa anteojos) */
+        @media (max-width: 640px) {
+            #modalTitulo { font-size: 1.45rem !important; line-height: 1.3; }
+            .modal-desc { font-size: 1.08rem; line-height: 1.75; color: rgba(241,245,249,0.92); }
+            .modal-stats { font-size: 0.95rem; }
+            .modal-seccion-tit { font-size: 1rem; }
+            .preg-tit { font-size: 1.15rem; }
+            .preg-sub { font-size: 0.95rem; color: rgba(226,232,240,0.78); }
+            .preg-q { font-size: 1.05rem; line-height: 1.45; color: #fff; }
+            .preg-a { font-size: 1.02rem; line-height: 1.5; }
+            .preg-fecha { font-size: 0.85rem; color: rgba(226,232,240,0.6); }
+            .preg-vacio, .preg-aviso { font-size: 0.95rem; }
+            .preg-input, .cotiz-cp { font-size: 16px; padding: 0.75rem 0.8rem; }
+            .preg-btn, .cotiz-btn { font-size: 1rem; padding: 0.75rem 1rem; }
+            .envio-tit { font-size: 1.05rem; }
+            .envio-sub, .envio-tip, .envio-pasos, .cotiz-fallback p { font-size: 0.98rem; }
+            .envio-paquete, .cotiz-op-info { font-size: 0.88rem; color: rgba(226,232,240,0.65); }
+            .cotiz-op-nom, .cotiz-total, .cotiz-cargando, .cotiz-error { font-size: 1rem; }
+            .cotiz-op-precio, .cotiz-total strong { font-size: 1.08rem; }
+            .card-title { font-size: 1.05rem; }
+            .card-desc { font-size: 0.9rem; color: rgba(226,232,240,0.75); }
+            .card-envio, .card-stats { font-size: 0.85rem; }
+            .estado { font-size: 1rem; }
+            footer { font-size: 0.98rem !important; color: #94a3b8 !important; }
+        }
+
         /* Encabezado nuevo: menú (izq) + campana (der) */
         .hdr-btn {
             background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
