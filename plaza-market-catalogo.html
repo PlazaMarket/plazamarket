@@ -695,10 +695,56 @@
         function pushDisponible() {
             return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
         }
+        // Cartel con los pasos para activarlas a mano (cuando el celu las tiene bloqueadas)
+        function mostrarAyudaNotifManual(forzar) {
+            try {
+                if (!sesionActiva || !miUserId) return;
+                if (!forzar) {
+                    if (localStorage.getItem('pm_notif_ayuda_nunca') === '1') return;
+                    if (Date.now() < Number(localStorage.getItem('pm_notif_ayuda_hasta') || 0)) return;
+                }
+                const viejo = document.getElementById('cartelNotif'); if (viejo) viejo.remove();
+                const ua = navigator.userAgent || '';
+                const esIphone = /iPhone|iPad|iPod/i.test(ua);
+                const esAndroid = /Android/i.test(ua);
+                const esApp = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || (document.referrer || '').indexOf('android-app://') === 0;
+                let pasos;
+                if (esIphone) {
+                    pasos = ['Abrí <b>Ajustes</b> del iPhone.', 'Entrá a <b>Notificaciones</b> → <b>Plaza Market</b>.', 'Activá <b>Permitir notificaciones</b>.'];
+                } else if (esAndroid && esApp) {
+                    pasos = ['Abrí <b>Ajustes</b> del celular → <b>Aplicaciones</b>.', 'Buscá <b>Plaza Market</b> → <b>Notificaciones</b>.', 'Activalas y volvé a abrir Plaza Market.'];
+                } else if (esAndroid) {
+                    pasos = ['Tocá el <b>candadito 🔒</b> (o los ajustes) al lado de la dirección, arriba.', 'Tocá <b>Permisos</b> → <b>Notificaciones</b> → <b>Permitir</b>.', 'Recargá la página.'];
+                } else {
+                    pasos = ['Hacé clic en el <b>candadito 🔒</b> a la izquierda de la dirección, arriba.', 'En <b>Notificaciones</b> elegí <b>Permitir</b>.', 'Recargá la página.'];
+                }
+                const d = document.createElement('div');
+                d.id = 'cartelNotif';
+                d.setAttribute('role', 'dialog');
+                d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:5.2rem;z-index:99999;width:min(94vw,440px);background:#0f1b33;border:1.5px solid #f59e0b;border-radius:1rem;padding:1rem 1.1rem;box-shadow:0 14px 40px rgba(0,0,0,.55);color:#e2e8f0;font-size:1rem;line-height:1.5;';
+                d.innerHTML = '<div style="font-weight:800;font-size:1.08rem;color:#fff;margin-bottom:.35rem;">🔕 Tus notificaciones están bloqueadas</div>'
+                    + '<div style="color:#cbd5e1;margin-bottom:.5rem;">Para enterarte cuando te escriben, activalas así (lleva 10 segundos):</div>'
+                    + '<ol style="margin:0 0 .85rem 1.2rem;padding:0;color:#f1f5f9;">' + pasos.map(function (x) { return '<li style="margin:.25rem 0;">' + x + '</li>'; }).join('') + '</ol>'
+                    + '<div style="display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;">'
+                    + '<button id="cartelNotifNunca" style="background:none;border:none;color:#94a3b8;padding:.65rem .4rem;font-size:.95rem;cursor:pointer;">No mostrar más</button>'
+                    + '<button id="cartelNotifOk" style="background:linear-gradient(135deg,#0052D4,#4364F7);border:none;color:#fff;font-weight:800;border-radius:.7rem;padding:.65rem 1.2rem;font-size:1rem;cursor:pointer;">Entendido</button>'
+                    + '</div>';
+                document.body.appendChild(d);
+                document.getElementById('cartelNotifOk').onclick = function () {
+                    try { localStorage.setItem('pm_notif_ayuda_hasta', String(Date.now() + 7 * 86400000)); } catch (e) {}
+                    d.remove();
+                };
+                document.getElementById('cartelNotifNunca').onclick = function () {
+                    try { localStorage.setItem('pm_notif_ayuda_nunca', '1'); } catch (e) {}
+                    d.remove();
+                };
+            } catch (e) {}
+        }
         function mostrarCartelNotif() {
             try {
                 if (!sesionActiva || !miUserId || !pushDisponible()) return;
-                if (Notification.permission !== 'default') return; // ya aceptó o ya rechazó
+                if (Notification.permission === 'denied') { mostrarAyudaNotifManual(false); return; }
+                if (Notification.permission !== 'default') return; // ya aceptó
                 const hasta = Number(localStorage.getItem('pm_notif_cartel_hasta') || 0);
                 if (Date.now() < hasta) return;
                 if (document.getElementById('cartelNotif')) return;
@@ -733,7 +779,9 @@
                 alert('Primero iniciá sesión para activar las notificaciones.');
                 return;
             }
+            if (Notification.permission === 'denied') { mostrarAyudaNotifManual(true); return; }
             const permiso = await Notification.requestPermission();
+            if (permiso === 'denied') { mostrarAyudaNotifManual(true); return; }
             if (permiso !== 'granted') {
                 alert('No se activaron las notificaciones. Podés hacerlo más tarde desde el menú.');
                 return;
