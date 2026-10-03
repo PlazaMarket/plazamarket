@@ -691,6 +691,38 @@
             }, { onConflict: 'endpoint' });
         }
 
+        // Cartelito para pedir permiso de notificaciones (sin tener que buscarlo en el menú)
+        function pushDisponible() {
+            return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+        }
+        function mostrarCartelNotif() {
+            try {
+                if (!sesionActiva || !miUserId || !pushDisponible()) return;
+                if (Notification.permission !== 'default') return; // ya aceptó o ya rechazó
+                const hasta = Number(localStorage.getItem('pm_notif_cartel_hasta') || 0);
+                if (Date.now() < hasta) return;
+                if (document.getElementById('cartelNotif')) return;
+                const d = document.createElement('div');
+                d.id = 'cartelNotif';
+                d.setAttribute('role', 'dialog');
+                d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:5.2rem;z-index:99999;width:min(94vw,440px);background:#0f1b33;border:1.5px solid #3b82f6;border-radius:1rem;padding:1rem 1.1rem;box-shadow:0 14px 40px rgba(0,0,0,.55);color:#e2e8f0;font-size:1rem;line-height:1.45;';
+                d.innerHTML = '<div style="font-weight:800;font-size:1.08rem;color:#fff;margin-bottom:.35rem;">🔔 ¿Te avisamos al celu?</div>'
+                    + '<div style="color:#cbd5e1;margin-bottom:.85rem;">Así te enterás al instante cuando te escriben, te hacen una consulta o alguien guarda tu producto en favoritos.</div>'
+                    + '<div style="display:flex;gap:.6rem;justify-content:flex-end;">'
+                    + '<button id="cartelNotifNo" style="background:none;border:1px solid rgba(255,255,255,.25);color:#cbd5e1;border-radius:.7rem;padding:.65rem 1rem;font-size:1rem;cursor:pointer;">Ahora no</button>'
+                    + '<button id="cartelNotifSi" style="background:linear-gradient(135deg,#0052D4,#4364F7);border:none;color:#fff;font-weight:800;border-radius:.7rem;padding:.65rem 1.2rem;font-size:1rem;cursor:pointer;">Sí, avisame</button>'
+                    + '</div>';
+                document.body.appendChild(d);
+                document.getElementById('cartelNotifNo').onclick = function () {
+                    try { localStorage.setItem('pm_notif_cartel_hasta', String(Date.now() + 3 * 86400000)); } catch (e) {}
+                    d.remove();
+                };
+                document.getElementById('cartelNotifSi').onclick = async function () {
+                    d.remove();
+                    await activarNotificaciones();
+                };
+            } catch (e) {}
+        }
         async function activarNotificaciones(e) {
             if (e) e.preventDefault();
             if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
@@ -801,6 +833,7 @@
             actualizarNotif();
             escucharNotif();
             sincronizarPush();
+            setTimeout(mostrarCartelNotif, 2500);
 
             const cont = document.getElementById('contenido');
             const { data, error } = await db.from('productos').select('*').neq('activa', false).order('creado_en', { ascending: false }).limit(300);
