@@ -431,7 +431,8 @@
                 if (u.id !== miId) {
                     accion = esAdmin
                         ? '<button class="btn-del" onclick="quitarAdmin(\'' + u.id + '\', this)">Quitar admin</button>'
-                        : '<button class="btn-admin" onclick="hacerAdmin(\'' + u.id + '\', this)">Hacer admin</button>';
+                        : '<div style="display:flex;gap:0.4rem;"><button class="btn-admin" onclick="hacerAdmin(\'' + u.id + '\', this)">Hacer admin</button>' +
+                          '<button class="btn-del" data-nombre="' + escaparHtml(u.nombre || u.email || 'este usuario') + '" onclick="eliminarUsuario(\'' + u.id + '\', this)">🗑 Eliminar</button></div>';
                 }
                 return '<tr>' +
                     '<td>' + escaparHtml(u.nombre || '—') + '</td>' +
@@ -460,6 +461,15 @@
             const { error } = await db.from('pm_admins').delete().eq('id', id);
             if (error) { alert('No se pudo: ' + error.message); btn.disabled = false; btn.textContent = 'Quitar admin'; return; }
             await cargarTodo();
+        }
+        async function eliminarUsuario(id, btn) {
+            const nombre = btn.getAttribute('data-nombre') || 'este usuario';
+            if (!confirm('¿Eliminar a ' + nombre + '?\n\nSe borran para siempre su cuenta, su perfil, sus publicaciones, sus favoritos y sus mensajes. No se puede deshacer.')) return;
+            btn.disabled = true; btn.textContent = '...';
+            const { error } = await db.rpc('admin_eliminar_usuario', { uid: id });
+            if (error) { alert('No se pudo eliminar: ' + error.message); btn.disabled = false; btn.textContent = '🗑 Eliminar'; return; }
+            alert('Listo: ' + nombre + ' fue eliminado.');
+            location.reload();
         }
         async function borrar(id, btn) {
             if (!confirm('¿Seguro que querés BAJAR esta publicación? Se elimina para siempre.')) return;
