@@ -380,7 +380,10 @@
                     document.getElementById('regStepDatos').classList.add('hidden');
                     document.getElementById('regStepCodigo').classList.remove('hidden');
                 } catch (e) {}
+                return;
             }
+            // Si viene de un anuncio o de un botón "Vender" (?registro=1), abrimos directo la pestaña Registro
+            if (new URLSearchParams(location.search).get('registro') === '1') switchTab('register');
         })();
     </script>
 </body>
