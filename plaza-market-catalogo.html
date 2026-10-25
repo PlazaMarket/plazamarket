@@ -87,6 +87,10 @@
             padding: 0.25rem 0.6rem; border-radius: 999px; letter-spacing: 0.03em;
         }
         .img-agotada { filter: grayscale(0.7) brightness(0.6); }
+        .badge-promo { position:absolute; top:0.5rem; left:0.5rem; background:linear-gradient(135deg,#ef4444,#f97316); color:#fff; font-size:0.7rem; font-weight:900; padding:0.25rem 0.65rem; border-radius:999px; letter-spacing:0.04em; box-shadow:0 2px 10px rgba(239,68,68,.45); z-index:2; }
+        .precio-tachado { display:block; font-size:0.8rem; font-weight:600; color:rgba(226,232,240,0.5); text-decoration:line-through; margin-bottom:-0.1rem; -webkit-text-fill-color:rgba(226,232,240,0.5); }
+        .precio-off { display:inline-block; background:#ef4444; color:#fff; -webkit-text-fill-color:#fff; font-size:0.66rem; font-weight:800; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:middle; }
+        .precio-consultar { display:inline-block; line-height:1.3; font-size:0.95rem !important; color:#93C5FD; -webkit-text-fill-color:#93C5FD !important; }
         .card-body { padding: 1rem 1.1rem 1.2rem; flex: 1; display: flex; flex-direction: column; }
         .card-cat {
             font-size: 0.65rem; font-weight: 700; color: #93C5FD; text-transform: uppercase;
@@ -821,7 +825,18 @@
             localStorage.removeItem('pm_uid');
             location.reload();
         }
-        function agotado(p) { return p.tipo === 'producto' && p.stock !== null && p.stock !== undefined && p.stock <= 0; }
+        function agotado(p) { return p.tipo === 'producto' && (p.estado === 'sin_stock' || (p.stock !== null && p.stock !== undefined && p.stock <= 0)); }
+        function esConsultar(p) { return p.estado === 'consultar'; }
+        function esPromo(p) { return p.estado === 'promocional' && Number(p.precio_anterior) > Number(p.precio); }
+        // Precio para mostrar según el estado: "a consultar", promo (con el anterior tachado) o normal
+        function precioHTML(p) {
+            if (esConsultar(p)) return '<span class="precio-consultar">💬 Precio a consultar</span>';
+            if (esPromo(p)) {
+                const off = Math.round((1 - Number(p.precio) / Number(p.precio_anterior)) * 100);
+                return `<span class="precio-tachado">${pesos(p.precio_anterior)}</span>${pesos(p.precio)}${off > 0 ? `<span class="precio-off">${off}% OFF</span>` : ''}`;
+            }
+            return pesos(p.precio);
+        }
 
         // Despliega/oculta los 3 pasos del envío en la ficha del producto
         function toggleComoEnvio(e) {
@@ -915,7 +930,7 @@
         function aplicarFiltros() {
             const texto = document.getElementById('buscador').value.trim().toLowerCase();
             const cat = document.getElementById('filtroCategoria').value;
-            let lista = todos;
+            let lista = todos.filter(p => !agotado(p));   // sin stock: no se muestra en el catálogo
             if (cat) lista = lista.filter(p => p.categoria === cat);
             if (texto) lista = lista.filter(p =>
                 (p.marca || '').toLowerCase().includes(texto) || (p.titulo || '').toLowerCase().includes(texto) || (p.descripcion || '').toLowerCase().includes(texto));
@@ -932,11 +947,12 @@
             const img = nFotos
                 ? `<img src="${p.fotos[0]}" alt="${escaparHtml(p.titulo)}" class="${imgClase}" loading="lazy">${nFotos > 1 ? `<span class="card-fotos-badge">📷 ${nFotos}</span>` : ''}`
                 : `<div class="card-img-placeholder">${esServicio ? '🛠️' : '📦'}</div>`;
-            const badgeAgot = agot ? '<span class="badge-agotado">AGOTADO</span>' : '';
+            const badgeAgot = agot ? '<span class="badge-agotado">AGOTADO</span>' : (esPromo(p) ? '<span class="badge-promo">🔥 PROMO</span>' : '');
             const desc = escaparHtml(p.descripcion).slice(0, 100);
 
             let envio;
-            if (esServicio) { const sena = Math.round(Number(p.precio || 0) * SENA); envio = `<p class="card-envio servicio">🔖 Seña para reservar: ${pesos(sena)}</p>`; }
+            if (esServicio && esConsultar(p)) envio = '<p class="card-envio servicio">💬 Consultá precio y turnos por chat</p>';
+            else if (esServicio) { const sena = Math.round(Number(p.precio || 0) * SENA); envio = `<p class="card-envio servicio">🔖 Seña para reservar: ${pesos(sena)}</p>`; }
             else envio = '<p class="card-envio pago" style="letter-spacing:0.03em;font-weight:700;">ENVÍO APARTE</p>';
 
             return `
@@ -947,7 +963,7 @@
                     ${(p.condicion === 'usado' ? '<span class="badge-usado">Usado</span>' : '') + (p.marca ? '<span class="badge-marca">'+escaparHtml(p.marca)+'</span>' : '')}
                         <h2 class="card-title">${escaparHtml(p.titulo)}</h2>
                     <p class="card-desc">${desc}${desc.length >= 100 ? '…' : ''}</p>
-                    <p class="card-precio">${pesos(p.precio)}</p>
+                    <p class="card-precio">${precioHTML(p)}</p>
                     ${envio}
                     ${(miUserId && p.usuario_id === miUserId) ? `<div class="card-stats">
                         <span>👁 ${p.vistas || 0} vistas</span>
@@ -1041,13 +1057,13 @@
                 + '<p class="hist-cat">' + (CATEGORY_LABELS[p.categoria] || p.categoria || '') + '</p>'
                 + '<p class="hist-name">' + escaparHtml(p.titulo || '') + '</p>'
                 + '<p class="hist-desc">' + desc + (desc.length >= 90 ? '…' : '') + '</p>'
-                + '<p class="hist-precio">' + pesos(p.precio) + '</p>'
+                + '<p class="hist-precio">' + (esConsultar(p) ? 'Precio a consultar' : pesos(p.precio)) + (esPromo(p) ? ' 🔥' : '') + '</p>'
                 + '</div></div>';
         }
         function renderVistosPanel(){
             var cont = document.getElementById('listaVistos');
             var ids = leerHistorial();
-            var items = ids.map(function(id){ return todos.find(function(p){ return p.id === id; }); }).filter(Boolean).slice(0, pmVistosN);
+            var items = ids.map(function(id){ return todos.find(function(p){ return p.id === id; }); }).filter(function(p){ return p && !agotado(p); }).slice(0, pmVistosN);
             if (!items.length){ cont.innerHTML = '<p class="hist-vacio">Todavía no viste ningún producto.<br>Cuando abras productos, van a aparecer acá. 👀</p>'; return; }
             cont.innerHTML = items.map(filaVistoHTML).join('');
         }
@@ -1114,7 +1130,7 @@
             return `<div class="mini-prod" onclick="location.href='plaza-market-catalogo.html?id=${p.id}'">
                 ${foto}
                 <p>${escaparHtml((p.titulo || '').slice(0, 28))}</p>
-                <p class="mini-precio">${pesos(p.precio)}</p>
+                <p class="mini-precio">${esConsultar(p) ? 'A consultar' : pesos(p.precio) + (esPromo(p) ? ' 🔥' : '')}</p>
             </div>`;
         }
 
@@ -1163,12 +1179,16 @@
 
             document.getElementById('modalCat').textContent = CATEGORY_LABELS[p.categoria] || p.categoria; var _mc=document.getElementById('modalCat'); if(_mc){ var _box=document.getElementById('modalVentas'); if(!_box){ _box=document.createElement('div'); _box.id='modalVentas'; _box.style.cssText='font-size:.85rem;color:#94a3b8;margin:.35rem 0;font-weight:600;'; if(_mc.parentElement) _mc.parentElement.insertBefore(_box, _mc.nextSibling); } var _v=Number(p.ventas)||0; var _txt=_v>0?('🛒 '+_v+' '+(_v===1?'venta':'ventas')):'🛒 ¡Sé el primero en comprarle!'; _box.textContent=_txt; try{ db.from('pm_perfiles').select('creado_en').eq('id', p.usuario_id).maybeSingle().then(function(r){ if(r.data&&r.data.creado_en){ var _d=new Date(r.data.creado_en); var _M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; _box.textContent=_txt+' · Vendedor desde '+_M[_d.getMonth()]+'. '+_d.getFullYear(); } }).catch(function(){}); }catch(_e){} }
             document.getElementById('modalTitulo').textContent = p.titulo;
-            document.getElementById('modalPrecio').textContent = pesos(p.precio);
+            document.getElementById('modalPrecio').innerHTML = precioHTML(p);
             document.getElementById('modalDesc').textContent = p.descripcion || 'Sin descripción.';
 
             const envioEl = document.getElementById('modalEnvio');
             fichaProd = p; envioElegido = null; envioModo = 'ninguno'; cargarRating(p); cargarResenas(p);
-            if (esServicio) {
+            if (esServicio && esConsultar(p)) {
+                envioEl.className = 'card-envio servicio';
+                envioEl.innerHTML = '💬 Escribile al vendedor por chat para consultar el precio y coordinar el turno.';
+            }
+            else if (esServicio) {
                 const sena = Math.round(Number(p.precio || 0) * SENA);
                 envioEl.className = 'card-envio servicio';
                 envioEl.innerHTML = `🔖 Para reservar el turno se paga una <strong>seña de ${pesos(sena)}</strong> (20% del precio). El resto lo abonás al recibir el servicio. Se coordina por chat.`;
@@ -1219,7 +1239,7 @@
 
             mostrarFormDireccion(false);
             const stockEl = document.getElementById('modalStock');
-            if (p.tipo === 'producto' && !agot) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
+            if (p.tipo === 'producto' && !agot && p.stock !== null && p.stock !== undefined && !esConsultar(p)) { stockEl.textContent = `📦 ${p.stock} en stock`; stockEl.classList.remove('hidden'); }
             else stockEl.classList.add('hidden');
 
             fotosModal = fotos;
@@ -1233,7 +1253,9 @@
             const btn = document.getElementById('modalBtnChat');
             const btnComprar = document.getElementById('modalBtnComprar');
             const cartel = document.getElementById('modalAgotado');
+            const btnCarrito = document.getElementById('modalBtnCarrito');
             btn.classList.add('hidden'); btnComprar.classList.add('hidden'); cartel.classList.add('hidden');
+            if (btnCarrito) btnCarrito.classList.add('hidden');
             if (agot) {
                 cartel.textContent = 'Este producto está agotado por ahora.';
                 cartel.style.cssText = 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#FCA5A5;';
@@ -1242,7 +1264,12 @@
                 cartel.textContent = '📦 Esta es tu propia publicación. Para editarla, andá a "Vender".';
                 cartel.style.cssText = 'background:rgba(0,82,212,0.12); border:1px solid rgba(59,130,246,0.4); color:#BFDBFE;';
                 cartel.classList.remove('hidden');
+            } else if (esConsultar(p)) {
+                btn.classList.remove('hidden');
+                btn.textContent = '💬 Consultar precio';
+                btn.onclick = (e) => { e.preventDefault(); consultar(p); };
             } else {
+                if (btnCarrito) btnCarrito.classList.remove('hidden');
                 btnComprar.classList.remove('hidden');
                 btnComprar.textContent = esServicio ? '🔖 Pagar seña y reservar' : '🛒 Comprar ahora';
                 btnComprar.onclick = (e) => { e.preventDefault(); comprar(p); };
@@ -1254,13 +1281,13 @@
             }
 
             // Más del vendedor
-            const delVend = todos.filter(x => x.usuario_id === p.usuario_id && x.id !== p.id).slice(0, 10);
+            const delVend = todos.filter(x => x.usuario_id === p.usuario_id && x.id !== p.id && !agotado(x)).slice(0, 10);
             const secVend = document.getElementById('modalDelVendedor');
             if (delVend.length) { document.getElementById('gridDelVendedor').innerHTML = delVend.map(miniHTML).join(''); secVend.classList.remove('hidden'); }
             else secVend.classList.add('hidden');
 
             // También podría interesarte (misma categoría, de otros vendedores)
-            const interesar = todos.filter(x => x.categoria === p.categoria && x.id !== p.id && x.usuario_id !== p.usuario_id).slice(0, 10);
+            const interesar = todos.filter(x => x.categoria === p.categoria && x.id !== p.id && x.usuario_id !== p.usuario_id && !agotado(x)).slice(0, 10);
             const secInt = document.getElementById('modalInteresar');
             if (interesar.length) { document.getElementById('gridInteresar').innerHTML = interesar.map(miniHTML).join(''); secInt.classList.remove('hidden'); }
             else secInt.classList.add('hidden');
@@ -1610,6 +1637,7 @@
         // COMPRAR / PAGAR SEÑA (Mercado Pago)
         // ============================================================
         async function comprar(p) {
+            if (esConsultar(p) || agotado(p)) return;
             if (!sesionActiva) {
                 alert('Para comprar necesitás tener una cuenta (es gratis). Te llevamos al registro.');
                 window.location.href = 'plaza-market-acceso-emprendedores.html?next=plaza-market-catalogo.html';
@@ -1956,6 +1984,8 @@ body.modo-pagina #modalFondo .modal-card { max-width:860px !important; width:100
   function pesosCart(n){ return '$'+(Number(n)||0).toLocaleString('es-AR'); }
   window.updateCartBadge=function(){ var b=document.getElementById('cartBadge'); if(!b) return; var n=getCart().length; b.textContent=n; b.style.display=n>0?'inline-block':'none'; };
   window.addAlCarrito=function(p){
+    if(p && p.estado==='consultar'){ alert('Este producto es con precio a consultar: escribile al vendedor por chat.'); return; }
+    if(p && p.tipo==='producto' && (p.estado==='sin_stock' || (p.stock!==null && p.stock!==undefined && Number(p.stock)<=0))){ alert('Este producto está agotado por ahora.'); return; }
     if(!p||!p.id) return;
     var variante=null, varOpciones=null;
     if(p.variaciones && p.variaciones.combinaciones && p.variaciones.combinaciones.length){

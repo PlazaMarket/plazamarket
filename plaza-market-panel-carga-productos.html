@@ -350,14 +350,38 @@
                         </div>
                     </div>
 
+                    <div id="seccionEstado">
+                        <label>Estado de la publicación</label>
+                        <select id="productEstado" class="mt-2" onchange="pmEstadoCambio()">
+                            <option value="disponible">✅ Disponible</option>
+                            <option value="sin_stock">⛔ Sin stock</option>
+                            <option value="promocional">🔥 Promocional</option>
+                            <option value="consultar">💬 A consultar</option>
+                            <option value="variante">🎨 Variante (talle, color...)</option>
+                            <option value="oculto">🙈 Oculto</option>
+                        </select>
+                        <p class="envio-hint" id="estadoHint"></p>
+                        <div id="boxPrecioAnterior" class="hidden" style="margin-top:.8rem;">
+                            <label>Precio anterior (ARS) <span style="color:#94a3b8;font-weight:400;font-size:.8rem;">— se muestra tachado</span></label>
+                            <input type="text" id="productPrecioAnterior" inputmode="numeric" placeholder="Ej: $12.000" class="mt-2" oninput="onPrecioAntInput(event)">
+                        </div>
+                    </div>
+
                     <div id="seccionStock">
-                        <label>¿Cuántas unidades tenés en stock?</label>
-                        <input type="text" id="productStock" inputmode="numeric" placeholder="Ej: 5" class="mt-2" oninput="onStockInput(event)">
-                        <p class="envio-hint">Cuando el stock llegue a 0, la publicación se muestra como <strong>“Agotado”</strong> hasta que lo repongas.</p>
+                        <div id="filaSwitchStock" class="pm-switch-row">
+                            <label class="pm-switch"><input type="checkbox" id="chkIncluirStock" checked onchange="pmEstadoUI()"><span class="pm-slider"></span></label>
+                            <span class="pm-switch-txt" onclick="var c=document.getElementById('chkIncluirStock');c.checked=!c.checked;pmEstadoUI();">Incluir stock disponible</span>
+                        </div>
+                        <div id="boxStockCant" style="margin-top:.7rem;">
+                            <label>¿Cuántas unidades tenés en stock?</label>
+                            <input type="text" id="productStock" inputmode="numeric" placeholder="Ej: 5" class="mt-2" oninput="onStockInput(event)">
+                            <p class="envio-hint">Cuando el stock llegue a 0, la publicación <strong>deja de aparecer en el catálogo</strong> hasta que lo repongas.</p>
+                        </div>
+                        <p class="envio-hint" id="stockOffHint" style="display:none;">No se muestra la cantidad y la publicación sigue en el catálogo. Si te quedás sin unidades, cambiá el estado a <strong>Sin stock</strong>.</p>
                     </div>
 
                     <div id="seccionVariaciones" style="margin-top:1rem;">
-  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+  <label id="labelChkVariaciones" style="display:none;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
     <input type="checkbox" id="chkVariaciones" onchange="pmVarToggle()" style="width:auto;margin:0;"> Este producto tiene <span style="color:#93c5fd;">variaciones</span> (ej: talle, color)
   </label>
   <div id="varBox" class="hidden" style="margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;background:rgba(255,255,255,.03);">
@@ -371,6 +395,7 @@
     <div id="varGrid"></div>
   </div>
 </div>
+<style>.pm-switch-row{display:flex;align-items:center;gap:12px;}.pm-switch{position:relative;display:inline-block;width:52px;height:30px;flex-shrink:0;cursor:pointer;}.pm-switch input{opacity:0;width:0;height:0;position:absolute;}.pm-slider{position:absolute;inset:0;background:#475569;border-radius:999px;transition:background .2s;}.pm-slider:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);}.pm-switch input:checked + .pm-slider{background:#22c55e;}.pm-switch input:checked + .pm-slider:before{transform:translateX(22px);}.pm-switch-txt{color:#e2e8f0;font-weight:700;font-size:.95rem;cursor:pointer;user-select:none;}</style>
 <style>.pm-varbtn{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#93c5fd;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.85rem;}.pm-varbtn:hover{background:rgba(59,130,246,.28);}#varBox input[type=text]{padding:6px 8px;border-radius:8px;}</style>
                     <div id="seccionMedidas">
                         <div class="mb-4"><label>🔖 Código de barras (opcional)</label><input type="text" id="productoEan" inputmode="numeric" placeholder="Ej: 7791234567890" class="mt-2"><p class="text-xs text-gray-400 mt-1">¿Tu producto tiene código de barras? Cargalo y aparecés en más búsquedas. Si es hecho a mano o no tiene, dejalo vacío.</p></div><label>📦 Medidas del paquete</label>
@@ -584,6 +609,49 @@
         function valorEnvio() { return Number(soloDigitos(document.getElementById('costoEnvio').value)) || 0; }
         function valorStock() { return Number(soloDigitos(document.getElementById('productStock').value)) || 0; }
         function onStockInput(e) { e.target.value = soloDigitos(e.target.value); }
+        function onPrecioAntInput(e) { const d = soloDigitos(e.target.value); e.target.value = d ? formatearPesos(d) : ''; }
+        function valorPrecioAnterior() { return Number(soloDigitos((document.getElementById('productPrecioAnterior') || {}).value)) || 0; }
+        function estadoActual() { const el = document.getElementById('productEstado'); return el ? el.value : 'disponible'; }
+        const ESTADO_HINTS = {
+            disponible: 'Se puede comprar normalmente.',
+            sin_stock: 'No aparece en el catálogo. Cuando tengas unidades, cambiala a Disponible y vuelve a aparecer.',
+            promocional: 'Lleva el cartel 🔥 PROMO y el precio anterior tachado al lado del nuevo.',
+            consultar: 'No se muestra el precio: el comprador te escribe por chat para consultarlo. El precio es opcional.',
+            variante: 'Cargá los talles, colores u otras opciones con el stock de cada combinación.',
+            oculto: 'No aparece en el catálogo. Nadie la ve hasta que cambies el estado.'
+        };
+        function pmEstadoCambio() {
+            const e = estadoActual();
+            const chk = document.getElementById('chkVariaciones');
+            if (chk && window.pmVar) {
+                if (e === 'variante' && !pmVar.activo) { chk.checked = true; pmVarToggle(); }
+                else if (e !== 'variante' && e !== 'oculto' && pmVar.activo) { chk.checked = false; pmVarToggle(); }
+            }
+            pmEstadoUI();
+        }
+        function pmEstadoUI() {
+            const sel = document.getElementById('productEstado');
+            if (!sel) return;
+            const esProd = tipoActual === 'producto';
+            ['sin_stock', 'variante'].forEach(v => { const o = sel.querySelector(`option[value="${v}"]`); if (o) o.disabled = !esProd; });
+            if (!esProd && (sel.value === 'sin_stock' || sel.value === 'variante')) { sel.value = 'disponible'; pmEstadoCambio(); return; }
+            const e = sel.value;
+            const conVar = !!(window.pmVar && pmVar.activo);
+            document.getElementById('estadoHint').textContent = ESTADO_HINTS[e] || '';
+            document.getElementById('boxPrecioAnterior').classList.toggle('hidden', e !== 'promocional');
+            const lp = document.getElementById('labelPrecio');
+            const base = esProd ? 'Precio Unitario (ARS)' : 'Precio del servicio (ARS)';
+            lp.textContent = e === 'promocional' ? (esProd ? 'Precio de promoción (ARS)' : 'Precio de promoción del servicio (ARS)')
+                           : e === 'consultar' ? base + ' — opcional, no se muestra' : base;
+            const sv = document.getElementById('seccionVariaciones');
+            if (sv) sv.style.display = esProd ? '' : 'none';
+            const incluir = document.getElementById('chkIncluirStock').checked;
+            document.getElementById('filaSwitchStock').style.display = (e === 'sin_stock') ? 'none' : '';
+            document.getElementById('boxStockCant').style.display = (e !== 'sin_stock' && incluir) ? '' : 'none';
+            document.getElementById('stockOffHint').style.display = (e !== 'sin_stock' && !incluir) ? '' : 'none';
+            const ss = document.getElementById('seccionStock');
+            if (ss) ss.style.display = conVar ? 'none' : '';
+        }
         function onMedidaInput(e) { e.target.value = soloDigitos(e.target.value); delete e.target.dataset.auto; }
         function valorMedida(id) { return Number(soloDigitos(document.getElementById(id).value)) || 0; }
 
@@ -667,6 +735,7 @@
                 tipo === 'servicio' ? 'Precio del servicio (ARS)' : 'Precio Unitario (ARS)';
             cargarCategorias(tipo);
             actualizarDesglose();
+            try { pmEstadoUI(); } catch (e) {}
         }
 
         // ============================================================
@@ -1030,14 +1099,29 @@ async function publishProduct() {
             if (!title) { showToast('❌ Ingresá un título', 'error'); return; }
             if (!category) { showToast('❌ Seleccioná una categoría', 'error'); return; }
         if (!(document.getElementById('productMarca') && document.getElementById('productMarca').value.trim())) { showToast('❌ Ingresá la marca (ej: Lattafa, Afnan)', 'error'); return; }
-            if (!price || price <= 0) { showToast('❌ Ingresá un precio válido', 'error'); return; }
+            const estado = estadoActual();
+            if (estado !== 'consultar' && (!price || price <= 0)) { showToast('❌ Ingresá un precio válido', 'error'); return; }
+            const precioAnterior = (estado === 'promocional' || estado === 'oculto') ? valorPrecioAnterior() : null;
+            if (estado === 'promocional' && !(precioAnterior > price)) {
+                showToast('❌ En una promo, el precio anterior tiene que ser mayor al precio nuevo', 'error'); return;
+            }
 
+            const conVariantes = !!(esProducto && window.pmVar && pmVar.activo);
+            if (estado === 'variante' && !(conVariantes && pmVarCombos().combos.length)) {
+                showToast('❌ Agregá al menos una opción (ej: un talle o un color) a las variantes', 'error'); return;
+            }
+            const incluirStock = document.getElementById('chkIncluirStock').checked;
             const stockRaw = soloDigitos(document.getElementById('productStock').value);
-            if (esProducto && stockRaw === '' && !(window.pmVar && pmVar.activo)) {
-                showToast('❌ Poné cuántas unidades tenés en stock (0 = agotado)', 'error');
+            if (esProducto && !conVariantes && estado !== 'sin_stock' && incluirStock && stockRaw === '') {
+                showToast('❌ Poné cuántas unidades tenés en stock, o apagá “Incluir stock disponible”', 'error');
                 return;
             }
-            const stock = esProducto ? ((window.pmVar && pmVar.activo) ? pmVarStockTotal() : Number(stockRaw)) : null;
+            let stock = null;
+            if (esProducto) {
+                if (conVariantes) stock = pmVarStockTotal();
+                else if (estado === 'sin_stock') stock = 0;
+                else if (incluirStock) stock = Number(stockRaw);
+            }
 
             const altoCm = valorMedida('paqueteAlto');
             const anchoCm = valorMedida('paqueteAncho');
@@ -1078,7 +1162,15 @@ async function publishProduct() {
                     alto_cm: altoF, ancho_cm: anchoF,
         largo_cm: largoF, peso_gr: pesoF
                 };
-                datos.variaciones = (esProducto && window.pmVar && pmVar.activo) ? pmVarGet() : null;
+                datos.variaciones = conVariantes ? pmVarGet() : null;
+                if (estado === 'oculto') {
+                    // Oculta: se guarda el estado que tenía, así al volver a mostrarla queda igual
+                    const _prev = editandoId ? ((misProductos.find(x => x.id === editandoId) || {}).estado) : null;
+                    datos.estado = (_prev && _prev !== 'oculto') ? _prev : (conVariantes ? 'variante' : 'disponible');
+                } else datos.estado = estado;
+                datos.precio_anterior = precioAnterior || null;
+                datos.activa = estado !== 'oculto';
+                if (estado === 'consultar') datos.precio = price || 0;
                 if (esProducto) { try { const _e=(document.getElementById('productoEan')?.value||'').trim(); if(_e) datos.ean=_e; } catch(e){} }
 
                 let error;
@@ -1121,6 +1213,9 @@ async function publishProduct() {
             fotosExistentes = [];
             editandoId = null;
             try{ pmVarReset(); }catch(e){}
+            document.getElementById('productEstado').value = 'disponible';
+            document.getElementById('chkIncluirStock').checked = true;
+            document.getElementById('productPrecioAnterior').value = '';
             document.getElementById('bannerEdicion').classList.add('hidden');
             document.getElementById('publishBtn').textContent = 'Publicar';
             setTipo('producto');
@@ -1158,6 +1253,14 @@ async function publishProduct() {
             }
 
             try{ pmVarLoad(p.variaciones); }catch(e){}
+            let est = p.estado || 'disponible';
+            if (p.activa === false) est = 'oculto';
+            else if (est === 'oculto') est = 'disponible';
+            if (est !== 'oculto' && p.variaciones && p.variaciones.combinaciones) est = 'variante';
+            document.getElementById('productEstado').value = est;
+            document.getElementById('chkIncluirStock').checked = !(p.tipo === 'producto' && (p.stock === null || p.stock === undefined) && !p.variaciones);
+            document.getElementById('productPrecioAnterior').value = p.precio_anterior ? formatearPesos(p.precio_anterior) : '';
+            pmEstadoUI();
             fotosExistentes = (p.fotos || []).slice();
             uploadedPhotos = [];
             renderPhotoSlots();
@@ -1209,23 +1312,24 @@ async function publishProduct() {
 
                 let stockTxt = '';
                 if (p.tipo === 'producto') {
-                    stockTxt = (p.stock > 0)
-                        ? ` · Stock: ${p.stock}`
-                        : ` · <span style="color:#FCA5A5;font-weight:700;">AGOTADO</span>`;
+                    stockTxt = (p.estado === 'sin_stock' || (p.stock !== null && p.stock !== undefined && p.stock <= 0))
+                        ? ` · <span style="color:#FCA5A5;font-weight:700;">⛔ SIN STOCK — no se ve en el catálogo</span>`
+                        : (p.stock === null || p.stock === undefined) ? ''
+                        : ` · Stock: ${p.stock}`;
                 }
 
                 return `<div class="product-card-row">
                     <div class="flex items-center gap-3">
                         ${foto}
                         <div>
-                            <p class="product-title">${p.activa === false ? '<span style="display:inline-block;background:#fde68a;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">\u23f8\ufe0f Pausada</span>' : ''}${escaparHtml(p.titulo)}</p>
+                            <p class="product-title">${p.activa === false ? '<span style="display:inline-block;background:#fde68a;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">\u23f8\ufe0f Oculta</span>' : ''}${p.activa !== false && p.estado === 'promocional' ? '<span style="display:inline-block;background:#ef4444;color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">🔥 PROMO</span>' : ''}${p.activa !== false && p.estado === 'consultar' ? '<span style="display:inline-block;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">💬 A consultar</span>' : ''}${escaparHtml(p.titulo)}</p>
                             <p class="product-meta">${CATEGORY_LABELS[p.categoria] || p.categoria} · ${formatearPesos(p.precio)} · ${envioTxt}${stockTxt}</p>
                             <p class="product-meta">Recibís ${formatearPesos(recibis)} · ${fecha}</p>
                             <p class="product-meta" style="color:#93C5FD;margin-top:0.3rem;">👁 ${p.vistas || 0} vistas · 💬 ${p.consultas || 0} consultas</p>
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Reactivar' : '\u23f8\ufe0f Pausar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
+                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Mostrar' : '🙈 Ocultar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
                     </div>
                 </div>`;
             }).join('');
@@ -1234,9 +1338,12 @@ async function publishProduct() {
         async function togglePausa(id, estaPausada) {
             const nuevoActiva = estaPausada;
             try {
-                const { error } = await supabaseClient.from('productos').update({ activa: nuevoActiva }).eq('id', id);
+                const _cambio = { activa: nuevoActiva };
+                const _p = misProductos.find(x => x.id === id);
+                if (nuevoActiva && _p && _p.estado === 'oculto') _cambio.estado = 'disponible';
+                const { error } = await supabaseClient.from('productos').update(_cambio).eq('id', id);
                 if (error) { showToast('\u274c No se pudo: ' + error.message, 'error'); return; }
-                showToast(nuevoActiva ? '\u25b6\ufe0f Publicaci\u00f3n reactivada' : '\u23f8\ufe0f Publicaci\u00f3n pausada', 'success');
+                showToast(nuevoActiva ? '\u25b6\ufe0f Publicaci\u00f3n visible otra vez' : '🙈 Publicaci\u00f3n oculta', 'success');
                 if (typeof cargarMisProductos === 'function') cargarMisProductos();
             } catch (e) { showToast('\u274c Error: ' + (e.message || e), 'error'); }
         }
@@ -1577,7 +1684,7 @@ async function subirPlanilla(ev){
 </script>
 <script>
 (function(){
-  var CAMPOS=['productTitle','productDescription','productCategory','productPrice','productMarca','productCondicion','productStock','paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso','productoEan','costoEnvio'];
+  var CAMPOS=['productTitle','productDescription','productCategory','productEstado','productPrecioAnterior','productPrice','productMarca','productCondicion','productStock','paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso','productoEan','costoEnvio'];
   var KEY='pm_borrador_vender';
   function leer(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
   function guardar(){
