@@ -417,7 +417,8 @@
                                 <input type="text" id="paquetePeso" inputmode="numeric" placeholder="Ej: 1500" oninput="onMedidaInput(event)">
                             </div>
                         </div>
-                        <p class="envio-hint">¿No sabés las medidas? No pasa nada: al elegir la categoría te completamos unas aproximadas. Si tu paquete es más grande o más pesado, cambialas — con los datos reales tu comprador paga menos de envío.</p>
+                        <p class="envio-hint">¿No sabés las medidas? No pasa nada: con el nombre del producto te las completamos solas (cajas estándar de calzado, perfumes, ropa y más). Si tu paquete es más grande o más pesado, cambialas — con los datos reales tu comprador paga menos de envío.</p>
+                        <p class="envio-hint" id="medidasOrigen" style="display:none;color:#93c5fd;"></p>
                         <style>#seccionMedidas input[data-auto="1"]{color:#93c5fd;font-style:italic;}</style>
                     </div>
 
@@ -720,7 +721,7 @@
         function cargarCategorias(tipo) {
             const sel = document.getElementById('productCategory');
             sel.innerHTML = '<option value="">Seleccioná una categoría</option>' +
-                CATEGORIAS[tipo].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+                CATEGORIAS[tipo].slice().sort((a, b) => a[1].localeCompare(b[1], 'es', { sensitivity: 'base' })).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
         }
 
         function setTipo(tipo) {
@@ -1088,7 +1089,7 @@ function sugerirMedidas() {
 }
 
 async function publishProduct() {
-            const title = document.getElementById('productTitle').value.trim();
+            const title = (window.pmCapitalizar ? pmCapitalizar(document.getElementById('productTitle').value) : document.getElementById('productTitle').value).trim();
             const description = document.getElementById('productDescription').value.trim();
             const category = document.getElementById('productCategory').value;
             const price = valorPrecio();
@@ -1128,7 +1129,7 @@ async function publishProduct() {
             const largoCm = valorMedida('paqueteLargo');
             const pesoGr = valorMedida('paquetePeso');
             // Si es producto y faltan medidas, usamos las de la categoria (opcional para el vendedor)
-    const _md = medidasPorCategoria(category);
+    const _md = (typeof medidasSugeridas === 'function') ? medidasSugeridas(title, category) : medidasPorCategoria(category);
     const altoF  = esProducto ? (Number(altoCm)  || _md.alto)  : null;
     const anchoF = esProducto ? (Number(anchoCm) || _md.ancho) : null;
     const largoF = esProducto ? (Number(largoCm) || _md.largo) : null;
@@ -1154,7 +1155,7 @@ async function publishProduct() {
                 const nuevasUrls = await subirFotosAprobadas();
                 const fotos = fotosExistentes.concat(nuevasUrls);
 
-                const marca = (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '').trim().slice(0,60);
+                const marca = (window.pmCapitalizar ? pmCapitalizar(document.getElementById('productMarca') ? document.getElementById('productMarca').value : '') : (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '')).trim().slice(0,60);
     const condicion = (document.getElementById('productCondicion') ? document.getElementById('productCondicion').value : 'nuevo');
     const datos = {
                     titulo: title, descripcion: description, categoria: category, marca: marca || null, condicion: condicion, precio: price,
@@ -1204,6 +1205,8 @@ async function publishProduct() {
             document.getElementById('paqueteAncho').value = '';
             document.getElementById('paqueteLargo').value = '';
             document.getElementById('paquetePeso').value = '';
+            ['paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso'].forEach(id => { delete document.getElementById(id).dataset.auto; });
+            { const _mo = document.getElementById('medidasOrigen'); if (_mo) _mo.style.display = 'none'; }
             document.getElementById('productoEan').value = '';
             document.getElementById('costoEnvio').value = '';
             document.querySelector('input[name="quienPagaEnvio"][value="comprador"]').checked = true;
@@ -1246,6 +1249,7 @@ async function publishProduct() {
                 document.getElementById('paqueteAncho').value = p.ancho_cm ? String(p.ancho_cm) : '';
                 document.getElementById('paqueteLargo').value = p.largo_cm ? String(p.largo_cm) : '';
                 document.getElementById('paquetePeso').value = p.peso_gr ? String(p.peso_gr) : '';
+                ['paqueteAlto','paqueteAncho','paqueteLargo','paquetePeso'].forEach(id => { const _e = document.getElementById(id); if (_e.value) delete _e.dataset.auto; });
                 document.getElementById('productoEan').value = p.ean || '';
                 document.getElementById('costoEnvio').value = p.costo_envio ? formatearPesos(p.costo_envio) : '';
                 const quien = p.envio_gratis ? 'vendedor' : 'comprador';
@@ -1723,6 +1727,176 @@ function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_co
 // Medidas sugeridas por categoría. Va en un bloque aparte para que funcione
 // aunque otro script de la página tarde o falle.
 (function(){ var s=document.getElementById('productCategory'); if (s && typeof sugerirMedidas==='function') s.addEventListener('change', sugerirMedidas); })();
+</script>
+<script>
+// ============================================================
+// 1) MAYÚSCULA INICIAL en título y marca  ("perfume lattafa yara" -> "Perfume Lattafa Yara")
+// ============================================================
+(function(){
+  var CHICAS = ['de','del','la','las','el','los','y','e','o','u','con','sin','para','por','en','a','al','x'];
+  var UNIDADES = ['ml','cm','mm','kg','gr','g','lt','lts','cc','oz','mts','mt'];
+  window.pmCapitalizar = function(s){
+    var i = 0;
+    return String(s || '').replace(/[^\s\/\-]+/g, function(w){
+      var primera = (i++ === 0);
+      var lw = w.toLowerCase();
+      if (UNIDADES.indexOf(lw) >= 0) return lw;                         // "ml", "cm", "kg" siempre en minúscula
+      if (!primera && CHICAS.indexOf(lw) >= 0) return lw;               // "de", "y", "para"... quedan en minúscula
+      if (!/^[a-záéíóúñü]/.test(w)) return w;                           // números, "100ml", palabras que ya empiezan en mayúscula
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    });
+  };
+  function enganchar(id){
+    var el = document.getElementById(id); if (!el) return;
+    el.addEventListener('input', function(){
+      var a = el.selectionStart, b = el.selectionEnd, v = pmCapitalizar(el.value);
+      if (v !== el.value){ el.value = v; try{ el.setSelectionRange(a, b); }catch(e){} }
+    });
+  }
+  // ============================================================
+  // 2) SIN HISTORIAL del navegador en precios y nombres
+  //    (el navegador no vuelve a sugerir lo que se escribió antes)
+  // ============================================================
+  function sinHistorial(id){
+    var el = document.getElementById(id); if (!el) return;
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('name', 'pm_' + id + '_' + Math.random().toString(36).slice(2, 8));
+  }
+  function boot(){
+    enganchar('productTitle'); enganchar('productMarca');
+    ['productTitle','productMarca','productPrice','productPrecioAnterior','costoEnvio'].forEach(sinHistorial);
+  }
+  if (document.readyState !== 'loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
+
+// ============================================================
+// 3) MEDIDAS AUTOMÁTICAS según el nombre del producto
+//    Orden: tus publicaciones parecidas -> cajas estándar (calzado, perfumes...) ->
+//    publicaciones parecidas de otros vendedores -> categoría.
+//    Nunca pisa lo que el vendedor escribió a mano.
+// ============================================================
+(function(){
+  var sugerirViejo = window.sugerirMedidas;
+  function norm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function tiene(t, palabras){ return palabras.some(function(p){ return new RegExp('(^|[^a-z])' + p + '([^a-z]|$)').test(t); }); }
+  var NINOS = ['nino','nina','ninos','ninas','nene','nena','nenes','nenas','kids','infantil','infantiles','bebe','bebes','junior','escolar'];
+  // [palabras, alto, ancho, largo, peso(g), nombre de la caja]
+  var CAJAS = [
+    [['bota','botas','bucanera','bucaneras'],                                   13, 33, 45, 1600, 'caja de botas'],
+    [['borcego','borcegos','botita','botitas','botineta','botinetas','texana','texanas'], 14, 24, 35, 1300, 'caja de borcegos / botitas'],
+    [['zapatilla','zapatillas','sneaker','sneakers','botin','botines','running'], 13, 22, 33, 1000, 'caja estándar de zapatillas'],
+    [['zapato','zapatos','mocasin','mocasines','nautico','nauticos','stiletto','stilettos','guillermina','guillerminas','chatita','chatitas','zueco','zuecos','alpargata','alpargatas','panchas'], 12, 20, 31, 800, 'caja estándar de zapatos'],
+    [['sandalia','sandalias','fajas'],                                          10, 18, 30, 600, 'caja de sandalias'],
+    [['ojota','ojotas','chinela','chinelas','pantufla','pantuflas','crocs','slide','slides'], 9, 15, 30, 450, 'caja de ojotas / pantuflas'],
+    [['decant','decants','muestra','muestras'],                                  3,  4, 12, 60, 'decant / muestra'],
+    [['body splash','splash','body mist'],                                       7,  9, 24, 380, 'body splash'],
+    [['perfume','perfumes','fragancia','fragancias','eau de parfum','eau de toilette','edp','edt','colonia','extrait'], 0, 0, 0, 0, 'perfume'],
+    [['crema','cremas','serum','serums','labial','labiales','rubor','sombra','sombras','mascara','delineador','protector solar','shampoo','acondicionador'], 6, 8, 14, 250, 'cosmético chico'],
+    [['remera','remeras','camisa','camisas','musculosa','musculosas','top','tops','body','bodys','blusa','blusas'], 3, 25, 30, 300, 'remera / camisa doblada'],
+    [['vestido','vestidos','pollera','polleras','short','shorts','calza','calzas','bermuda','bermudas','malla','mallas','bikini'], 4, 25, 30, 400, 'prenda liviana'],
+    [['buzo','buzos','sweater','sweaters','hoodie','pantalon','pantalones','jean','jeans','jogger','joggers','sueter','cardigan'], 6, 30, 35, 700, 'prenda de abrigo / pantalón'],
+    [['campera','camperas','tapado','tapados','parka','puffer','chaleco','chalecos'], 8, 35, 40, 1100, 'campera'],
+    [['mochila','mochilas','bolso','bolsos','cartera','carteras','valija','valijas'], 15, 30, 40, 900, 'bolso / mochila'],
+    [['billetera','billeteras','cinturon','cinturones','gorra','gorras','riñonera','rinonera'], 4, 15, 22, 250, 'accesorio chico'],
+    [['reloj','relojes','anillo','anillos','aros','collar','collares','pulsera','pulseras','cadena','cadenas'], 6, 10, 12, 200, 'cajita de accesorio'],
+    [['celular','celulares','smartphone','iphone','samsung galaxy'],             6, 10, 18, 450, 'caja de celular'],
+    [['auricular','auriculares','parlante','parlantes'],                         8, 15, 20, 400, 'auriculares / parlante'],
+    [['ps5','ps4','playstation','xbox','nintendo switch','consola','consolas'], 15, 40, 45, 5000, 'caja de consola'],
+    [['joystick','joysticks','control','mando'],                                 7, 16, 20, 500, 'joystick'],
+    [['juego ps','videojuego','videojuegos','juego para'],                       2, 14, 18, 150, 'videojuego'],
+    [['libro','libros','novela','manga','comic'],                                4, 18, 25, 500, 'libro'],
+    [['taza','tazas','mate','mates','vaso','vasos'],                            12, 12, 15, 500, 'taza / mate'],
+    [['termo','termos','botella','botellas'],                                   10, 10, 35, 800, 'termo / botella'],
+    [['peluche','peluches','muñeco','muneco','muñeca','muneca'],                20, 25, 30, 500, 'juguete mediano']
+  ];
+  function perfumePorMl(t){
+    var m = t.match(/(\d{1,3})\s*ml/); var ml = m ? Number(m[1]) : 100;
+    if (ml <= 15)  return { alto:3,  ancho:4,  largo:12, peso:60,  nombre:'decant / perfume ' + ml + ' ml' };
+    if (ml <= 35)  return { alto:6,  ancho:8,  largo:11, peso:180, nombre:'caja de perfume ' + ml + ' ml' };
+    if (ml <= 60)  return { alto:7,  ancho:9,  largo:13, peso:280, nombre:'caja de perfume ' + ml + ' ml' };
+    if (ml <= 110) return { alto:8,  ancho:10, largo:15, peso:420, nombre:'caja de perfume ' + ml + ' ml' };
+    return           { alto:9,  ancho:12, largo:17, peso:600, nombre:'caja de perfume ' + ml + ' ml' };
+  }
+  window.pmCajaEstandar = function(titulo){
+    var t = norm(titulo); if (!t.trim()) return null;
+    for (var i = 0; i < CAJAS.length; i++){
+      var c = CAJAS[i];
+      if (!tiene(t, c[0])) continue;
+      if (c[5] === 'perfume') return perfumePorMl(t);
+      var r = { alto:c[1], ancho:c[2], largo:c[3], peso:c[4], nombre:c[5] };
+      if (i <= 5 && tiene(t, NINOS)) {   // calzado de chicos: caja más chica
+        r = { alto:10, ancho:16, largo:24, peso:500, nombre:'caja de calzado infantil' };
+      }
+      return r;
+    }
+    return null;
+  };
+
+  // Historial de medidas: todo lo publicado en Plaza Market (con prioridad a lo tuyo)
+  window.pmHistMedidas = [];
+  function cargarHistorial(){
+    try {
+      if (typeof supabaseClient === 'undefined') return setTimeout(cargarHistorial, 800);
+      supabaseClient.from('productos').select('id,titulo,categoria,usuario_id,alto_cm,ancho_cm,largo_cm,peso_gr')
+        .eq('tipo', 'producto').not('alto_cm', 'is', null).limit(1000)
+        .then(function(r){ if (r && r.data) window.pmHistMedidas = r.data; }, function(){});
+    } catch(e) {}
+  }
+  function palabras(s){ return norm(s).split(/[^a-z0-9]+/).filter(function(w){ return w.length >= 3; }); }
+  function parecido(a, b){
+    var A = palabras(a), B = palabras(b); if (!A.length || !B.length) return 0;
+    var comunes = A.filter(function(w){ return B.indexOf(w) >= 0; }).length;
+    return comunes / (new Set(A.concat(B))).size;
+  }
+  function esDeCategoria(p){
+    try { var d = medidasPorCategoria(p.categoria); return d.alto == p.alto_cm && d.ancho == p.ancho_cm && d.largo == p.largo_cm && d.peso == p.peso_gr; } catch(e){ return false; }
+  }
+  function buscarEnHistorial(titulo, soloMias){
+    var yo = (typeof usuarioActual !== 'undefined' && usuarioActual) ? usuarioActual.id : null;
+    var editando = (typeof editandoId !== 'undefined') ? editandoId : null;
+    var mejor = null, puntaje = 0;
+    (window.pmHistMedidas || []).forEach(function(p){
+      if (p.id === editando || !p.alto_cm || !p.peso_gr) return;
+      if (soloMias ? p.usuario_id !== yo : (p.usuario_id === yo || esDeCategoria(p))) return;
+      var s = parecido(titulo, p.titulo);
+      if (s > puntaje){ puntaje = s; mejor = p; }
+    });
+    if (!mejor || puntaje < 0.5) return null;
+    return { alto:mejor.alto_cm, ancho:mejor.ancho_cm, largo:mejor.largo_cm, peso:mejor.peso_gr,
+             nombre: (soloMias ? 'igual que tu publicación «' : 'como «') + (mejor.titulo || '').slice(0, 40) + '»' };
+  }
+
+  // La que se usa al escribir el título, al elegir la categoría y al publicar
+  window.medidasSugeridas = function(titulo, categoria){
+    var r = buscarEnHistorial(titulo, true) || pmCajaEstandar(titulo) || buscarEnHistorial(titulo, false);
+    if (r) return r;
+    var c = medidasPorCategoria(categoria);
+    return { alto:c.alto, ancho:c.ancho, largo:c.largo, peso:c.peso, nombre: categoria ? 'medidas aproximadas de la categoría' : 'medidas aproximadas' };
+  };
+
+  window.sugerirMedidas = function(){
+    if (typeof tipoActual !== 'undefined' && tipoActual !== 'producto') return;
+    var titulo = (document.getElementById('productTitle') || {}).value || '';
+    var cat = (document.getElementById('productCategory') || {}).value || '';
+    if (!titulo.trim() && !cat) return;
+    var md = medidasSugeridas(titulo, cat), puso = false;
+    [['paqueteAlto','alto'],['paqueteAncho','ancho'],['paqueteLargo','largo'],['paquetePeso','peso']].forEach(function(x){
+      var el = document.getElementById(x[0]); if (!el) return;
+      if (el.value === '' || el.dataset.auto === '1'){ el.value = String(md[x[1]]); el.dataset.auto = '1'; puso = true; }
+    });
+    var h = document.getElementById('medidasOrigen');
+    if (h) { h.style.display = puso ? '' : 'none'; if (puso) h.innerHTML = '📏 Medidas completadas solas: <strong>' + String(md.nombre).replace(/</g,'&lt;') + '</strong>. Si tu paquete es distinto, cambialas.'; }
+  };
+
+  function boot(){
+    cargarHistorial();
+    var sel = document.getElementById('productCategory');
+    if (sel) { if (sugerirViejo) sel.removeEventListener('change', sugerirViejo); sel.addEventListener('change', function(){ window.sugerirMedidas(); }); }
+    var t = document.getElementById('productTitle'), tm = null;
+    if (t) t.addEventListener('input', function(){ clearTimeout(tm); tm = setTimeout(sugerirMedidas, 600); });
+  }
+  if (document.readyState !== 'loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
 </script>
 </body>
 </html>
