@@ -189,8 +189,12 @@
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const CATEGORY_LABELS = {
+            consolas: 'Consolas y Videojuegos', muebles: 'Muebles y Jardín', bazar: 'Bazar y Cocina',
+            bebes: 'Bebés', salud: 'Salud y Cuidado Personal', deportes: 'Deportes y Fitness', mascotas: 'Mascotas',
+            herramientas: 'Herramientas', instrumentos: 'Instrumentos Musicales', libreria: 'Arte, Librería y Mercería',
+            antiguedades: 'Antigüedades y Coleccionables', cotillon: 'Souvenirs y Cotillón', joyeria: 'Relojes, Joyería y Accesorios',
             cosmetica: 'Cosmética', perfumeria: 'Perfumería', indumentaria: 'Indumentaria',
-            construccion: 'Construcción', pintura: 'Pintura', reformas: 'Reformas y refacciones',
+            construccion: 'Construcción', pintura: 'Pintura', calzado: 'Calzado', reformas: 'Reformas y refacciones',
             servicios: 'Servicios Profesionales', estetica: 'Estética y Belleza', masajes: 'Masajes y Bienestar'
         };
         const ESTADOS = {
@@ -585,8 +589,13 @@
     var ref=(html.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)||[])[1];
     var keys=Object.keys(localStorage); var ak=keys.find(function(k){return /sb-.*-auth-token/.test(k);});
     var at=null; try{var s=JSON.parse(localStorage.getItem(ak)); at=s.access_token||(s.currentSession&&s.currentSession.access_token);}catch(e){}
-    var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc&limit=20000',{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
-    var rows=await rr.json(); if(!Array.isArray(rows)) rows=[];
+    // Supabase entrega como máximo 1000 filas por pedido: las traemos de a tandas hasta tenerlas todas
+    var rows=[];
+    for(var off=0; off<200000; off+=1000){
+      var rr=await fetch('https://'+ref+'.supabase.co/rest/v1/pm_visitas?select=origen,creado_en&path=neq./__test__&order=creado_en.desc,id.desc&limit=1000&offset='+off,{headers:{apikey:anon,Authorization:'Bearer '+(at||anon)}});
+      var lote=await rr.json(); if(!Array.isArray(lote)) break;
+      rows=rows.concat(lote); if(lote.length<1000) break;
+    }
     rows=rows.filter(function(x){return x.origen!=='Interno';});
     function fh(iso){var d=new Date(new Date(iso).getTime()-3*3600*1000);var s=d.toISOString();return s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11,16)+' hs';}
     function lab(o){o=o||'';
