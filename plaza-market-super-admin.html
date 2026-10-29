@@ -52,6 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
+<meta name="pm-version" content="202610282358">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -230,6 +231,33 @@
             '2901': 'Ushuaia (T. del Fuego)', '2920': 'Viedma (Río Negro)', '2944': 'Bariloche',
             '2954': 'Santa Rosa (La Pampa)', '2966': 'Río Gallegos (Santa Cruz)', '2984': 'Río Negro'
         };
+        // Todos los códigos de área del país (ENACOM, vía prefijos-telefonicos-argentina) → provincia
+        const PROV_CODIGOS = {
+            'Buenos Aires (provincia)': '220 2202 221 2221 2223 2224 2225 2226 2227 2229 223 2241 2242 2243 2244 2245 2246 2252 2254 2255 2257 2261 2262 2264 2265 2266 2267 2268 2271 2272 2273 2274 2281 2283 2284 2285 2286 2291 2292 2296 2297 230 2314 2316 2317 2320 2323 2324 2325 2326 2337 2342 2343 2344 2345 2346 2352 2353 2354 2355 2356 2357 2358 236 237 2392 2393 2394 2395 2396 2473 2474 2475 2477 2478 249 291 2921 2922 2923 2924 2925 2926 2927 2928 2929 2932 2933 2935 2936 2982 2983 3327 3329 336 3388 3407 348 3487 3489',
+            'Catamarca': '383 3832 3835 3837 3838',
+            'Chaco': '362 364 3721 3725 3731 3734 3735',
+            'Chubut': '280 2903 2945 297',
+            'Corrientes': '3756 3772 3773 3774 3775 3777 3781 3782 3786 379',
+            'Córdoba': '2336 3385 3387 3463 3467 3468 3472 351 3521 3522 3524 3525 353 3532 3533 3537 3541 3542 3543 3544 3546 3547 3548 3549 3562 3563 3564 3571 3572 3573 3574 3575 3576 358 3582 3583 3584 3585',
+            'Entre Ríos': '343 3435 3436 3437 3438 3442 3444 3445 3446 3447 345 3454 3455 3456 3458',
+            'Formosa': '370 3711 3715 3716 3718',
+            'Jujuy': '388 3885 3886 3887 3888',
+            'La Pampa': '2302 2331 2333 2334 2335 2338 2952 2953 2954',
+            'La Rioja': '380 3821 3825 3826 3827',
+            'Mendoza': '260 261 2622 2624 2625 2626 263',
+            'Misiones': '3741 3743 3751 3754 3755 3757 3758 376',
+            'Neuquén': '2942 2948 2972 299',
+            'Río Negro': '2920 2931 2934 294 2940 2946 298',
+            'Salta': '3868 387 3873 3876 3877 3878',
+            'San Juan': '264 2646 2647 2648',
+            'San Luis': '2651 2655 2656 2657 2658 266',
+            'Santa Cruz': '2902 2962 2963 2966',
+            'Santa Fe': '3382 3400 3401 3402 3404 3405 3406 3408 3409 341 342 3460 3462 3464 3465 3466 3469 3471 3476 3482 3483 3491 3492 3493 3496 3497 3498',
+            'Santiago del Estero': '3841 3843 3844 3845 3846 385 3854 3855 3856 3857 3858 3861',
+            'Tierra del Fuego': '2901 2964',
+            'Tucumán': '381 3862 3863 3865 3867 3869 3891 3892 3894'
+        };
+        const PROV = {}; Object.keys(PROV_CODIGOS).forEach(p => PROV_CODIGOS[p].split(' ').forEach(c => { PROV[c] = p; }));
         function soloNumeroNacional(valor) {
             let d = String(valor || '').replace(/\D/g, '');
             if (d.startsWith('54')) d = d.slice(2);
@@ -241,12 +269,16 @@
         function zonaDeTel(tel) {
             const d = soloNumeroNacional(tel);
             if (!d || d.length < 6) return { area: '—', zona: 'Sin dato' };
-            for (const len of [4, 3, 2]) {
+            if (d.length < 10) return { area: '—', zona: 'Sin código de área' };
+            for (const len of [4, 3, 2]) {          // primero las ciudades conocidas
                 const pref = d.slice(0, len);
                 if (AREAS[pref]) return { area: pref, zona: AREAS[pref] };
             }
-            const pref = d.slice(0, 3);
-            return { area: pref, zona: 'Otra zona' };
+            for (const len of [4, 3]) {             // si no, la provincia
+                const pref = d.slice(0, len);
+                if (PROV[pref]) return { area: pref, zona: PROV[pref] };
+            }
+            return { area: d.slice(0, 3), zona: 'Otra zona' };
         }
 
         async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
@@ -677,5 +709,6 @@
   }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
 </script>
+<script src="/pm-update.js" defer></script>
 </body>
 </html>

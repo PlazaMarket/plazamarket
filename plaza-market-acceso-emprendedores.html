@@ -70,6 +70,7 @@
         .link-btn:hover { text-decoration: underline; }
     </style>
 <!-- Cloudflare Web Analytics --><script>(function(){try{var q=location.search||"";if(q.indexOf("nocount=1")>-1){try{localStorage.setItem("pm_nocount","1");}catch(e){}}if(localStorage.getItem("pm_nocount")==="1")return;var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{\"token\": \"75e78540eee94bc38f4e577e0dff69b5\"}");document.head.appendChild(s);try{fetch("https://djpjgublkjtmprkcypma.functions.supabase.co/cc-log-visita",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ref:document.referrer,ua:navigator.userAgent,path:location.pathname}),keepalive:true});}catch(e){}}catch(e){}})();</script><!-- End Cloudflare Web Analytics -->
+<meta name="pm-version" content="202610282358">
 </head>
 <body>
     <main class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -118,7 +119,7 @@
                             </div>
                             <div>
                                 <label>Teléfono / WhatsApp</label>
-                                <input type="tel" id="regTelefono" inputmode="numeric" placeholder="Escribí tu celular (solo números)" class="mt-2">
+                                <input type="tel" id="regTelefono" inputmode="numeric" placeholder="Con código de área, sin 0 ni 15. Ej: 1123456789" class="mt-2">
                             </div>
                             <div>
                                 <label>Email</label>
@@ -252,7 +253,11 @@
         // ============================== REGISTRO ==============================
         async function attemptRegister() {
             const nombre = document.getElementById('regNombre').value.trim();
-            const telefono = document.getElementById('regTelefono').value.replace(/\D/g, '');
+            // Celular argentino: 10 dígitos (código de área + número), sin 0, sin 15 y sin +54 9
+            let telefono = document.getElementById('regTelefono').value.replace(/\D/g, '');
+            if (telefono.startsWith('54')) telefono = telefono.slice(2);
+            if (telefono.startsWith('9')) telefono = telefono.slice(1);
+            while (telefono.startsWith('0')) telefono = telefono.slice(1);
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value;
             const terms = document.getElementById('regTerms').checked;
@@ -260,7 +265,7 @@
             msg.textContent = '';
 
             if (!nombre) { msg.textContent = 'Poné tu nombre y apellido.'; return; }
-            if (telefono.length < 8) { msg.textContent = 'Poné un teléfono válido (solo números).'; return; }
+            if (telefono.length !== 10) { msg.textContent = 'Revisá el celular: tiene que tener 10 números, con el código de área y sin el 0 ni el 15. Ej: 11 2345 6789 o 351 234 5678.'; return; }
             if (!email) { msg.textContent = 'Poné tu email.'; return; }
             if (password.length < 6) { msg.textContent = 'La contraseña necesita al menos 6 caracteres.'; return; }
             if (!terms) { msg.textContent = 'Tenés que aceptar los Términos y Condiciones.'; return; }
@@ -386,5 +391,6 @@
             if (new URLSearchParams(location.search).get('registro') === '1') switchTab('register');
         })();
     </script>
+<script src="/pm-update.js" defer></script>
 </body>
 </html>

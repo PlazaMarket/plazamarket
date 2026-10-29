@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descargá la app · Plaza Market</title>
+<meta name="description" content="Descargá gratis la app de Plaza Market, el marketplace argentino para emprendedores.">
+<meta name="theme-color" content="#0B1120">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<!-- Cloudflare Web Analytics --><script>(function(){try{var q=location.search||"";if(q.indexOf("nocount=1")>-1){try{localStorage.setItem("pm_nocount","1");}catch(e){}}if(localStorage.getItem("pm_nocount")==="1")return;var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{\"token\": \"75e78540eee94bc38f4e577e0dff69b5\"}");document.head.appendChild(s);try{fetch("https://djpjgublkjtmprkcypma.functions.supabase.co/cc-log-visita",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ref:document.referrer,ua:navigator.userAgent,path:location.pathname}),keepalive:true});}catch(e){}}catch(e){}})();</script><!-- End Cloudflare Web Analytics -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; color: #e2e8f0;
+         background: radial-gradient(circle at 20% 10%, rgba(37,99,235,.35), transparent 55%),
+                     radial-gradient(circle at 85% 90%, rgba(124,58,237,.35), transparent 55%), #0B1120;
+         display: flex; align-items: center; justify-content: center; padding: 28px 18px; }
+  .card { width: 100%; max-width: 420px; text-align: center; background: rgba(15,23,42,.72);
+          border: 1px solid rgba(96,165,250,.25); border-radius: 26px; padding: 34px 24px 28px;
+          box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .logo { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 10px 30px rgba(37,99,235,.45); }
+  h1 { font-size: 1.65rem; font-weight: 900; color: #fff; margin-top: 18px; line-height: 1.2; }
+  h1 span { color: #FFD60A; }
+  .sub { color: rgba(226,232,240,.75); margin-top: 10px; font-size: .98rem; line-height: 1.5; }
+  .btn { display: block; width: 100%; margin-top: 22px; padding: 17px 18px; border-radius: 16px; font-weight: 800;
+         font-size: 1.08rem; text-decoration: none; color: #fff; background: linear-gradient(135deg,#059669,#10B981);
+         box-shadow: 0 8px 24px rgba(16,185,129,.4); }
+  .btn2 { display: block; width: 100%; margin-top: 12px; padding: 14px 18px; border-radius: 14px; font-weight: 700;
+          font-size: .98rem; text-decoration: none; color: #dbeafe; background: rgba(96,165,250,.14);
+          border: 1px solid rgba(96,165,250,.45); }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+  .chip { font-size: .8rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.08); color: #cbd5e1; }
+  .nota { margin-top: 18px; font-size: .82rem; color: rgba(226,232,240,.55); line-height: 1.5; }
+  .oculto { display: none; }
+</style>
+<meta name="pm-version" content="202610282358">
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="/icon-192.png" alt="Plaza Market">
+    <h1>Descargá la app de <span>Plaza Market</span></h1>
+    <p class="sub">El marketplace argentino para emprendedores, ahora en tu celu.</p>
+
+    <!-- Android: abre directo la app de Google Play -->
+    <div id="bloqueAndroid" class="oculto">
+      <a id="btnPlay" class="btn" href="#">📲 Descargar gratis en Google Play</a>
+      <a class="btn2" href="https://plazamarket.com.ar/">Seguir en la página</a>
+      <p class="nota">Si el botón no abre Google Play, tocá los tres puntitos de arriba a la derecha y elegí <strong>"Abrir en el navegador"</strong>.</p>
+    </div>
+
+    <!-- iPhone -->
+    <div id="bloqueIOS" class="oculto">
+      <p class="sub" style="margin-top:20px;">Por ahora la app es para <strong>Android</strong>. Desde iPhone usá la página: funciona igual y es gratis.</p>
+      <a class="btn" href="https://plazamarket.com.ar/">Entrar a Plaza Market</a>
+      <p class="nota">Tip: en Safari tocá <strong>Compartir</strong> y <strong>"Agregar a inicio"</strong> para tenerla como una app.</p>
+    </div>
+
+    <!-- Computadora -->
+    <div id="bloquePC" class="oculto">
+      <a class="btn" href="https://play.google.com/store/apps/details?id=ar.com.plazamarket.twa" target="_blank" rel="noopener">Ver la app en Google Play</a>
+      <a class="btn2" href="https://plazamarket.com.ar/">Entrar a la página</a>
+      <p class="nota">Desde Google Play en la compu podés mandar la app directo a tu celular Android.</p>
+    </div>
+
+    <div class="chips">
+      <span class="chip">Gratis</span><span class="chip">Sin publicidades</span><span class="chip">Pesa menos de 1 MB</span>
+    </div>
+  </main>
+<script>
+  (function () {
+    var ID = 'ar.com.plazamarket.twa';
+    var WEB = 'https://play.google.com/store/apps/details?id=' + ID;
+    // intent: abre la app de Google Play aunque el link se toque dentro de Instagram o Facebook
+    var INTENT = 'intent://details?id=' + ID + '#Intent;scheme=market;package=com.android.vending;S.browser_fallback_url=' + encodeURIComponent(WEB) + ';end';
+    var ua = navigator.userAgent || '';
+    var android = /android/i.test(ua);
+    var ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+    if (android) {
+      document.getElementById('bloqueAndroid').classList.remove('oculto');
+      document.getElementById('btnPlay').href = INTENT;
+    } else if (ios) {
+      document.getElementById('bloqueIOS').classList.remove('oculto');
+    } else {
+      document.getElementById('bloquePC').classList.remove('oculto');
+    }
+  })();
+</script>
+<script src="/pm-update.js" defer></script>
+</body>
+</html>
