@@ -70,7 +70,7 @@
         .link-btn:hover { text-decoration: underline; }
     </style>
 <!-- Cloudflare Web Analytics --><script>(function(){try{var q=location.search||"";if(q.indexOf("nocount=1")>-1){try{localStorage.setItem("pm_nocount","1");}catch(e){}}if(localStorage.getItem("pm_nocount")==="1")return;var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{\"token\": \"75e78540eee94bc38f4e577e0dff69b5\"}");document.head.appendChild(s);try{fetch("https://djpjgublkjtmprkcypma.functions.supabase.co/cc-log-visita",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ref:document.referrer,ua:navigator.userAgent,path:location.pathname}),keepalive:true});}catch(e){}}catch(e){}})();</script><!-- End Cloudflare Web Analytics -->
-<meta name="pm-version" content="202610282358">
+<meta name="pm-version" content="202610312349">
 </head>
 <body>
     <main class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -275,7 +275,7 @@
 
             const { error } = await db.auth.signUp({
                 email, password,
-                options: { data: { nombre, telefono } }
+                options: { data: { nombre, telefono, canal: (window.pmCanal ? window.pmCanal() : 'web') } }
             });
 
             btn.disabled = false; btn.innerHTML = txt;
@@ -319,7 +319,8 @@
 
             // Guardamos el perfil ahora que la persona está adentro (forma segura, sin gatillo)
             try {
-                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente, email: emailPendiente });
+                // canal_registro: si se registró desde la app de Play Store o desde la página web
+                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente, email: emailPendiente, canal_registro: (window.pmCanal ? window.pmCanal() : 'web') });
             } catch (e) { console.error('No se pudo guardar el perfil:', e); }
 
             entrar(uid);

@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202610282358">
+<meta name="pm-version" content="202610312349">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -153,11 +153,12 @@
             </section>
 
             <section class="glass-card p-5 sm:p-6">
-                <h2 class="text-lg font-bold text-white mb-4">👥 Todos los usuarios</h2>
+                <h2 class="text-lg font-bold text-white mb-2">👥 Todos los usuarios</h2>
+                <div id="resumenCanal" style="font-size:0.85rem;color:rgba(226,232,240,0.75);margin-bottom:0.9rem;line-height:1.6;"></div>
                 <div class="tabla-scroll">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Zona</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Rol</th><th></th></tr></thead>
-                        <tbody id="tablaUsuarios"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Zona</th><th>CP origen</th><th>Mercado Pago</th><th>Registrado</th><th>Llegó por</th><th>Rol</th><th></th></tr></thead>
+                        <tbody id="tablaUsuarios"><tr><td colspan="10" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -457,7 +458,16 @@
 
         function renderUsuarios(us) {
             const tb = document.getElementById('tablaUsuarios');
-            if (!us.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
+            // De dónde llegó cada usuario: app de Play Store o página web (se registra desde el 01/11/2026)
+            const cApp = us.filter(u => u.canal_registro === 'app').length;
+            const cWeb = us.filter(u => u.canal_registro === 'web' || u.canal_registro === 'web-instalada').length;
+            const cSin = us.length - cApp - cWeb;
+            const cUsan = us.filter(u => u.usa_app_desde).length;
+            const rc = document.getElementById('resumenCanal');
+            if (rc) rc.innerHTML = 'Se registraron desde la <b style="color:#86efac;">app de Play Store: ' + cApp + '</b> · desde la <b style="color:#93c5fd;">página web: ' + cWeb + '</b>' +
+                (cSin ? ' · <span style="color:rgba(226,232,240,0.45);">antes de que lo empezáramos a anotar: ' + cSin + '</span>' : '') +
+                '<br>📲 Usuarios que ya abrieron la app con su cuenta: <b style="color:#86efac;">' + cUsan + '</b>';
+            if (!us.length) { tb.innerHTML = '<tr><td colspan="10" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             tb.innerHTML = us.map(u => {
                 const esAdmin = adminSet.has(u.id);
                 const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
@@ -478,6 +488,8 @@
                     '<td>' + escaparHtml(u.cp_origen || '—') + '</td>' +
                     '<td>' + mp + '</td>' +
                     '<td style="white-space:nowrap;">' + fechaCorta(u.creado_en) + '</td>' +
+                    '<td style="white-space:nowrap;font-size:0.78rem;">' + (u.canal_registro === 'app' ? '<span class="si">📲 App</span>' : u.canal_registro === 'web' ? '🌐 Web' : u.canal_registro === 'web-instalada' ? '📌 Web instalada' : '<span style="color:rgba(226,232,240,0.4);">—</span>') +
+                        (u.usa_app_desde ? '<br><span style="color:#86efac;font-size:0.7rem;">Usa la app</span>' : '') + '</td>' +
                     '<td>' + rol + '</td>' +
                     '<td>' + accion + '</td>' +
                 '</tr>';

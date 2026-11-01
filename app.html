@@ -34,7 +34,7 @@
   .nota { margin-top: 18px; font-size: .82rem; color: rgba(226,232,240,.55); line-height: 1.5; }
   .oculto { display: none; }
 </style>
-<meta name="pm-version" content="202610311958">
+<meta name="pm-version" content="202610312349">
 </head>
 <body>
   <main class="card">
@@ -58,7 +58,7 @@
 
     <!-- Computadora -->
     <div id="bloquePC" class="oculto">
-      <a class="btn" href="https://play.google.com/store/apps/details?id=ar.com.plazamarket.twa" target="_blank" rel="noopener">Ver la app en Play Store</a>
+      <a id="btnPlayPC" class="btn" href="https://play.google.com/store/apps/details?id=ar.com.plazamarket.twa" target="_blank" rel="noopener">Ver la app en Play Store</a>
       <a class="btn2" href="https://plazamarket.com.ar/">Entrar a la página</a>
       <p class="nota">Desde Play Store en la compu podés mandar la app directo a tu celular Android.</p>
     </div>
@@ -71,6 +71,13 @@
   (function () {
     var ID = 'ar.com.plazamarket.twa';
     var WEB = 'https://play.google.com/store/apps/details?id=' + ID;
+    // Etiqueta para Play Console (Adquisición de usuarios): de qué link vino cada descarga.
+    // /app = bio de Instagram · /app?o=historia · /app?o=anuncio
+    var o = '';
+    try { o = (new URLSearchParams(location.search).get('o') || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 30); } catch (e) {}
+    var LINK = WEB + '&referrer=' + encodeURIComponent('utm_source=instagram&utm_medium=' + (o || 'bio') + '&utm_campaign=pagina_app');
+    document.getElementById('btnPlay').href = LINK;
+    document.getElementById('btnPlayPC').href = LINK;
     var ua = navigator.userAgent || '';
     var android = /android/i.test(ua);
     var ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);

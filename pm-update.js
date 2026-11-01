@@ -7,6 +7,41 @@
 
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js'); } catch (e) {}
 
+  // ---- Desde donde usa Plaza Market esta persona: la app de Play Store o la pagina web ----
+  // La app de Play Store abre la pagina con referrer "android-app://..." y en modo pantalla completa.
+  var SB = 'https://djpjgublkjtmprkcypma.supabase.co';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+  function canal() {
+    try {
+      var r = document.referrer || '';
+      if (r.indexOf('android-app://') === 0) { sessionStorage.setItem('pm_twa', '1'); localStorage.setItem('pm_tiene_app', '1'); }
+      if (sessionStorage.getItem('pm_twa') === '1') return 'app';
+      var sa = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+      if (sa && /android/i.test(navigator.userAgent)) { localStorage.setItem('pm_tiene_app', '1'); return 'app'; }
+      if (sa) return 'web-instalada';
+    } catch (e) {}
+    return 'web';
+  }
+  window.pmCanal = canal;
+  function marcarUsoApp() {          // una vez por dia: anota en el perfil que esta persona usa la app
+    try {
+      var hoy = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem('pm_app_uso') === hoy) return;
+      var k = Object.keys(localStorage).filter(function (x) { return /^sb-.*-auth-token$/.test(x); })[0];
+      if (!k) return;
+      var s = JSON.parse(localStorage.getItem(k) || '{}');
+      var tok = s.access_token, uid = s.user && s.user.id;
+      if (!tok || !uid || (s.expires_at && s.expires_at * 1000 < Date.now())) return;
+      var base = SB + '/rest/v1/pm_perfiles?id=eq.' + uid;
+      var h = { apikey: ANON, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+      var ahora = new Date().toISOString();
+      fetch(base, { method: 'PATCH', headers: h, body: JSON.stringify({ ultimo_uso_app: ahora }) })
+        .then(function (r) { if (r.ok) localStorage.setItem('pm_app_uso', hoy); }).catch(function () {});
+      fetch(base + '&usa_app_desde=is.null', { method: 'PATCH', headers: h, body: JSON.stringify({ usa_app_desde: ahora }) }).catch(function () {});
+    } catch (e) {}
+  }
+  if (canal() === 'app') setTimeout(marcarUsoApp, 4000);
+
   var meta = document.querySelector('meta[name="pm-version"]');
   var mia = meta ? meta.content : '';
   if (!mia) return;
