@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202610312349">
+<meta name="pm-version" content="202611011625">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -720,6 +720,12 @@
     try{ setTimeout(function(){ location.reload(); }, (artMid+86400000)-Date.now()+5000); }catch(e){}
   }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
 })();
+</script>
+<script>
+// Si el panel queda abierto, se actualiza solo: al volver a mirarlo (pasados 5 minutos) o cada 15 minutos si no estás escribiendo
+(function(){var t=Date.now();
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();});
+setInterval(function(){var a=document.activeElement;if(document.visibilityState==='visible'&&Date.now()-t>15*60*1000&&!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')))location.reload();},60000);})();
 </script>
 <script src="/pm-update.js" defer></script>
 </body>
