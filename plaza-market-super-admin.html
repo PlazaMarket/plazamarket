@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611011625">
+<meta name="pm-version" content="202611012344">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -719,6 +719,43 @@
     // Si el panel queda abierto al pasar la medianoche (Argentina), se recarga solo para arrancar de 0
     try{ setTimeout(function(){ location.reload(); }, (artMid+86400000)-Date.now()+5000); }catch(e){}
   }catch(e){ var el=document.getElementById('pmTree'); if(el) el.textContent='No se pudo cargar: '+(e&&e.message||e); }
+})();
+</script>
+<script>
+// Secciones desplegables: cerradas de entrada para que el panel quede prolijo. Tocá el título para abrir o cerrar.
+// Se acuerda de cuáles dejaste abiertas (aunque el panel se recargue solo).
+(function(){
+  function clave(t){ return 'pm_pleg_' + t.replace(/[^a-z0-9]/gi,'').slice(0,40); }
+  function contar(box){
+    var filas = box.querySelectorAll('tbody tr');
+    var n = 0; filas.forEach(function(tr){ if(!tr.querySelector('.empty')) n++; });
+    if (filas.length) return n;
+    return null;
+  }
+  function armar(box){
+    var h = box.querySelector('h2'); if(!h || h.dataset.pleg) return;
+    h.dataset.pleg = '1';
+    var cont = document.createElement('div'); cont.className = 'pmPlegable';
+    var nodos = []; var n = h.nextSibling;
+    while(n){ var sig = n.nextSibling; if(!(n.id === 'resumenCanal')) nodos.push(n); n = sig; }
+    nodos.forEach(function(x){ cont.appendChild(x); });
+    box.appendChild(cont);
+    var flecha = document.createElement('span'); flecha.style.cssText = 'margin-left:auto;font-size:0.95rem;opacity:.7;padding-left:12px;';
+    var badge = document.createElement('span'); badge.style.cssText = 'margin-left:10px;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(96,165,250,.18);color:#bfdbfe;display:none;';
+    h.style.cursor = 'pointer'; h.style.display = 'flex'; h.style.alignItems = 'center'; h.style.userSelect = 'none'; h.style.marginBottom = '0';
+    h.appendChild(badge); h.appendChild(flecha);
+    var k = clave(h.textContent);
+    var abierto = false; try { abierto = localStorage.getItem(k) === '1'; } catch(e){}
+    function pintar(){ cont.style.display = abierto ? '' : 'none'; flecha.textContent = abierto ? '▲ cerrar' : '▼ abrir'; cont.style.marginTop = abierto ? '14px' : '0'; }
+    h.addEventListener('click', function(ev){ if (ev.target.closest('button,a,input,select')) return; abierto = !abierto; try{ localStorage.setItem(k, abierto ? '1' : '0'); }catch(e){} pintar(); });
+    pintar();
+    setInterval(function(){ var c = contar(cont); if (c !== null){ badge.textContent = c; badge.style.display = ''; } }, 1500);
+  }
+  function todo(){
+    document.querySelectorAll('section.glass-card').forEach(function(s){ if (s.querySelector('.tabla-scroll')) armar(s); });
+    ['pmSinPublicarBox','pmOrigenesBox'].forEach(function(id){ var b = document.getElementById(id); if (b) armar(b); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', todo); else todo();
 })();
 </script>
 <script>
