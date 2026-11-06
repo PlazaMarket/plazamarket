@@ -45,8 +45,19 @@
   .confianza { margin-top: 30px; background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.35); border-radius: 18px; padding: 16px; }
   .confianza div { display: flex; gap: 10px; align-items: center; font-size: .92rem; margin: 6px 0; }
   .app { display: block; text-align: center; margin-top: 14px; color: #93c5fd; font-weight: 700; text-decoration: none; font-size: .92rem; }
+  .fund { margin-top: 22px; border-radius: 20px; padding: 18px 18px 16px; position: relative; overflow: hidden;
+          background: linear-gradient(135deg, rgba(255,214,10,.16), rgba(249,115,22,.12)); border: 1.5px solid rgba(255,214,10,.55); }
+  .fund .tag { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+               color: #0B1120; background: #FFD60A; padding: 4px 10px; border-radius: 999px; }
+  .fund b.t { display: block; color: #fff; font-size: 1.35rem; font-weight: 900; margin-top: 10px; }
+  .fund p { font-size: .95rem; color: rgba(226,232,240,.88); margin-top: 6px; line-height: 1.45; }
+  .fund p b { color: #FFD60A; }
+  .fund .cont { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-weight: 800; color: #fff; font-size: .95rem; }
+  .fund .barra { flex: 1; height: 8px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .fund .barra i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#FFD60A,#F97316); border-radius: 99px; transition: width .8s; }
+  .fund small { display: block; margin-top: 10px; font-size: .72rem; color: rgba(226,232,240,.5); line-height: 1.4; }
 </style>
-<meta name="pm-version" content="202611030211">
+<meta name="pm-version" content="202611062130">
 </head>
 <body>
   <main class="wrap">
@@ -54,6 +65,14 @@
 
     <h1>Vendé lo que hacés, <span>en todo el país</span></h1>
     <p class="sub">Publicá gratis tus productos o servicios. Pagás solo cuando vendés.</p>
+
+    <div class="fund" id="fund">
+      <span class="tag">🚀 Oferta de lanzamiento</span>
+      <b class="t">Vendedores fundadores</b>
+      <p>Los primeros 50 que publiquen <b>no pagan comisión en sus primeras 10 ventas</b>.</p>
+      <div class="cont"><span>Quedan <span id="fundN">50</span> de 50 lugares</span><span class="barra"><i id="fundB"></i></span></div>
+      <small>Entrás automáticamente al publicar tu primer producto. Cuenta como venta cada compra pagada. Después de esas 10 ventas, la comisión es la de siempre: 12% sobre el producto, nunca sobre el envío.</small>
+    </div>
 
     <a class="cta" href="plaza-market-acceso-emprendedores.html?registro=1">Crear mi cuenta gratis</a>
     <p class="nota">Lleva 2 minutos · Desde el celu o la compu</p>
@@ -79,6 +98,20 @@
     <a class="cta" href="plaza-market-acceso-emprendedores.html?registro=1">Quiero empezar a vender</a>
     <a class="app" href="/app">¿Tenés Android? También podés bajar la app de Play Store</a>
   </main>
+<script>
+// Lugares que quedan de la oferta "Vendedores fundadores"
+(function(){
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
+  fetch('https://djpjgublkjtmprkcypma.supabase.co/rest/v1/rpc/pm_fundadores_libres', { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json' }, body: '{}' })
+    .then(function(r){ return r.json(); })
+    .then(function(n){
+      n = Number(n); if (isNaN(n)) return;
+      if (n <= 0) { document.getElementById('fund').style.display = 'none'; return; }
+      document.getElementById('fundN').textContent = n;
+      document.getElementById('fundB').style.width = Math.max(4, (50 - n) / 50 * 100) + '%';
+    }).catch(function(){});
+})();
+</script>
 <script src="/pm-update.js" defer></script>
 </body>
 </html>
