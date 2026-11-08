@@ -57,7 +57,7 @@
   .fund .barra i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#FFD60A,#F97316); border-radius: 99px; transition: width .8s; }
   .fund small { display: block; margin-top: 10px; font-size: .72rem; color: rgba(226,232,240,.5); line-height: 1.4; }
 </style>
-<meta name="pm-version" content="202611062130">
+<meta name="pm-version" content="202611081200">
 </head>
 <body>
   <main class="wrap">
@@ -69,9 +69,10 @@
     <div class="fund" id="fund">
       <span class="tag">🚀 Oferta de lanzamiento</span>
       <b class="t">Vendedores fundadores</b>
-      <p>Los primeros 50 que publiquen <b>no pagan comisión en sus primeras 10 ventas</b>.</p>
-      <div class="cont"><span>Quedan <span id="fundN">50</span> de 50 lugares</span><span class="barra"><i id="fundB"></i></span></div>
-      <small>Entrás automáticamente al publicar tu primer producto. Cuenta como venta cada compra pagada. Después de esas 10 ventas, la comisión es la de siempre: 12% sobre el producto, nunca sobre el envío.</small>
+      <p>Los primeros 50 que publiquen compiten por <b>25 ventas sin comisión</b>. Las primeras 25 ventas que hagan entre todos los fundadores no pagan comisión. <b>Válido hasta el 31 de diciembre.</b></p>
+      <div class="cont"><span>Quedan <span id="fundV">25</span> de 25 ventas sin comisión</span><span class="barra"><i id="fundBV"></i></span></div>
+      <div class="cont" style="margin-top:8px;font-size:.85rem;font-weight:700;color:rgba(226,232,240,.8)"><span>Lugares de fundador: quedan <span id="fundN">50</span> de 50</span><span class="barra"><i id="fundB"></i></span></div>
+      <small>Entrás automáticamente al publicar tu primer producto. Las 25 ventas sin comisión son un cupo compartido entre todos los fundadores, por orden de llegada: cuenta cada compra pagada. Cuando se terminan las 25 o llega el 31/12/2026, la comisión es la de siempre: 12% sobre el producto, nunca sobre el envío.</small>
     </div>
 
     <a class="cta" href="plaza-market-acceso-emprendedores.html?registro=1">Crear mi cuenta gratis</a>
@@ -102,14 +103,15 @@
 // Lugares que quedan de la oferta "Vendedores fundadores"
 (function(){
   var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
-  fetch('https://djpjgublkjtmprkcypma.supabase.co/rest/v1/rpc/pm_fundadores_libres', { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json' }, body: '{}' })
-    .then(function(r){ return r.json(); })
-    .then(function(n){
-      n = Number(n); if (isNaN(n)) return;
-      if (n <= 0) { document.getElementById('fund').style.display = 'none'; return; }
-      document.getElementById('fundN').textContent = n;
-      document.getElementById('fundB').style.width = Math.max(4, (50 - n) / 50 * 100) + '%';
-    }).catch(function(){});
+  function rpc(n){ return fetch('https://djpjgublkjtmprkcypma.supabase.co/rest/v1/rpc/' + n, { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json' }, body: '{}' }).then(function(r){ return r.json(); }); }
+  Promise.all([rpc('pm_fundadores_libres'), rpc('pm_fundadores_ventas_libres')]).then(function(x){
+    var n = Number(x[0]), v = Number(x[1]); if (isNaN(n) || isNaN(v)) return;
+    if (v <= 0) { document.getElementById('fund').style.display = 'none'; return; }
+    document.getElementById('fundN').textContent = n;
+    document.getElementById('fundB').style.width = Math.max(4, (50 - n) / 50 * 100) + '%';
+    document.getElementById('fundV').textContent = v;
+    document.getElementById('fundBV').style.width = Math.max(4, (25 - v) / 25 * 100) + '%';
+  }).catch(function(){});
 })();
 </script>
 <script src="/pm-update.js" defer></script>
