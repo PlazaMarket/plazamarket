@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "ar.com.plazamarket.twa",
-    "sha256_cert_fingerprints": ["91:7A:D2:13:A9:48:40:64:19:F0:9A:76:61:03:FD:78:D3:35:F7:79:AB:7A:23:FB:C3:EA:9C:07:8C:17:7C:10"]
+    "sha256_cert_fingerprints": [
+      "8C:08:9C:D5:2C:41:16:46:32:49:71:96:94:5E:6A:00:83:4B:84:8E:4E:81:3F:1F:56:85:2B:D7:B6:BF:08:F1",
+      "91:7A:D2:13:A9:48:40:64:19:F0:9A:76:61:03:FD:78:D3:35:F7:79:AB:7A:23:FB:C3:EA:9C:07:8C:17:7C:10"
+    ]
   }
 }]
