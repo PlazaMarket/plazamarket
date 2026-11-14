@@ -155,6 +155,7 @@
         .btn-ghost-dark:hover { background: rgba(255,255,255,0.08); }
 
         .photo-slot {
+            position: relative;
             background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.1);
             border-radius: 1rem; padding: 1rem; text-align: center;
         }
@@ -270,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611141625">
+<meta name="pm-version" content="202611141900">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -592,6 +593,7 @@
         let misProductos = [];
         let editandoId = null;
         let fotosExistentes = [];
+        let pmOrden = []; // orden único de todas las fotos (ya cargadas + nuevas); la primera es la portada
         let miNombreVendedor = '';
 
         // ============================================================
@@ -1018,6 +1020,22 @@
 
         function moverFotoNueva(id, dir){ const i=uploadedPhotos.findIndex(function(p){return p.id===id;}); if(i<0)return; const j=i+dir; if(j<0||j>=uploadedPhotos.length)return; const t=uploadedPhotos[i]; uploadedPhotos[i]=uploadedPhotos[j]; uploadedPhotos[j]=t; renderPhotoSlots(); }
         function moverFotoExistente(i, dir){ const j=i+dir; if(j<0||j>=fotosExistentes.length)return; const t=fotosExistentes[i]; fotosExistentes[i]=fotosExistentes[j]; fotosExistentes[j]=t; renderPhotoSlots(); }
+        function pmKeyE(u){ return 'e:' + u; }
+        function pmKeyN(id){ return 'n:' + id; }
+        function pmSyncOrden(){
+            const keys = fotosExistentes.map(pmKeyE).concat(uploadedPhotos.map(function(p){ return pmKeyN(p.id); }));
+            pmOrden = pmOrden.filter(function(k){ return keys.indexOf(k) > -1; });
+            keys.forEach(function(k){ if (pmOrden.indexOf(k) < 0) pmOrden.push(k); });
+        }
+        function pmHacerPortada(btn){
+            const slot = btn && btn.closest ? btn.closest('.photo-slot') : null;
+            const k = slot ? slot.getAttribute('data-key') : null;
+            if (!k) return;
+            pmSyncOrden();
+            const i = pmOrden.indexOf(k);
+            if (i > 0) { pmOrden.splice(i, 1); pmOrden.unshift(k); renderPhotoSlots(); }
+        }
+        function pmAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
         function renderPhotoSlots() {
             const container = document.getElementById('photoSlotsContainer');
             if (!container) return;
@@ -1026,24 +1044,33 @@
             const contador = document.getElementById('contadorFotos');
             if (contador) contador.textContent = `${total} de ${MAX_FOTOS} fotos`;
 
-            const existentesHtml = fotosExistentes.map((url, i) => `
-                <div class="photo-slot">
-                    <img src="${url}" alt="Foto" class="photo-slot-real-img">
+            if (total === 0) { container.innerHTML = ''; pmOrden = []; return; }
+            pmSyncOrden();
+
+            container.innerHTML = pmOrden.map(function(k, pos){
+                const portada = pos === 0
+                    ? '<div class="photo-portada">⭐ Portada</div>'
+                    : '<button type="button" class="photo-portada-btn" onclick="pmHacerPortada(this)">⭐ Poner de portada</button>';
+                if (k.indexOf('e:') === 0) {
+                    const url = k.slice(2);
+                    const i = fotosExistentes.indexOf(url);
+                    return `<div class="photo-slot" data-key="${pmAttr(k)}">
+                    <img src="${pmAttr(url)}" alt="Foto" class="photo-slot-real-img">
                     <div class="photo-approved-badge">✓ Ya cargada</div>
-                    ${i===0?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
-                </div>`).join('');
-
-            if (total === 0) { container.innerHTML = ''; return; }
-
-            container.innerHTML = existentesHtml + uploadedPhotos.map((p,idx) => {
+                    ${portada}<button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
+                </div>`;
+                }
+                const id = Number(k.slice(2));
+                const p = uploadedPhotos.find(function(x){ return x.id === id; });
+                if (!p) return '';
                 let statusBlock;
                 if (!p.scanned) statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
                 else if (p.approved) statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
                 else statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
-                return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}">
+                return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}" data-key="${pmAttr(k)}">
                     <img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">
                     ${statusBlock}
-                    ${(idx===0 && fotosExistentes.length===0)?'<div class="photo-portada">⭐ Portada</div>':''}<button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
+                    ${portada}<button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
                 </div>`;
             }).join('');
         }
@@ -1058,7 +1085,9 @@
                 const nombre = `${usuarioActual.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
                 const { error } = await supabaseClient.storage.from('productos').upload(nombre, p.file, { contentType: p.file.type });
                 if (error) throw error;
-                urls.push(supabaseClient.storage.from('productos').getPublicUrl(nombre).data.publicUrl);
+                const pubUrl = supabaseClient.storage.from('productos').getPublicUrl(nombre).data.publicUrl;
+                p.subidaUrl = pubUrl;
+                urls.push(pubUrl);
             }
             return urls;
         }
@@ -1160,7 +1189,13 @@ async function publishProduct() {
 
             try {
                 const nuevasUrls = await subirFotosAprobadas();
-                const fotos = fotosExistentes.concat(nuevasUrls);
+                pmSyncOrden();
+                let fotos = pmOrden.map(function(k){
+                    if (k.indexOf('e:') === 0) return k.slice(2);
+                    const ph = uploadedPhotos.find(function(x){ return pmKeyN(x.id) === k; });
+                    return (ph && ph.approved && ph.subidaUrl) ? ph.subidaUrl : null;
+                }).filter(Boolean);
+                if (!fotos.length) fotos = fotosExistentes.concat(nuevasUrls);
 
                 const marca = (window.pmCapitalizar ? pmCapitalizar(document.getElementById('productMarca') ? document.getElementById('productMarca').value : '') : (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '')).trim().slice(0,60);
     const condicion = (document.getElementById('productCondicion') ? document.getElementById('productCondicion').value : 'nuevo');
@@ -1221,6 +1256,7 @@ async function publishProduct() {
             document.getElementById('desgloseComision').classList.add('hidden');
             uploadedPhotos = [];
             fotosExistentes = [];
+            pmOrden = [];
             editandoId = null;
             try{ pmVarReset(); }catch(e){}
             document.getElementById('productEstado').value = 'disponible';
@@ -1274,6 +1310,7 @@ async function publishProduct() {
             pmEstadoUI();
             fotosExistentes = (p.fotos || []).slice();
             uploadedPhotos = [];
+            pmOrden = [];
             renderPhotoSlots();
             actualizarDesglose();
             checkTitleAndDescription();
@@ -1669,26 +1706,17 @@ async function subirPlanilla(ev){
 (function(){var t=0,iv=setInterval(async function(){t++;if(typeof supabaseClient!=='undefined'){clearInterval(iv);try{var r=await supabaseClient.from('productos').select('marca').not('marca','is',null).limit(500);var dl=document.getElementById('marcasList');if(!dl||!r||!r.data)return;var seen={},html='';r.data.forEach(function(x){var m=(x.marca||'').trim();if(m&&!seen[m.toLowerCase()]){seen[m.toLowerCase()]=1;html+='<option value="'+m.replace(/"/g,'&quot;')+'"></option>';}});dl.innerHTML=html;}catch(e){}}if(t>40)clearInterval(iv);},500);})();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<style>#photoSlotsContainer .photo-slot{cursor:grab;}#photoSlotsContainer .photo-slot:active{cursor:grabbing;}.sortable-ghost{opacity:.35;}.sortable-chosen{outline:2px dashed #60a5fa;}#pmDragHint{font-size:.8rem;color:#93c5fd;margin:4px 0 8px;}</style>
+<style>#photoSlotsContainer .photo-slot{cursor:grab;}#photoSlotsContainer .photo-slot:active{cursor:grabbing;}.sortable-ghost{opacity:.35;}.sortable-chosen{outline:2px dashed #60a5fa;}#pmDragHint{font-size:.8rem;color:#93c5fd;margin:4px 0 8px;}.photo-portada-btn{display:block;width:100%;margin:0 0 .35rem;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fcd34d;font-size:.72rem;font-weight:700;border-radius:8px;padding:5px 4px;cursor:pointer;}.photo-portada-btn:hover{background:rgba(245,158,11,.25);}#photoSlotsContainer .photo-portada{font-size:11px;top:6px;left:6px;}</style>
 <script>
 (function(){
   function reordenar(){
     var cont=document.getElementById('photoSlotsContainer'); if(!cont) return;
-    var imgs=[].slice.call(cont.querySelectorAll('.photo-slot .photo-slot-real-img'));
-    var ne=[], nn=[];
-    imgs.forEach(function(img){
-      var src=img.getAttribute('src');
-      if(typeof fotosExistentes!=='undefined' && fotosExistentes.indexOf(src)>-1){ ne.push(src); return; }
-      if(typeof uploadedPhotos!=='undefined'){ var p=uploadedPhotos.find(function(x){return x.imageUrl===src;}); if(p){ nn.push(p); } }
-    });
-    try{
-      if(typeof fotosExistentes!=='undefined' && ne.length===fotosExistentes.length){ fotosExistentes.length=0; ne.forEach(function(u){fotosExistentes.push(u);}); }
-      if(typeof uploadedPhotos!=='undefined' && nn.length===uploadedPhotos.length){ uploadedPhotos.length=0; nn.forEach(function(p){uploadedPhotos.push(p);}); }
-    }catch(e){}
+    var keys=[].slice.call(cont.querySelectorAll('.photo-slot')).map(function(el){ return el.getAttribute('data-key'); }).filter(Boolean);
+    try{ if(keys.length && typeof pmOrden!=='undefined'){ pmOrden=keys; } }catch(e){}
     if(typeof renderPhotoSlots==='function') renderPhotoSlots();
   }
-  function hint(cont){ if(document.getElementById('pmDragHint')) return; var h=document.createElement('p'); h.id='pmDragHint'; h.textContent='✋ Arrastrá las fotos para reordenarlas. La primera (⭐ Portada) es la que se ve primero.'; if(cont.parentNode) cont.parentNode.insertBefore(h, cont); }
-  function init(){ var cont=document.getElementById('photoSlotsContainer'); if(!cont) return; if(!cont._pmSort && typeof Sortable!=='undefined'){ cont._pmSort=Sortable.create(cont,{animation:150,delay:130,delayOnTouchOnly:true,onEnd:reordenar}); } if(cont.children.length) hint(cont); }
+  function hint(cont){ if(document.getElementById('pmDragHint')) return; var h=document.createElement('p'); h.id='pmDragHint'; h.textContent='✋ Arrastrá las fotos para reordenarlas, o tocá "⭐ Poner de portada" en la que quieras primero. La portada es la que se ve en el catálogo.'; if(cont.parentNode) cont.parentNode.insertBefore(h, cont); }
+  function init(){ var cont=document.getElementById('photoSlotsContainer'); if(!cont) return; if(!cont._pmSort && typeof Sortable!=='undefined'){ cont._pmSort=Sortable.create(cont,{animation:150,delay:130,delayOnTouchOnly:true,forceFallback:true,fallbackTolerance:4,filter:".photo-remove-btn,.photo-portada-btn",preventOnFilter:false,onEnd:reordenar}); } if(cont.children.length) hint(cont); }
   function boot(){ var c=document.getElementById('photoSlotsContainer'); if(c){ new MutationObserver(init).observe(c,{childList:true}); init(); } else { setTimeout(boot,500); } }
   if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
 })();
