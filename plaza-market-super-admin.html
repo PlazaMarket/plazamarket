@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611161230">
+<meta name="pm-version" content="202611161330">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -468,7 +468,7 @@
                           '<button class="btn-del" data-nombre="' + escaparHtml(u.nombre || u.email || 'este usuario') + '" onclick="eliminarUsuario(\'' + u.id + '\', this)">🗑 Eliminar</button></div>';
                 }
                 return '<tr>' +
-                    '<td>' + escaparHtml(u.nombre || '—') + '</td>' +
+                    '<td>' + escaparHtml(u.nombre || '—') + (function(){ if (!window.PMU) return ''; const f = PMU.faltantes(u, null, 'comprar'); return f.length ? '<div style="font-size:0.7rem;color:#FCD34D;margin-top:2px;">⚠️ Cuenta incompleta: falta ' + f.map(k => ({nombre:'nombre', celular:'celular válido', ubicacion:'localidad/CP'})[k]).join(', ') + '</div>' : ''; })() + '</td>' +
                     '<td>' + escaparHtml(u.email || '—') + '</td>' +
                     '<td>' + escaparHtml(u.telefono || '—') + '</td>' +
                     '<td style="font-size:0.76rem;">' + escaparHtml(z.zona) + '</td>' +
@@ -751,6 +751,7 @@
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();});
 setInterval(function(){var a=document.activeElement;if(document.visibilityState==='visible'&&Date.now()-t>15*60*1000&&!(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')))location.reload();},60000);})();
 </script>
+<script src="/pm-ubicacion.js?v=2"></script>
 <script src="/pm-update.js" defer></script>
 </body>
 </html>

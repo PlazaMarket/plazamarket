@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611141900">
+<meta name="pm-version" content="202611161330">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -310,6 +310,7 @@
 
             <div class="status-pill" style="align-self:flex-start;"><span class="pulse-dot"></span> IA de Moderación Activa 24hs</div>
 
+            <div id="pmuCartel"></div>
             <section class="glass-card p-6 sm:p-7" id="seccionCobros">
                 <h2 class="text-lg font-bold text-white mb-1">💳 Cobros con Mercado Pago</h2>
                 <p class="text-sm text-slate-400 mb-4">Para poder cobrar tus ventas por Plaza Market, conectá tu cuenta de Mercado Pago. Se hace una sola vez.</p>
@@ -768,6 +769,7 @@
             document.getElementById('menuCuenta').textContent = '👤 ' + miNombreVendedor;
             const sub = document.getElementById('subEncabezado'); if (sub) sub.textContent = 'Hola, ' + miNombreVendedor + ' · Vender';
             renderCobros(!!(perf && perf.mp_conectado));
+            if (window.PMU) PMU.cartelIncompleta(supabaseClient, document.getElementById('pmuCartel'), 'vender');
             supabaseClient.from('pm_admins').select('id').eq('id', usuarioActual.id).maybeSingle().then(({ data }) => {
                 if (data) { const a = document.getElementById('menuAdmin'); if (a) a.style.display = 'block'; }
             });
@@ -1125,6 +1127,8 @@ function sugerirMedidas() {
 }
 
 async function publishProduct() {
+            // Cuenta completa (datos, ubicación y Mercado Pago) antes de publicar
+            if (window.PMU && !(await PMU.verificarCuenta(supabaseClient, 'vender'))) return;
             const title = (window.pmCapitalizar ? pmCapitalizar(document.getElementById('productTitle').value) : document.getElementById('productTitle').value).trim();
             const description = document.getElementById('productDescription').value.trim();
             const category = document.getElementById('productCategory').value;
@@ -1933,6 +1937,7 @@ function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_co
   if (document.readyState !== 'loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
 })();
 </script>
+<script src="/pm-ubicacion.js?v=2"></script>
 <script src="/pm-update.js" defer></script>
 </body>
 </html>

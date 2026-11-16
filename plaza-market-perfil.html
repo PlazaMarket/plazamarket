@@ -87,7 +87,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .cargando { text-align: center; color: #64748B; font-size: 0.9rem; padding: 2.5rem 1rem; }
     </style>
-<meta name="pm-version" content="202611161230">
+<meta name="pm-version" content="202611161330">
 </head>
 <body>
 
@@ -130,6 +130,7 @@
         <div id="cargando" class="cargando"><span class="spinner-mini"></span> Cargando tus datos...</div>
 
         <div id="formCard" class="card" style="display:none;">
+            <div id="pmuCartel"></div>
             <div id="aviso" class="aviso"></div>
 
             <div class="campo">
@@ -165,7 +166,7 @@
 
     </main>
 
-    <script src="/pm-ubicacion.js?v=1"></script>
+    <script src="/pm-ubicacion.js?v=2"></script>
     <script>
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
@@ -266,6 +267,7 @@
             PMU.montar(ub, { campoClass: 'campo' });
             ub.querySelector('.pmu-cp').id = 'cpOrigen';
             PMU.setear(ub, PMU.valores(perf, session.user));
+            PMU.cartelIncompleta(db, document.getElementById('pmuCartel'), 'comprar');
 
             document.getElementById('cargando').style.display = 'none';
             document.getElementById('formCard').style.display = 'block';
@@ -325,6 +327,7 @@
             const sub = document.getElementById('subEncabezado');
             if (sub) sub.textContent = 'Hola, ' + nombre + ' · Mi perfil';
             mostrarAviso('ok', '¡Listo! Tus datos se guardaron correctamente. ✅');
+            PMU.cartelIncompleta(db, document.getElementById('pmuCartel'), 'comprar');
         }
 
         cargar();
