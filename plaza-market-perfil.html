@@ -87,7 +87,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .cargando { text-align: center; color: #64748B; font-size: 0.9rem; padding: 2.5rem 1rem; }
     </style>
-<meta name="pm-version" content="202610282358">
+<meta name="pm-version" content="202611161230">
 </head>
 <body>
 
@@ -151,11 +151,8 @@
                 <p class="ayuda">Escribí código de área + número, sin el 0 y sin el 15. Ej: <strong>11 2345 6789</strong>.</p>
             </div>
 
-            <div class="campo">
-                <label>Código postal de origen <span class="candado">(desde dónde enviás)</span></label>
-                <input type="text" id="cpOrigen" placeholder="Ej: 1824" inputmode="numeric" maxlength="4" autocomplete="postal-code">
-                <p class="ayuda">El código postal de tu localidad, de donde salen tus envíos. Sirve para calcular el costo del envío de tus productos. Si por ahora solo ofrecés servicios (sin envío), podés dejarlo vacío.</p>
-            </div>
+            <div id="perfilUbic"></div>
+            <p class="ayuda" style="margin:-0.4rem 0 1rem;">Tu código postal es también el origen de tus envíos: con él se calcula el costo de envío de tus productos.</p>
 
             <button id="btnGuardar" class="btn-guardar" onclick="guardar()">Guardar cambios</button>
         </div>
@@ -168,6 +165,7 @@
 
     </main>
 
+    <script src="/pm-ubicacion.js?v=1"></script>
     <script>
         const SUPABASE_URL = 'https://djpjgublkjtmprkcypma.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
@@ -237,6 +235,7 @@
             return soloNumeroNacional(valor).length === 10;
         }
 
+        let miUser = null;
         async function cargar() {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
@@ -246,7 +245,8 @@
             miUserId = session.user.id;
             miEmail = session.user.email || '';
 
-            const { data: perf } = await db.from('pm_perfiles').select('nombre, telefono, email, cp_origen, mp_conectado').eq('id', miUserId).maybeSingle();
+            const { data: perf } = await db.from('pm_perfiles').select('*').eq('id', miUserId).maybeSingle();
+            miUser = session.user;
             miNombre = (perf && perf.nombre) || '';
 
             // Encabezado y menú
@@ -262,7 +262,10 @@
             document.getElementById('email').value = (perf && perf.email) || miEmail;
             document.getElementById('nombre').value = miNombre;
             document.getElementById('telefono').value = (perf && perf.telefono) || '';
-            document.getElementById('cpOrigen').value = (perf && perf.cp_origen) || '';
+            const ub = document.getElementById('perfilUbic');
+            PMU.montar(ub, { campoClass: 'campo' });
+            ub.querySelector('.pmu-cp').id = 'cpOrigen';
+            PMU.setear(ub, PMU.valores(perf, session.user));
 
             document.getElementById('cargando').style.display = 'none';
             document.getElementById('formCard').style.display = 'block';
@@ -276,7 +279,7 @@
             limpiarAviso();
             const nombre = document.getElementById('nombre').value.trim();
             const telefono = document.getElementById('telefono').value.trim();
-            const cpOrigen = document.getElementById('cpOrigen').value.replace(/\D/g, '');
+            const ubic = PMU.leer(document.getElementById('perfilUbic'));
 
             if (!nombre) {
                 mostrarAviso('error', 'Poné tu nombre completo para continuar.');
@@ -290,8 +293,8 @@
                 mostrarAviso('error', 'Revisá el celular: tiene que ser un número argentino de 10 dígitos (código de área + número, sin 0 y sin 15). Ej: 11 2345 6789.');
                 return;
             }
-            if (cpOrigen && cpOrigen.length !== 4) {
-                mostrarAviso('error', 'El código postal de origen tiene que ser de 4 números. Ej: 1824. (Si no lo sabés, dejalo vacío por ahora.)');
+            if (ubic.error) {
+                mostrarAviso('error', ubic.error);
                 return;
             }
 
@@ -305,8 +308,9 @@
                 nombre: nombre,
                 telefono: telefono,
                 email: miEmail,
-                cp_origen: cpOrigen || null
+                cp_origen: ubic.cp
             }, { onConflict: 'id' });
+            if (!error) { try { await PMU.guardar(db, miUserId, ubic); } catch (e) {} }
 
             btn.disabled = false;
             btn.textContent = textoOriginal;
@@ -327,7 +331,7 @@
     </script>
 
 <!-- Tour guiado Plaza Market -->
-<script>window.PM_TOUR={"key":"pm_tour_perfil_v1","steps":[{"sel":null,"title":"👤 Tu perfil","text":"Acá configurás tu cuenta. Te muestro lo importante."},{"sel":"#nombre","title":"📇 Tus datos","text":"Completá tu nombre y teléfono de contacto."},{"sel":"#cpOrigen","title":"📍 Código postal de origen","text":"Poné tu CP: desde ahí salen tus envíos y se calcula el costo."},{"sel":"#btnGuardar","title":"💾 Guardá","text":"No te olvides de guardar los cambios."},{"sel":"#mpCard","title":"💳 Conectá Mercado Pago","text":"Clave para vender: conectá tu Mercado Pago y cobrá tus ventas directo en tu cuenta. ¿Volver a ver esto? Tocá el botón ❓ Ayuda."}]};</script>
+<script>window.PM_TOUR={"key":"pm_tour_perfil_v1","steps":[{"sel":null,"title":"👤 Tu perfil","text":"Acá configurás tu cuenta. Te muestro lo importante."},{"sel":"#nombre","title":"📇 Tus datos","text":"Completá tu nombre y teléfono de contacto."},{"sel":"#cpOrigen","title":"📍 De dónde sos","text":"Poné tu provincia, localidad y código postal: desde ahí salen tus envíos y se calcula el costo."},{"sel":"#btnGuardar","title":"💾 Guardá","text":"No te olvides de guardar los cambios."},{"sel":"#mpCard","title":"💳 Conectá Mercado Pago","text":"Clave para vender: conectá tu Mercado Pago y cobrá tus ventas directo en tu cuenta. ¿Volver a ver esto? Tocá el botón ❓ Ayuda."}]};</script>
 <script src="pm-tour.js"></script>
 <script src="/pm-update.js" defer></script>
 </body>

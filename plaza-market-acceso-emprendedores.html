@@ -70,7 +70,7 @@
         .link-btn:hover { text-decoration: underline; }
     </style>
 <!-- Cloudflare Web Analytics --><script>(function(){try{var q=location.search||"";if(q.indexOf("nocount=1")>-1){try{localStorage.setItem("pm_nocount","1");}catch(e){}}if(localStorage.getItem("pm_nocount")==="1")return;var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{\"token\": \"75e78540eee94bc38f4e577e0dff69b5\"}");document.head.appendChild(s);try{fetch("https://djpjgublkjtmprkcypma.functions.supabase.co/cc-log-visita",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ref:document.referrer,ua:navigator.userAgent,path:location.pathname}),keepalive:true});}catch(e){}}catch(e){}})();</script><!-- End Cloudflare Web Analytics -->
-<meta name="pm-version" content="202610312349">
+<meta name="pm-version" content="202611161230">
 </head>
 <body>
     <main class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -121,6 +121,7 @@
                                 <label>Teléfono / WhatsApp</label>
                                 <input type="tel" id="regTelefono" inputmode="numeric" placeholder="Con código de área, sin 0 ni 15. Ej: 1123456789" class="mt-2">
                             </div>
+                            <div id="regUbicacion"></div>
                             <div>
                                 <label>Email</label>
                                 <input type="email" id="regEmail" placeholder="Escribí tu email" class="mt-2">
@@ -181,6 +182,7 @@
         let passPendiente = '';
         let nombrePendiente = '';
         let telefonoPendiente = '';
+        let ubicPendiente = {};
 
         // A dónde ir después de entrar (por defecto, el catálogo)
         function destino() {
@@ -266,6 +268,8 @@
 
             if (!nombre) { msg.textContent = 'Poné tu nombre y apellido.'; return; }
             if (telefono.length !== 10) { msg.textContent = 'Revisá el celular: tiene que tener 10 números, con el código de área y sin el 0 ni el 15. Ej: 11 2345 6789 o 351 234 5678.'; return; }
+            const ubic = window.PMU ? PMU.leer(document.getElementById('regUbicacion')) : {};
+            if (ubic.error) { msg.textContent = ubic.error; return; }
             if (!email) { msg.textContent = 'Poné tu email.'; return; }
             if (password.length < 6) { msg.textContent = 'La contraseña necesita al menos 6 caracteres.'; return; }
             if (!terms) { msg.textContent = 'Tenés que aceptar los Términos y Condiciones.'; return; }
@@ -275,7 +279,7 @@
 
             const { error } = await db.auth.signUp({
                 email, password,
-                options: { data: { nombre, telefono, canal: (window.pmCanal ? window.pmCanal() : 'web') } }
+                options: { data: { nombre, telefono, canal: (window.pmCanal ? window.pmCanal() : 'web'), provincia: ubic.provincia || null, localidad: ubic.localidad || null, cp: ubic.cp || null } }
             });
 
             btn.disabled = false; btn.innerHTML = txt;
@@ -290,7 +294,8 @@
             passPendiente = password;
             nombrePendiente = nombre;
             telefonoPendiente = telefono;
-            sessionStorage.setItem('pm_reg', JSON.stringify({ email, nombre, telefono }));
+            ubicPendiente = ubic;
+            sessionStorage.setItem('pm_reg', JSON.stringify({ email, nombre, telefono, ubic }));
             document.getElementById('emailDestino').textContent = email;
             document.getElementById('regStepDatos').classList.add('hidden');
             document.getElementById('regStepCodigo').classList.remove('hidden');
@@ -320,7 +325,8 @@
             // Guardamos el perfil ahora que la persona está adentro (forma segura, sin gatillo)
             try {
                 // canal_registro: si se registró desde la app de Play Store o desde la página web
-                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente, email: emailPendiente, canal_registro: (window.pmCanal ? window.pmCanal() : 'web') });
+                await db.from('pm_perfiles').upsert({ id: uid, nombre: nombrePendiente, telefono: telefonoPendiente, email: emailPendiente, cp_origen: (ubicPendiente && ubicPendiente.cp) || null, canal_registro: (window.pmCanal ? window.pmCanal() : 'web') });
+                if (window.PMU && ubicPendiente && ubicPendiente.provincia) await PMU.guardar(db, uid, ubicPendiente);
             } catch (e) { console.error('No se pudo guardar el perfil:', e); }
 
             entrar(uid);
@@ -380,7 +386,7 @@
             if (pend) {
                 try {
                     const d = JSON.parse(pend);
-                    emailPendiente = d.email; nombrePendiente = d.nombre; telefonoPendiente = d.telefono;
+                    emailPendiente = d.email; nombrePendiente = d.nombre; telefonoPendiente = d.telefono; ubicPendiente = d.ubic || {};
                     switchTab('register');
                     document.getElementById('emailDestino').textContent = d.email;
                     document.getElementById('regStepDatos').classList.add('hidden');
@@ -392,6 +398,8 @@
             if (new URLSearchParams(location.search).get('registro') === '1') switchTab('register');
         })();
     </script>
+<script src="/pm-ubicacion.js?v=1"></script>
+<script>try{ PMU.montar(document.getElementById('regUbicacion'), { inputClass: 'mt-2' }); }catch(e){}</script>
 <script src="/pm-update.js" defer></script>
 </body>
 </html>

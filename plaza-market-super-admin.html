@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611161130">
+<meta name="pm-version" content="202611161230">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -123,7 +123,7 @@
             <!-- De dónde son (por código de área del celular) -->
             <section class="glass-card p-5 sm:p-6">
                 <h2 class="text-lg font-bold text-white mb-1">📍 De dónde son</h2>
-                <p class="text-xs text-slate-400 mb-4">Según el código postal (si lo cargó) o el código de área del celular. Un mismo usuario puede ser vendedor y comprador a la vez. Los que dicen ⚠️ tienen el celular mal cargado: el nombre aparece abajo para que lo revises.</p>
+                <p class="text-xs text-slate-400 mb-4">Según la localidad que cargó cada persona; si todavía no la cargó, por su código postal o el código de área del celular. Un mismo usuario puede ser vendedor y comprador a la vez. Los que dicen ⚠️ tienen el celular mal cargado: el nombre aparece abajo para que lo revises.</p>
                 <div class="tabla-scroll">
                     <table>
                         <thead><tr><th>Zona</th><th>Área</th><th>Usuarios</th><th>Vendedores</th><th>Compradores</th></tr></thead>
@@ -258,6 +258,16 @@
             return { area: d.slice(0, 3), zona: '⚠️ Celular mal cargado (el código ' + d.slice(0, 3) + ' no existe)' };
         }
 
+        // Primero lo que la persona cargó (provincia y localidad); si no, CP y celular
+        function zonaDeUsuario(u) {
+            const z = zonaDeTel(u.telefono, u.cp_origen);
+            if (u.localidad) {
+                const prov = u.provincia === 'Ciudad Autónoma de Buenos Aires' ? 'CABA' : (u.provincia === 'Buenos Aires' ? 'Bs. As.' : (u.provincia || ''));
+                return { area: z.area, zona: u.localidad + (prov ? ' (' + prov + ')' : '') };
+            }
+            return z;
+        }
+
         async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
         function toggleMenu() { document.getElementById('menuOverlay').classList.toggle('abierto'); }
         function cerrarMenu(e) { if (!e || e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('abierto'); }
@@ -370,7 +380,7 @@
             if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             const mapa = {};
             us.forEach(u => {
-                const z = zonaDeTel(u.telefono, u.cp_origen);
+                const z = zonaDeUsuario(u);
                 const clave = z.zona + '|' + z.area;
                 if (!mapa[clave]) mapa[clave] = { zona: z.zona, area: z.area, usuarios: 0, vendedores: 0, compradores: 0, nombres: [] };
                 mapa[clave].usuarios++;
@@ -449,7 +459,7 @@
                 const esAdmin = adminSet.has(u.id);
                 const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
                 const mp = u.mp_conectado ? '<span class="si">✓ Conectado</span>' : '<span class="no">— No</span>';
-                const z = zonaDeTel(u.telefono, u.cp_origen);
+                const z = zonaDeUsuario(u);
                 let accion = '';
                 if (u.id !== miId) {
                     accion = esAdmin
