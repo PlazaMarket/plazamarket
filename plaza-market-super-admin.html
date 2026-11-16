@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611012344">
+<meta name="pm-version" content="202611161130">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -123,7 +123,7 @@
             <!-- De dónde son (por código de área del celular) -->
             <section class="glass-card p-5 sm:p-6">
                 <h2 class="text-lg font-bold text-white mb-1">📍 De dónde son</h2>
-                <p class="text-xs text-slate-400 mb-4">Según el código de área del celular de cada persona. Un mismo usuario puede ser vendedor y comprador a la vez.</p>
+                <p class="text-xs text-slate-400 mb-4">Según el código postal (si lo cargó) o el código de área del celular. Un mismo usuario puede ser vendedor y comprador a la vez. Los que dicen ⚠️ tienen el celular mal cargado: el nombre aparece abajo para que lo revises.</p>
                 <div class="tabla-scroll">
                     <table>
                         <thead><tr><th>Zona</th><th>Área</th><th>Usuarios</th><th>Vendedores</th><th>Compradores</th></tr></thead>
@@ -216,49 +216,13 @@
         function fechaCorta(iso) { return iso ? new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—'; }
         let perfilMap = {}, prodMap = {}, adminSet = new Set(), miId = null;
 
-        // Códigos de área de Argentina → zona (para saber de dónde son, por el celular)
-        const AREAS = {
-            '11': 'CABA / Gran Buenos Aires',
-            '220': 'Merlo (Bs. As.)', '221': 'La Plata', '223': 'Mar del Plata', '236': 'Junín',
-            '237': 'Moreno (Bs. As.)', '249': 'Tandil', '260': 'San Rafael (Mendoza)', '261': 'Mendoza',
-            '263': 'San Martín (Mendoza)', '264': 'San Juan', '266': 'San Luis', '280': 'Chubut (costa)',
-            '291': 'Bahía Blanca', '297': 'Comodoro Rivadavia', '299': 'Neuquén',
-            '336': 'San Nicolás', '341': 'Rosario', '342': 'Santa Fe', '343': 'Paraná',
-            '345': 'Concordia (E. Ríos)', '348': 'Escobar/Pilar (Bs. As.)', '351': 'Córdoba',
-            '353': 'Villa María', '358': 'Río Cuarto', '362': 'Resistencia (Chaco)', '364': 'Chaco (interior)',
-            '370': 'Formosa', '376': 'Posadas (Misiones)', '379': 'Corrientes', '380': 'La Rioja',
-            '381': 'Tucumán', '383': 'Catamarca', '385': 'Santiago del Estero', '387': 'Salta', '388': 'Jujuy',
-            '2202': 'Bs. As. (interior)', '2494': 'Bs. As. (interior)', '2604': 'San Rafael (Mendoza)',
-            '2901': 'Ushuaia (T. del Fuego)', '2920': 'Viedma (Río Negro)', '2944': 'Bariloche',
-            '2954': 'Santa Rosa (La Pampa)', '2966': 'Río Gallegos (Santa Cruz)', '2984': 'Río Negro'
-        };
-        // Todos los códigos de área del país (ENACOM, vía prefijos-telefonicos-argentina) → provincia
-        const PROV_CODIGOS = {
-            'Buenos Aires (provincia)': '220 2202 221 2221 2223 2224 2225 2226 2227 2229 223 2241 2242 2243 2244 2245 2246 2252 2254 2255 2257 2261 2262 2264 2265 2266 2267 2268 2271 2272 2273 2274 2281 2283 2284 2285 2286 2291 2292 2296 2297 230 2314 2316 2317 2320 2323 2324 2325 2326 2337 2342 2343 2344 2345 2346 2352 2353 2354 2355 2356 2357 2358 236 237 2392 2393 2394 2395 2396 2473 2474 2475 2477 2478 249 291 2921 2922 2923 2924 2925 2926 2927 2928 2929 2932 2933 2935 2936 2982 2983 3327 3329 336 3388 3407 348 3487 3489',
-            'Catamarca': '383 3832 3835 3837 3838',
-            'Chaco': '362 364 3721 3725 3731 3734 3735',
-            'Chubut': '280 2903 2945 297',
-            'Corrientes': '3756 3772 3773 3774 3775 3777 3781 3782 3786 379',
-            'Córdoba': '2336 3385 3387 3463 3467 3468 3472 351 3521 3522 3524 3525 353 3532 3533 3537 3541 3542 3543 3544 3546 3547 3548 3549 3562 3563 3564 3571 3572 3573 3574 3575 3576 358 3582 3583 3584 3585',
-            'Entre Ríos': '343 3435 3436 3437 3438 3442 3444 3445 3446 3447 345 3454 3455 3456 3458',
-            'Formosa': '370 3711 3715 3716 3718',
-            'Jujuy': '388 3885 3886 3887 3888',
-            'La Pampa': '2302 2331 2333 2334 2335 2338 2952 2953 2954',
-            'La Rioja': '380 3821 3825 3826 3827',
-            'Mendoza': '260 261 2622 2624 2625 2626 263',
-            'Misiones': '3741 3743 3751 3754 3755 3757 3758 376',
-            'Neuquén': '2942 2948 2972 299',
-            'Río Negro': '2920 2931 2934 294 2940 2946 298',
-            'Salta': '3868 387 3873 3876 3877 3878',
-            'San Juan': '264 2646 2647 2648',
-            'San Luis': '2651 2655 2656 2657 2658 266',
-            'Santa Cruz': '2902 2962 2963 2966',
-            'Santa Fe': '3382 3400 3401 3402 3404 3405 3406 3408 3409 341 342 3460 3462 3464 3465 3466 3469 3471 3476 3482 3483 3491 3492 3493 3496 3497 3498',
-            'Santiago del Estero': '3841 3843 3844 3845 3846 385 3854 3855 3856 3857 3858 3861',
-            'Tierra del Fuego': '2901 2964',
-            'Tucumán': '381 3862 3863 3865 3867 3869 3891 3892 3894'
-        };
-        const PROV = {}; Object.keys(PROV_CODIGOS).forEach(p => PROV_CODIGOS[p].split(' ').forEach(c => { PROV[c] = p; }));
+        // ── De dónde son ──
+        // 1) Código postal (si lo cargó): da la localidad exacta.
+        // 2) Código de área del celular: localidad y provincia (los 300 códigos de Argentina, ENACOM).
+        // 3) Número de 8 cifras: es del área 11 cargado sin el 11.
+        const CODIGOS_AREA = {"2317": "9 de Julio (Bs. As.)", "2924": "17 de Agosto, Bordenave (Bs. As. / La Pampa)", "2345": "25 de Mayo (Bs. As.)", "2392": "Trenque Lauquen (Bs. As.)", "221": "La Plata (Bs. As.)", "2271": "San Miguel del Monte (Bs. As.)", "2477": "Acevedo, Arroyo Dulce (Bs. As. / Santa Fe)", "2983": "Adolfo González Chaves, Aparicio (Bs. As.)", "236": "Junín (Bs. As.)", "2346": "Chivilcoy (Bs. As.)", "2225": "San Vicente, Alejandro Korn (Bs. As.)", "2226": "Cañuelas (Bs. As.)", "2927": "Médanos (Bs. As.)", "3329": "San Pedro, Baradero (Bs. As.)", "2223": "Brandsen (Bs. As.)", "2344": "Saladillo (Bs. As.)", "11": "CABA / Gran Buenos Aires", "3388": "General Villegas (Bs. As.)", "2337": "América (Bs. As.)", "2227": "Lobos, Roque Pérez (Bs. As.)", "2316": "Daireaux (Bs. As.)", "2355": "Lincoln (Bs. As.)", "2478": "Arrecifes (Bs. As.)", "2353": "General Arenales (Bs. As.)", "2923": "Pigüé (Bs. As.)", "2221": "Magdalena, Verónica (Bs. As.)", "2296": "Ayacucho (Bs. As.)", "2325": "San Andrés de Giles (Bs. As.)", "2281": "Azul (Bs. As.)", "291": "Bahía Blanca (Bs. As.)", "2932": "Punta Alta (Bs. As.)", "2266": "Balcarce (Bs. As.)", "2921": "Coronel Dorrego (Bs. As.)", "223": "Mar del Plata (Bs. As.)", "237": "Moreno, General Rodríguez (Bs. As.)", "2395": "Carlos Casares (Bs. As.)", "3327": "Benavídez (Bs. As.)", "2292": "Benito Juárez (Bs. As.)", "2925": "Bernasconi, Felipe Sola (Bs. As.)", "2314": "Bolívar (Bs. As.)", "2929": "Guaminí (Bs. As.)", "2342": "Bragado (Bs. As.)", "2323": "Luján (Bs. As.)", "3489": "Campana (Bs. As.)", "336": "San Nicolás (Bs. As.)", "3382": "Canada Seca, La Cesira (Bs. As. / Córdoba / Santa Fe)", "2475": "Rojas (Bs. As.)", "2936": "Carhué (Bs. As.)", "2254": "Pinamar (Bs. As.)", "2357": "Carlos Tejedor (Bs. As.)", "2274": "Carlos Spegazzini (Bs. As.)", "2273": "Carmen de Areco (Bs. As.)", "2245": "Dolores, Castelli (Bs. As.)", "2324": "Mercedes (Bs. As.)", "2352": "Chacabuco (Bs. As.)", "2241": "Chascomús (Bs. As.)", "2396": "Pehuajó (Bs. As.)", "2264": "La Dulce (Bs. As.)", "2982": "Claromeco, Orense (Bs. As.)", "2473": "Colón, El Arbolito (Bs. As. / Santa Fe)", "2291": "Miramar (Bs. As.)", "2356": "General Pinto (Bs. As.)", "2922": "Coronel Pringles (Bs. As.)", "2926": "Coronel Suárez (Bs. As.)", "2265": "Coronel Vidal (Bs. As.)", "2320": "José C. Paz (Bs. As.)", "230": "Pilar (Bs. As.)", "348": "Escobar, Garín (Bs. As.)", "2326": "San Antonio de Areco (Bs. As.)", "2354": "Vedia (Bs. As.)", "3407": "Ramallo (Bs. As.)", "2229": "Juan María Gutiérrez (Bs. As.)", "2343": "Norberto de la Riestra (Bs. As.)", "2474": "Salto (Bs. As.)", "249": "Tandil (Bs. As.)", "2243": "General Belgrano (Bs. As.)", "2268": "Maipú (Bs. As.)", "2286": "General La Madrid (Bs. As.)", "220": "Merlo, Marcos Paz (Bs. As.)", "2252": "San Clemente del Tuyú (Bs. As.)", "2267": "General Madariaga (Bs. As.)", "2224": "Glew, Guernica (Bs. As.)", "2202": "González Catán, Virrey del Pino (Bs. As.)", "2928": "Pedro Luro (Bs. As.)", "2284": "Olavarría (Bs. As.)", "2933": "Huanguelén (Bs. As.)", "2394": "Tres Lomas (Bs. As.)", "2285": "Laprida (Bs. As.)", "2244": "Las Flores (Bs. As.)", "2272": "Navarro (Bs. As.)", "2242": "Lezama (Bs. As.)", "3487": "Zárate (Bs. As.)", "2261": "Lobería (Bs. As.)", "2358": "Los Toldos (Bs. As.)", "2257": "Mar de Ajó, San Bernardo (Bs. As.)", "2262": "Necochea (Bs. As.)", "2297": "Rauch (Bs. As.)", "2935": "Rivera, Villa Maza (Bs. As.)", "2393": "Salazar (Bs. As.)", "2246": "Santa Teresita (Bs. As.)", "2283": "Tapalqué (Bs. As.)", "2255": "Villa Gesell (Bs. As.)", "383": "Catamarca (Catamarca)", "3835": "Amanao, Andalgala (Catamarca)", "3832": "Ancasti, Anquincilla (Catamarca)", "3837": "Copacabana, El Durazno Oeste (Catamarca)", "3838": "El Cajon, La Hoyada (Catamarca)", "364": "Presidencia Roque Sáenz Peña (Chaco)", "362": "Resistencia (Chaco)", "3725": "Capitan Solari, General José de San Martín (Chaco)", "3721": "Charadai, La Sabana (Chaco)", "3731": "Charata, Corzuela (Chaco)", "3735": "Coronel Du Graty, Enrique Urien (Chaco)", "3734": "El Curundu, Ing Barbet (Chaco)", "3711": "Comandante Frias, General Mosconi (Chaco / Formosa)", "3715": "Nueva Pompeya, Sauzalito (Chaco / Formosa)", "3877": "Taco Pozo, Apolinario Saravia (Chaco / Salta)", "280": "Trelew, Rawson, Puerto Madryn (Chubut)", "2903": "Aldea Beleiro, Coihaique (Chubut)", "2945": "Aldea Epulef, Aldea Escolar (Chubut)", "297": "Comodoro Rivadavia (Chubut)", "294": "San Carlos de Bariloche (Chubut / Río Negro)", "3582": "Achiras, Bulnes (Córdoba)", "3585": "Adelia María, La Brianza (Córdoba)", "3525": "Agua de Las Piedras, Agua de Oro Dto Colón (Córdoba)", "3522": "Agua de Oro Dto Río Seco, Campo Alegre (Córdoba)", "3542": "Agua del Crispin, Alto Grande (Córdoba)", "3521": "Agua Hedionda, Avellaneda (Córdoba)", "3549": "Aguas de Ramón, Banado de Soto (Córdoba)", "358": "Río Cuarto (Córdoba)", "3468": "Alejo Ledesma, Arias (Córdoba)", "3533": "Alicia, El Aranado (Córdoba)", "3571": "Almafuerte, Corralito (Córdoba)", "3547": "Alta Gracia, Anizacate (Córdoba)", "3537": "Alto Alegre, Bell Ville (Córdoba)", "3562": "Altos de Chipion, Brinkmann (Córdoba)", "3546": "Amboy, Atos Pampa (Córdoba)", "3543": "Arguello, Cabana (Córdoba)", "3576": "Arroyito, El Fuertecito (Córdoba)", "353": "Villa María (Córdoba)", "3467": "Arteaga, Cruz Alta (Córdoba / Santa Fe)", "3575": "Atahona, Capilla de Siton (Córdoba)", "3563": "Balnearia, Marull (Córdoba)", "3463": "Benjamin Gould, Canals (Córdoba)", "3541": "Bialet Masse, Cosquin (Córdoba)", "3387": "Bouchard, Italo (Córdoba)", "351": "Córdoba (Córdoba)", "3573": "Calchin, Canada del Machado Sur (Córdoba)", "3532": "Calchin Oeste, Colazo (Córdoba)", "3548": "Canteras Iguazu, Capilla del Monte (Córdoba)", "3574": "Canada del Machado Norte, Capilla de La Sagrada Familia (Córdoba)", "3544": "Cienaga de Allende, Conlara (Córdoba)", "3564": "Devoto, Freyre (Córdoba)", "3472": "General Roca, Leones (Córdoba)", "3572": "Cosme Sur, Costa Sacate (Córdoba)", "3583": "Del Campillo, General Soler (Córdoba)", "3524": "El Banado Norte, Las Penas Norte (Córdoba)", "3584": "El Rastreador, Huanchilla (Córdoba)", "3385": "General Levalle, Guardia Vieja (Córdoba)", "2336": "Huinca Renanco, Pincen (Córdoba)", "3777": "9 de Julio, Bella Vista (Corrientes)", "3773": "Aguay, Capita Mini (Corrientes)", "3772": "Alvear, Guaviravi (Corrientes)", "3782": "Angua, Concepción (Corrientes)", "3786": "Apipe Grande, Ituzaingo (Corrientes)", "3774": "Baibiene, Chanar (Corrientes)", "3781": "Beron de Astrada, Caa Cati (Corrientes)", "3775": "Bompland, Juan Pujol (Corrientes)", "379": "Corrientes (Corrientes)", "3756": "Galarza, Gobernador Virasoro (Corrientes / Misiones)", "3447": "1 de Mayo, Arroyo Baru (Entre Ríos)", "3435": "20 de Setiembre, Crucesitas Tercera (Entre Ríos)", "3438": "Alcaraz, Alcaraz Segundo (Entre Ríos)", "343": "Paraná (Entre Ríos)", "3446": "Aldea San Antonio, Almada (Entre Ríos)", "3445": "Altamirano, Basavilbaso (Entre Ríos)", "3436": "Aranguren, Las Cuevas (Entre Ríos)", "345": "Concordia (Entre Ríos)", "3442": "Caseros, Concepción del Uruguay (Entre Ríos)", "3437": "Centenario, El Carmen (Entre Ríos)", "3456": "Chajari, Federacion (Entre Ríos)", "3455": "Clara, Dominguez (Entre Ríos)", "3454": "Conscripto Bernardi, El Cimarron (Entre Ríos)", "3444": "Cuchilla, Enrique Carbo (Entre Ríos)", "3458": "Los Conquistadores, San Jaime de La Frontera (Entre Ríos)", "3718": "Clorinda, El Espinillo (Formosa)", "370": "Formosa (Formosa)", "3716": "Comandante Fontana, Estanislao del Campo (Formosa)", "3887": "Abra Pampa, Abralaite (Jujuy)", "3888": "Agua Caliente Dto Cochinoca, Arrayanal (Jujuy)", "388": "San Salvador de Jujuy (Jujuy)", "3886": "Caimancito, Calilegua (Jujuy)", "3885": "Casira, Cienaga Grande (Jujuy)", "2331": "Adolfo Van Praet, Chamaico (La Pampa)", "2302": "Agustoni, Alta Italia (La Pampa)", "2338": "Algarrobo del Aguila, Carro Quemado (La Pampa)", "2953": "Alpachiri, Doblas (La Pampa)", "2954": "Santa Rosa (La Pampa)", "2335": "Arata, Caleufu (La Pampa)", "2952": "Chacharramendi, Cuchillo Co (La Pampa)", "2333": "Mauricio Mayer, Miguel Cane (La Pampa)", "2334": "Conhello, Eduardo Castex (La Pampa)", "298": "Gobernador Duval, Aguada Guzman (La Pampa / Río Negro)", "3827": "Aimogasta, Aminga (La Rioja)", "3825": "Alto Jague, Anguinan (La Rioja)", "380": "La Rioja (La Rioja)", "3826": "Chamical, Chanar (La Rioja)", "3821": "Chepes, Desiderio Telo (La Rioja)", "260": "San Rafael (Mendoza)", "261": "Mendoza (Mendoza)", "2626": "Arroyito, Desaguadero (Mendoza)", "2625": "Bowen, Calle Larga (Mendoza)", "2624": "Cacheuta, Las Carditas (Mendoza)", "263": "San Martín (Mendoza)", "2622": "Cordon del Plata, El Zampal (Mendoza)", "3755": "2 de Mayo, 25 de Mayo (Misiones)", "3751": "9 de Julio, Caraguatay (Misiones)", "3754": "Almafuerte, Dos Arroyos (Misiones)", "3757": "Andresito, Gobernador J J Lanusse (Misiones)", "3758": "Apostoles, Azara (Misiones)", "376": "Posadas (Misiones)", "3741": "Bernardo de Irigoyen, San Antonio (Misiones)", "3743": "Capiovi, Garuhape (Misiones)", "2948": "Aguada Chacayco, Andacollo (Neuquén)", "2942": "Alumine, Bajada del Agrio (Neuquén)", "299": "Neuquén (Neuquén)", "2972": "Junin de Los Andes, Lago Huechulafquen (Neuquén)", "2934": "Arroyo de La Ventana, Arroyo Los Berros (Río Negro)", "2920": "Viedma (Río Negro)", "2946": "Chimpay, Choele Choel (Río Negro)", "2940": "Colan Conhue, Comallo (Río Negro)", "2931": "General Conesa, Río Colorado (Río Negro)", "3873": "Aguaray, Alto de La Sierra (Salta)", "3878": "Aguas Blancas, Campichuelo (Salta)", "3868": "Angastaco, Animama (Salta)", "3876": "Antilla, El Galpon (Salta)", "387": "Salta (Salta)", "264": "San Juan (San Juan)", "2646": "Astica, Balde del Rosario (San Juan)", "2648": "Barreal, Calingasta (San Juan)", "2647": "Colanguil, Entre Rios (San Juan)", "266": "San Luis (San Luis)", "2658": "Anchorena, Arizona (San Luis)", "2651": "Candelaria, Carolina (San Luis)", "2656": "Carpinteria, Concaran (San Luis)", "2657": "Fraga, Juan Jorba (San Luis)", "2655": "Juan Llerena, La Punilla (San Luis)", "2902": "28 de Noviembre, Cancha Carrera (Santa Cruz)", "2963": "Bajo Caracoles, Fundacion Procorde Namuncura (Santa Cruz)", "2966": "Río Gallegos (Santa Cruz)", "2962": "Comandante Luis Piedra Buena, El Chalten (Santa Cruz)", "3469": "Acebal, Arminda (Santa Fe)", "342": "Santa Fe (Santa Fe)", "3408": "Aguara Grande, La Cabral (Santa Fe)", "3402": "Albarellos, Álvarez (Santa Fe)", "3465": "Alcorta, Berabevu (Santa Fe)", "3476": "Aldao, Clarke (Santa Fe)", "3405": "Alejandra, Cacique Ariacaiquin (Santa Fe)", "3491": "Ambrosetti, Arrufo (Santa Fe)", "3492": "Angelica, Aurelia Sur (Santa Fe)", "3464": "Arequito, Bigand (Santa Fe)", "3471": "Armstrong, Bouquet (Santa Fe)", "3466": "Arocena, Barrancas (Santa Fe)", "3482": "Arroyo Ceibal, Berna (Santa Fe)", "3493": "Ataliva, Eusebia (Santa Fe)", "3483": "Calchaqui, Espin (Santa Fe)", "3497": "Campo Andino, Cayastacito (Santa Fe)", "3401": "Campo Castro, Canada Rosquin (Santa Fe)", "3404": "Campo Piaggio, Galvez (Santa Fe)", "3460": "Canada Rica, Godoy (Santa Fe)", "341": "Rosario (Santa Fe)", "3462": "Carmen, Chapuy (Santa Fe)", "3406": "Castelar, Crispi (Santa Fe)", "3496": "Cavour, Esperanza (Santa Fe)", "3409": "Constanza, Las Palmeras (Santa Fe)", "3498": "Elisa, Gobernador Crespo (Santa Fe)", "3400": "Empalme Villa Constitucion, Pavon (Santa Fe)", "3854": "Ancajan, Choya (Santiago del Estero)", "385": "Santiago del Estero (Santiago del Estero)", "3844": "Anatuya, Herrera (Santiago del Estero)", "3861": "Arenales, Bobadal (Santiago del Estero)", "3857": "Bandera, Guardia Escolta (Santiago del Estero)", "3855": "Bandera Bajada, Caspi Corral (Santiago del Estero)", "3845": "Brea Pozo, Medellin (Santiago del Estero)", "3846": "Campo Gallo, Tintina (Santiago del Estero)", "3858": "El Charco, La Donosa (Santiago del Estero)", "3856": "El 49 Km 49, Los Telares (Santiago del Estero)", "3841": "Monte Quemado, Pampa de Los Guanacos (Santiago del Estero)", "3843": "Quimili (Santiago del Estero)", "2901": "Ushuaia (Tierra del Fuego)", "2964": "Río Grande (Tierra del Fuego)", "3863": "Acheral, Famailla (Tucumán)", "3865": "Aguilares, Alpachiri (Tucumán)", "3892": "Amaicha del Valle, Ancajuli (Tucumán)", "381": "San Miguel de Tucumán (Tucumán)", "3894": "Burruyacu, Chorrillos (Tucumán)", "3862": "Choromoro, Gonzalo (Tucumán)", "3867": "El Mollar, Tafi del Valle (Tucumán)", "3869": "Las Cejas, Los Ralos (Tucumán)", "3891": "Graneros, La Madrid (Tucumán)"};
+        // Códigos postales del Gran Buenos Aires → localidad (CP de 4 cifras)
+        const CP_GBA = {"1602": "Florida", "1603": "Villa Martelli", "1605": "Munro", "1636": "Olivos", "1638": "Vicente López", "1640": "Martínez", "1641": "Acassuso", "1642": "San Isidro", "1643": "Béccar", "1644": "Victoria", "1646": "San Fernando", "1648": "Tigre", "1650": "San Martín", "1651": "San Andrés", "1653": "Villa Ballester", "1655": "José León Suárez", "1657": "Loma Hermosa", "1659": "Campo de Mayo", "1661": "Bella Vista", "1663": "San Miguel", "1665": "José C. Paz", "1667": "Tortuguitas", "1669": "Del Viso", "1672": "Villa Lynch", "1674": "Sáenz Peña", "1676": "Santos Lugares", "1678": "Caseros", "1682": "Villa Bosch", "1684": "El Palomar", "1686": "Hurlingham", "1688": "Villa Tesei", "1702": "Ciudadela", "1704": "Ramos Mejía", "1706": "Haedo", "1708": "Morón", "1712": "Castelar", "1714": "Ituzaingó", "1716": "Libertad", "1718": "San Antonio de Padua", "1722": "Merlo", "1742": "Paso del Rey", "1744": "Moreno", "1752": "Lomas del Mirador", "1754": "San Justo", "1755": "Rafael Castillo", "1757": "Gregorio de Laferrere", "1759": "González Catán", "1763": "Virrey del Pino", "1765": "Isidro Casanova", "1766": "Tablada", "1768": "Ciudad Madero", "1770": "Tapiales", "1772": "Villa Madero", "1774": "Ciudad Evita", "1776": "Aldo Bonzi", "1778": "Ciudad Evita", "1802": "Aeropuerto Ezeiza", "1804": "Ezeiza", "1806": "Tristán Suárez", "1812": "Carlos Spegazzini", "1814": "Cañuelas", "1822": "Valentín Alsina", "1824": "Lanús", "1825": "Monte Chingolo", "1826": "Remedios de Escalada", "1828": "Banfield", "1832": "Lomas de Zamora", "1834": "Temperley", "1836": "Llavallol", "1838": "Luis Guillón", "1842": "Monte Grande", "1846": "Adrogué", "1847": "Rafael Calzada", "1849": "Claypole", "1852": "Burzaco", "1854": "Longchamps", "1856": "Glew", "1862": "Guernica", "1864": "Alejandro Korn", "1865": "San Vicente", "1870": "Avellaneda", "1871": "Dock Sud", "1872": "Sarandí", "1874": "Villa Domínico", "1875": "Wilde", "1876": "Bernal", "1878": "Quilmes", "1879": "Quilmes Oeste", "1880": "Berazategui", "1882": "Ezpeleta", "1884": "Hudson", "1885": "Plátanos", "1886": "Ranelagh", "1888": "Florencio Varela", "1889": "Bosques", "1890": "Juan María Gutiérrez", "1894": "Villa Elisa", "1896": "City Bell", "1897": "Gonnet", "1900": "La Plata", "1923": "Berisso", "1925": "Ensenada", "1625": "Escobar", "1629": "Pilar", "1631": "Villa Rosa", "1617": "General Pacheco", "1615": "Grand Bourg", "1613": "Los Polvorines", "1611": "Don Torcuato", "1618": "El Talar", "1621": "Benavídez", "1623": "Ingeniero Maschwitz", "1627": "Matheu", "1609": "Boulogne", "1607": "Villa Adelina", "1604": "Florida Oeste", "1606": "Carapachay"};
         function soloNumeroNacional(valor) {
             let d = String(valor || '').replace(/\D/g, '');
             if (d.startsWith('54')) d = d.slice(2);
@@ -266,20 +230,32 @@
             while (d.startsWith('0')) d = d.slice(1);
             return d;
         }
-        // Devuelve { area, zona } a partir del celular
-        function zonaDeTel(tel) {
+        function localidadPorCP(cp) {
+            const c = String(cp || '').replace(/\D/g, '').slice(0, 4);
+            if (c.length !== 4) return null;
+            const n = Number(c);
+            if (n >= 1000 && n <= 1499) return 'CABA (Capital Federal)';
+            if (CP_GBA[c]) return CP_GBA[c] + ' (Bs. As.)';
+            return null;
+        }
+        // Devuelve { area, zona } a partir del celular y del código postal
+        function zonaDeTel(tel, cp) {
             const d = soloNumeroNacional(tel);
-            if (!d || d.length < 6) return { area: '—', zona: 'Sin dato' };
-            if (d.length < 10) return { area: '—', zona: 'Sin código de área' };
-            for (const len of [4, 3, 2]) {          // primero las ciudades conocidas
-                const pref = d.slice(0, len);
-                if (AREAS[pref]) return { area: pref, zona: AREAS[pref] };
+            const porCP = localidadPorCP(cp);
+            let area = '—', zona = null;
+            if (d.length === 8) { area = '11'; zona = 'CABA / Gran Buenos Aires'; }        // cargado sin el 11
+            else if (d.length >= 10) {
+                for (const len of [4, 3, 2]) {
+                    const pref = d.slice(0, len);
+                    if (CODIGOS_AREA[pref]) { area = pref; zona = CODIGOS_AREA[pref]; break; }
+                }
             }
-            for (const len of [4, 3]) {             // si no, la provincia
-                const pref = d.slice(0, len);
-                if (PROV[pref]) return { area: pref, zona: PROV[pref] };
+            if (porCP && (!zona || area === '11' || zona.indexOf(porCP.split(' (')[0]) === -1)) {
+                return { area: area, zona: porCP };                               // el CP manda: es más exacto
             }
-            return { area: d.slice(0, 3), zona: 'Otra zona' };
+            if (zona) return { area: area, zona: zona };
+            if (!d) return { area: '—', zona: '⚠️ Sin celular cargado' };
+            return { area: d.slice(0, 3), zona: '⚠️ Celular mal cargado (el código ' + d.slice(0, 3) + ' no existe)' };
         }
 
         async function salir(e) { if (e) e.preventDefault(); await db.auth.signOut(); localStorage.removeItem('pm_uid'); window.location.href = 'plaza-market-catalogo.html'; }
@@ -394,17 +370,18 @@
             if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
             const mapa = {};
             us.forEach(u => {
-                const z = zonaDeTel(u.telefono);
+                const z = zonaDeTel(u.telefono, u.cp_origen);
                 const clave = z.zona + '|' + z.area;
-                if (!mapa[clave]) mapa[clave] = { zona: z.zona, area: z.area, usuarios: 0, vendedores: 0, compradores: 0 };
+                if (!mapa[clave]) mapa[clave] = { zona: z.zona, area: z.area, usuarios: 0, vendedores: 0, compradores: 0, nombres: [] };
                 mapa[clave].usuarios++;
+                mapa[clave].nombres.push(u.nombre || u.email || 'Sin nombre');
                 if (publicaronSet.has(u.id)) mapa[clave].vendedores++;
                 if (compradoresSet.has(u.id)) mapa[clave].compradores++;
             });
             const filas = Object.values(mapa).sort((a, b) => b.usuarios - a.usuarios);
             tb.innerHTML = filas.map(f =>
                 '<tr>' +
-                    '<td>' + escaparHtml(f.zona) + '</td>' +
+                    '<td>' + escaparHtml(f.zona) + (f.zona.indexOf('⚠️') === 0 ? '<div style="font-size:0.72rem;color:#FCD34D;margin-top:2px;">Revisar: ' + escaparHtml(f.nombres.join(', ')) + '</div>' : '') + '</td>' +
                     '<td style="color:rgba(226,232,240,0.5);">' + escaparHtml(f.area) + '</td>' +
                     '<td style="font-weight:700;">' + f.usuarios + '</td>' +
                     '<td>' + f.vendedores + '</td>' +
@@ -472,7 +449,7 @@
                 const esAdmin = adminSet.has(u.id);
                 const rol = esAdmin ? '<span class="pill-admin">Dueño</span>' : '<span style="color:rgba(226,232,240,0.5); font-size:0.78rem;">Usuario</span>';
                 const mp = u.mp_conectado ? '<span class="si">✓ Conectado</span>' : '<span class="no">— No</span>';
-                const z = zonaDeTel(u.telefono);
+                const z = zonaDeTel(u.telefono, u.cp_origen);
                 let accion = '';
                 if (u.id !== miId) {
                     accion = esAdmin
