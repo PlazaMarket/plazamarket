@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611190000">
+<meta name="pm-version" content="202611190010">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -1706,13 +1706,15 @@ async function subirPlanilla(ev){
           prev.innerHTML = '<p style="color:#fca5a5">No encontre columnas de <b>Titulo</b> y <b>Precio</b>. Revisa los encabezados (ej: Titulo, Precio).</p>';
           return;
         }
-        var rows = [], saltadas = 0;
+        var rows = [], saltadas = 0, bloqueadas = 0;
         for (var i=1; i<aoa.length; i++) {
           var r = aoa[i];
           if (!r || r.every(function(c){ return String(c).trim()===''; })) continue;
           var titulo = String(r[map.titulo]==null?'':r[map.titulo]).trim();
           var precio = _precio(r[map.precio]);
           if (!titulo || !(precio>0)) { saltadas++; continue; }
+          var _txt = titulo + ' ' + (map.descripcion!=null ? String(r[map.descripcion]==null?'':r[map.descripcion]) : '');
+          if (precio < 100 || (typeof contactoEnTexto==='function' && contactoEnTexto(_txt)) || (typeof checkBlockedCategory==='function' && checkBlockedCategory(_txt))) { bloqueadas++; continue; }
           var categoria = map.categoria!=null ? _norm(r[map.categoria]) : '';
           if (CATS_VALIDAS.indexOf(categoria)===-1) categoria = 'perfumeria';
           var stock = map.stock!=null ? (parseInt(r[map.stock],10)||1) : 1;
@@ -1723,7 +1725,7 @@ async function subirPlanilla(ev){
         window.__importRows = rows;
         var esc = (typeof escaparHtml==='function') ? escaparHtml : function(x){ return String(x); };
         var fp = (typeof formatearPesos==='function') ? formatearPesos : function(x){ return '$'+x; };
-        var html = '<p style="color:#bbf7d0;font-size:.85rem;">Detecte <b>'+rows.length+'</b> productos para crear.' + (saltadas ? ' <span style="color:#fcd34d">('+saltadas+' filas salteadas por falta de titulo o precio)</span>' : '') + '</p>';
+        var html = '<p style="color:#bbf7d0;font-size:.85rem;">Detecte <b>'+rows.length+'</b> productos para crear.' + (saltadas ? ' <span style="color:#fcd34d">('+saltadas+' filas salteadas por falta de titulo o precio)</span>' : '') + (bloqueadas ? ' <span style="color:#fca5a5">('+bloqueadas+' filas no permitidas: precio menor a $100, datos de contacto o rubro prohibido)</span>' : '') + '</p>';
         html += '<div style="max-height:230px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px;margin:.5rem 0;"><table style="width:100%;font-size:.78rem;border-collapse:collapse;">';
         html += '<tr style="position:sticky;top:0;background:#0f172a;color:#93c5fd;"><th style="text-align:left;padding:.35rem .5rem;">Titulo</th><th style="padding:.35rem;">Cat.</th><th style="padding:.35rem;">Precio</th><th style="padding:.35rem;">Stock</th><th style="padding:.35rem;">Foto</th></tr>';
         rows.slice(0,50).forEach(function(p){
