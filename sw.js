@@ -1,5 +1,5 @@
 // Plaza Market — Service Worker (red primero, HTML siempre fresco)
-const CACHE = 'plaza-market-v2';
+const CACHE = 'plaza-market-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -18,6 +18,9 @@ self.addEventListener('fetch', (event) => {
   const pedido = esHTML ? new Request(event.request.url, { cache: 'reload' }) : event.request;
   event.respondWith(
     fetch(pedido).then((resp) => {
+      // Si la página redirige (ej: /calculadora → /calculadora/), le pasamos la redirección al navegador.
+      // Devolver la respuesta redirigida directo hace que el navegador muestre ERR_FAILED.
+      if (esHTML && resp.redirected) return Response.redirect(resp.url, 302);
       const copia = resp.clone();
       caches.open(CACHE).then((c) => c.put(event.request, copia)).catch(() => {});
       return resp;
