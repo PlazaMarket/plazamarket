@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611161330">
+<meta name="pm-version" content="202611190000">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -933,7 +933,41 @@
             return maxRun >= 5;
         }
 
-        function hasSocialMediaPattern(text) { return /instagram|facebook|@[a-z0-9_.]{3,}/i.test(text); }
+        function hasSocialMediaPattern(text) { return /instagram|facebook|whats\s?app|wsp\b|wpp\b|telegram|tik\s?tok|@[a-z0-9_.]{3,}/i.test(text); }
+        function hasLinkPattern(text) {
+            const t = String(text).toLowerCase().replace(/plazamarket\.com\.ar/g, '');
+            return /https?:\/\/|www\.|wa\.me|bit\.ly|linktr\.ee|\b[a-z0-9-]{3,}\.(com|com\.ar|ar|net|org|shop|store)\b/.test(t);
+        }
+        // Teléfono escrito en un TEXTO (título/descripción): más estricto que en fotos para no confundir talles o medidas
+        function hasPhoneInText(text) {
+            const t = String(text);
+            if (/(\+?54[\s\-.]?)?(9[\s\-.]?)?(11|15|2\d{2,3}|3\d{2,3})[\s\-.]?\d{3,4}[\s\-.]?\d{4}\b/.test(t)) return true;
+            const m = t.match(/\d[\d\-.()]{6,}\d/g) || [];
+            return m.some(x => x.replace(/\D/g, '').length >= 8 && !/^\d{1,3}(\.\d{3})+$/.test(x));
+        }
+        // Datos de contacto en título o descripción → no se permite (todo se habla por el chat de Plaza Market)
+        function contactoEnTexto(text) {
+            if (hasPhoneInText(text) || hasSpelledOutPhonePattern(text)) return 'un número de teléfono';
+            if (hasSocialMediaPattern(text)) return 'una red social o un usuario (@)';
+            if (hasLinkPattern(text)) return 'un link a otra página';
+            if (/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(text)) return 'un mail';
+            return null;
+        }
+        async function tieneQR(file) {
+            try {
+                if (!('BarcodeDetector' in window)) return false;
+                const det = new BarcodeDetector({ formats: ['qr_code'] });
+                const bmp = await createImageBitmap(file);
+                const r = await det.detect(bmp);
+                return r && r.length > 0;
+            } catch (e) { return false; }
+        }
+        // Palabras que indican que es un SERVICIO y no un producto
+        const PALABRAS_SERVICIO = ['peluqueria','peluquero','peluquera','corte de pelo','alisado','keratina','botox capilar','balayage','reflejos','claritos','manicura','manicuria','pedicura','depilacion','pestanas','cejas','maquilladora','estilista','barberia','a domicilio','turno','turnos','clases','clase de','profesor','profesora','reparacion','reparaciones','arreglo','arreglos','instalacion','service de','plomero','electricista','gasista','pintor','albanil','fletes','mudanza','abogado','contador','asesoria','consultoria','diseno grafico','fotografo','fotografia de eventos','paseador','cuidado de','ninera','limpieza de'];
+        function pareceServicio(text) {
+            const t = normalizeText(text);
+            return PALABRAS_SERVICIO.find(w => new RegExp('(^|[^a-z])' + w + '([^a-z]|$)').test(t)) || null;
+        }
 
         let uploadedPhotos = [];
         const MAX_FOTOS = 10;
@@ -959,12 +993,14 @@
                 id: Date.now() + Math.random(),
                 file,
                 imageUrl: URL.createObjectURL(file),
-                scanned: true, approved: true, reason: null
+                scanned: false, approved: false, reason: null
             }));
 
             uploadedPhotos.push(...nuevas);
             renderPhotoSlots();
-            if (nuevas.length) showToast(`✅ ${nuevas.length} foto${nuevas.length === 1 ? '' : 's'} agregada${nuevas.length === 1 ? '' : 's'}`, 'success');
+            if (nuevas.length) showToast(`🔎 Revisando ${nuevas.length} foto${nuevas.length === 1 ? '' : 's'}...`, 'info');
+            // La IA de moderación revisa cada foto, de a una (teléfonos, QR, redes, links)
+            for (const ph of nuevas) { await scanPhotoReal(ph, ph.file); }
         }
 
         function handlePhotoFileSelected(event) {
@@ -992,9 +1028,11 @@
 
                 const extracted = text || '';
                 let reason = null;
-                if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
+                if (await tieneQR(file)) reason = 'Se detectó un código QR en la imagen. No se permiten datos de contacto.';
+                else if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
                 else if (hasSpelledOutPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
                 else if (hasSocialMediaPattern(extracted)) reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+                else if (hasLinkPattern(extracted)) reason = 'Se detectó un link a otra página en la imagen.';
 
                 photo.scanned = true;
                 photo.approved = !reason;
@@ -1003,7 +1041,7 @@
                 showToast(reason ? `🚫 Foto rechazada: ${reason}` : '✅ Foto aprobada — sin datos de contacto detectados', reason ? 'error' : 'success');
             } catch (err) {
                 photo.scanned = true; photo.approved = false;
-                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó.';
+                photo.reason = 'No se pudo analizar la imagen. Por seguridad, no se aprobó. Quitala y probá de nuevo.';
                 renderPhotoSlots();
                 showToast('⚠️ No se pudo analizar la foto', 'error');
                 console.error(err);
@@ -1178,6 +1216,29 @@ async function publishProduct() {
             if (checkBlockedCategory(`${title} ${description}`)) {
                 showToast('🚫 Este rubro no está permitido en Plaza Market.', 'error');
                 return;
+            }
+            // IA de moderación: sin datos de contacto en el texto
+            const _contacto = contactoEnTexto(`${title} ${description}`);
+            if (_contacto) {
+                showToast(`🚫 El título o la descripción tienen ${_contacto}. No se permiten datos de contacto: todo se habla por el chat de Plaza Market.`, 'error');
+                return;
+            }
+            // Precio real: nada de $1 o $11 de relleno
+            if (estado !== 'consultar' && price < 100) {
+                showToast('❌ El precio mínimo es $100. Si el precio depende del trabajo o del cliente, en "Estado" elegí "💬 A consultar".', 'error');
+                return;
+            }
+            // ¿Es un servicio cargado como producto?
+            if (esProducto) {
+                const _serv = pareceServicio(`${title} ${description}`);
+                if (_serv && !window._pmServOk) {
+                    if (confirm(`Parece un servicio ("${_serv}"), no un producto.\n\nAceptar: lo paso a Servicio para que lo publiques bien.\nCancelar: es un producto, publicarlo igual.`)) {
+                        setTipo('servicio');
+                        showToast('🛠️ Lo pasamos a Servicio. Elegí la categoría y revisá los datos antes de publicar.', 'info');
+                        return;
+                    }
+                    window._pmServOk = true;
+                }
             }
 
             const totalFotos = uploadedPhotos.length + fotosExistentes.length;
