@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611161330">
+<meta name="pm-version" content="202611181000">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -128,6 +128,39 @@
                     <table>
                         <thead><tr><th>Zona</th><th>Área</th><th>Usuarios</th><th>Vendedores</th><th>Compradores</th></tr></thead>
                         <tbody id="tablaZonas"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <!-- Consultas por producto / servicio -->
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-1">💬 Consultas</h2>
+                <p class="text-xs text-slate-400 mb-4">Cuántas personas consultaron por cada producto o servicio. Cada persona cuenta una sola vez por publicación, aunque consulte varias veces.</p>
+                <div id="consResumen" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;"></div>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Tipo</th><th>Vendedor</th><th>Personas que consultaron</th></tr></thead>
+                        <tbody id="tablaConsultas"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Qué le interesa a la gente -->
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-1">📊 Qué le interesa a la gente</h2>
+                <p class="text-xs text-slate-400 mb-4" id="interesNota">Personas distintas que entraron a ver productos de cada categoría. Cada persona cuenta una sola vez por publicación, aunque entre varias veces. No cuenta al vendedor mirando lo suyo ni a los administradores.</p>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Categoría</th><th>Personas</th><th>%</th><th></th></tr></thead>
+                        <tbody id="tablaInteres"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+                <h3 class="text-sm font-bold text-white mt-5 mb-2">Las publicaciones más vistas</h3>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Categoría</th><th>Personas que entraron</th></tr></thead>
+                        <tbody id="tablaMasVistos"><tr><td colspan="3" class="empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -348,6 +381,7 @@
 
             renderVentas(ords);
             renderZonas(us, publicaronSet, compradoresSet);
+            cargarConsultasEInteres();
             renderProductos(ps);
             renderUsuarios(us);
             renderReportes(reportes.data || []);
@@ -375,6 +409,48 @@
                 return '<tr><td>'+escaparHtml(pr.titulo||('#'+r.producto_id))+'</td><td>'+estrellas(r.estrellas_producto)+'</td><td>'+escaparHtml(vend)+' '+estrellas(r.estrellas_vendedor)+'</td><td>'+escaparHtml(r.comentario||'')+'</td><td>'+escaparHtml(autor)+'</td><td>'+fechaCorta(r.creado_en)+'</td></tr>';
             }).join('');
         }
+
+        // ── Consultas y lo que más interesa ──
+        function catNombre(c) { return CATEGORY_LABELS[c] || c || 'Sin categoría'; }
+        async function cargarConsultasEInteres() {
+            const vendedorDe = id => { const p = prodMap[id]; return p ? nombreDe(p.usuario_id) : '—'; };
+            // 1) Consultas: una persona cuenta una vez por publicación
+            try {
+                const { data, error } = await db.from('pm_consultas').select('producto_id, usuario_id');
+                if (error) throw error;
+                const porProd = {};
+                (data || []).forEach(c => { if (!prodMap[c.producto_id]) return; (porProd[c.producto_id] = porProd[c.producto_id] || new Set()).add(c.usuario_id); });
+                const ids = Object.keys(porProd).sort((a, b) => porProd[b].size - porProd[a].size);
+                let pProd = new Set(), pServ = new Set(), nProd = 0, nServ = 0;
+                ids.forEach(id => { const serv = prodMap[id].tipo === 'servicio'; porProd[id].forEach(u => (serv ? pServ : pProd).add(u)); if (serv) nServ += porProd[id].size; else nProd += porProd[id].size; });
+                const chip = (t, v) => '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:.8rem;padding:.6rem .9rem;font-size:.82rem;color:#CBD5E1;">' + t + ': <b style="color:#fff;font-size:1rem;">' + v + '</b></div>';
+                document.getElementById('consResumen').innerHTML = chip('📦 Consultas por productos', nProd) + chip('🛠️ Consultas por servicios', nServ) + chip('👤 Personas distintas que consultaron', new Set([...pProd, ...pServ]).size);
+                const tb = document.getElementById('tablaConsultas');
+                tb.innerHTML = ids.length ? ids.map(id => { const p = prodMap[id]; return '<tr><td>' + escaparHtml(p.titulo || ('#' + id)) + '</td><td>' + (p.tipo === 'servicio' ? '🛠️ Servicio' : '📦 Producto') + '</td><td>' + vendedorDe(id) + '</td><td style="font-weight:800;">' + porProd[id].size + '</td></tr>'; }).join('')
+                    : '<tr><td colspan="4" class="empty">Todavía nadie consultó.</td></tr>';
+            } catch (e) { document.getElementById('tablaConsultas').innerHTML = '<tr><td colspan="4" class="empty">No se pudieron cargar las consultas.</td></tr>'; }
+            // 2) Interés por categoría (vistas únicas)
+            try {
+                const { data, error } = await db.from('pm_vistas').select('producto_id, visitante, usuario_id, creado_en');
+                if (error) throw error;
+                const filas = (data || []).filter(v => { const p = prodMap[v.producto_id]; if (!p) return false; if (v.usuario_id && (v.usuario_id === p.usuario_id || adminSet.has(v.usuario_id))) return false; return true; });
+                const porCat = {}, porProd = {}, todas = new Set();
+                filas.forEach(v => { const c = prodMap[v.producto_id].categoria || ''; (porCat[c] = porCat[c] || new Set()).add(v.visitante); (porProd[v.producto_id] = porProd[v.producto_id] || new Set()).add(v.visitante); todas.add(v.visitante); });
+                const total = Object.values(porCat).reduce((a, s) => a + s.size, 0);
+                const cats = Object.keys(porCat).sort((a, b) => porCat[b].size - porCat[a].size);
+                const desde = filas.length ? new Date(Math.min(...filas.map(v => new Date(v.creado_en)))) : null;
+                if (desde) document.getElementById('interesNota').textContent += ' Se cuenta desde el ' + desde.toLocaleDateString('es-AR') + '. Personas distintas en total: ' + todas.size + '.';
+                document.getElementById('tablaInteres').innerHTML = cats.length ? cats.map(c => { const n = porCat[c].size, pc = total ? Math.round(n * 100 / total) : 0; return '<tr><td>' + escaparHtml(catNombre(c)) + '</td><td style="font-weight:800;">' + n + '</td><td>' + pc + '%</td><td style="width:40%;"><div style="height:10px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden;"><div style="height:100%;width:' + pc + '%;background:linear-gradient(90deg,#3B82F6,#A78BFA);"></div></div></td></tr>'; }).join('')
+                    : '<tr><td colspan="4" class="empty">Todavía no hay visitas registradas.</td></tr>';
+                const top = Object.keys(porProd).sort((a, b) => porProd[b].size - porProd[a].size).slice(0, 15);
+                document.getElementById('tablaMasVistos').innerHTML = top.length ? top.map(id => '<tr><td>' + escaparHtml(prodMap[id].titulo || ('#' + id)) + '</td><td>' + escaparHtml(catNombre(prodMap[id].categoria)) + '</td><td style="font-weight:800;">' + porProd[id].size + '</td></tr>').join('')
+                    : '<tr><td colspan="3" class="empty">Todavía no hay visitas registradas.</td></tr>';
+            } catch (e) {
+                const msg = '<tr><td colspan="4" class="empty">⏳ Falta activar el registro de visitas en la base de datos.</td></tr>';
+                document.getElementById('tablaInteres').innerHTML = msg; document.getElementById('tablaMasVistos').innerHTML = msg.replace('colspan="4"', 'colspan="3"');
+            }
+        }
+
         function renderZonas(us, publicaronSet, compradoresSet) {
             const tb = document.getElementById('tablaZonas');
             if (!us.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay usuarios.</td></tr>'; return; }
