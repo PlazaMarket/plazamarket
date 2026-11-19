@@ -52,7 +52,7 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); }
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
-<meta name="pm-version" content="202611181000">
+<meta name="pm-version" content="202611190100">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando permisos...</div>
@@ -132,6 +132,18 @@
                 </div>
             </section>
 
+
+            <!-- Revisión automática -->
+            <section class="glass-card p-5 sm:p-6">
+                <h2 class="text-lg font-bold text-white mb-1">🛡️ Publicaciones a revisar</h2>
+                <p class="text-xs text-slate-400 mb-4">Revisión automática de todas las publicaciones cada vez que abrís esta pantalla: datos de contacto (teléfono, redes, links, mails), servicios sin precio fijo y precios menores a $100. Las fotos se revisan al publicar.</p>
+                <div class="tabla-scroll">
+                    <table>
+                        <thead><tr><th>Publicación</th><th>Vendedor</th><th>Problema</th><th>Estado</th></tr></thead>
+                        <tbody id="tablaRevisar"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
 
             <!-- Consultas por producto / servicio -->
             <section class="glass-card p-5 sm:p-6">
@@ -382,6 +394,7 @@
             renderVentas(ords);
             renderZonas(us, publicaronSet, compradoresSet);
             cargarConsultasEInteres();
+            cargarARevisar();
             renderProductos(ps);
             renderUsuarios(us);
             renderReportes(reportes.data || []);
@@ -412,6 +425,16 @@
 
         // ── Consultas y lo que más interesa ──
         function catNombre(c) { return CATEGORY_LABELS[c] || c || 'Sin categoría'; }
+        async function cargarARevisar() {
+            const tb = document.getElementById('tablaRevisar');
+            try {
+                const { data, error } = await db.rpc('pm_a_revisar');
+                if (error) throw error;
+                tb.innerHTML = (data && data.length) ? data.map(r => '<tr><td>' + escaparHtml(r.titulo || ('#' + r.id)) + '</td><td>' + escaparHtml(r.vendedor || '') + '</td><td style="color:#fca5a5;font-weight:700;">⚠️ ' + escaparHtml(r.motivo || '') + '</td><td>' + (r.activa ? '<span style="color:#fcd34d;">Visible</span>' : '<span style="color:#94a3b8;">⏸️ Pausada</span>') + '</td></tr>').join('')
+                    : '<tr><td colspan="4" class="empty">✅ Todo en orden: ninguna publicación tiene problemas.</td></tr>';
+            } catch (e) { tb.innerHTML = '<tr><td colspan="4" class="empty">No se pudo revisar.</td></tr>'; }
+        }
+
         async function cargarConsultasEInteres() {
             const vendedorDe = id => { const p = prodMap[id]; return p ? nombreDe(p.usuario_id) : '—'; };
             // 1) Consultas: una persona cuenta una vez por publicación

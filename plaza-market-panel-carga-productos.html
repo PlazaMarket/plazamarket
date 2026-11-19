@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611190010">
+<meta name="pm-version" content="202611190100">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -733,6 +733,8 @@
 
         function setTipo(tipo) {
             tipoActual = tipo;
+            // Los servicios van con precio fijo: sin "A consultar"
+            try { const _o = document.querySelector('#productEstado option[value="consultar"]'); if (_o) { _o.hidden = (tipo === 'servicio'); _o.disabled = (tipo === 'servicio'); if (tipo === 'servicio' && document.getElementById('productEstado').value === 'consultar') { document.getElementById('productEstado').value = 'disponible'; document.getElementById('productEstado').dispatchEvent(new Event('change')); } } } catch (e) {}
             document.getElementById('btnTipoProducto').classList.toggle('activo', tipo === 'producto');
             document.getElementById('btnTipoServicio').classList.toggle('activo', tipo === 'servicio');
             document.getElementById('seccionEnvio').classList.add('hidden');
@@ -1223,9 +1225,10 @@ async function publishProduct() {
                 showToast(`🚫 El título o la descripción tienen ${_contacto}. No se permiten datos de contacto: todo se habla por el chat de Plaza Market.`, 'error');
                 return;
             }
+            if (!esProducto && estado === 'consultar') { showToast('❌ Los servicios tienen que tener un precio fijo. Poné el precio del servicio.', 'error'); return; }
             // Precio real: nada de $1 o $11 de relleno
             if (estado !== 'consultar' && price < 100) {
-                showToast('❌ El precio mínimo es $100. Si el precio depende del trabajo o del cliente, en "Estado" elegí "💬 A consultar".', 'error');
+                showToast('❌ El precio mínimo es $100. Si es un servicio, poné el precio fijo (en la descripción podés detallar la lista de precios).', 'error');
                 return;
             }
             // ¿Es un servicio cargado como producto?

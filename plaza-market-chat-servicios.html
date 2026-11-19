@@ -135,7 +135,7 @@
         .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748B; display: inline-block; }
         .conn-dot.on { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
     </style>
-<meta name="pm-version" content="202610282358">
+<meta name="pm-version" content="202611190100">
 </head>
 <body>
 
@@ -573,7 +573,21 @@
                 if (perf && perf.nombre) otherName = perf.nombre;
                 document.getElementById('tituloChat').textContent = otherName;
                 document.getElementById('prodChat').textContent = '💬 ' + prod.titulo;
+                // El chat privado se habilita recién con la compra pagada
+                const { data: ords } = await db.from('pm_ordenes').select('id').eq('producto_id', pid).eq('comprador_id', buyerUid).eq('estado', 'pagado').limit(1);
+                if (!ords || !ords.length) bloquearChat(soyVendedor, pid);
             } catch (e) {}
+        }
+
+        function bloquearChat(soyVendedor, pid) {
+            const bar = document.querySelector('.chat-input-bar');
+            if (bar) {
+                bar.innerHTML = '<div style="padding:.9rem 1rem;color:#cbd5e1;font-size:.9rem;line-height:1.45;text-align:center;">🔒 ' +
+                    (soyVendedor
+                        ? 'El chat se habilita cuando la compra está pagada. Si te hicieron una pregunta, respondela en la publicación: la respuesta la ve todo el mundo.'
+                        : 'El chat con el vendedor se habilita cuando pagás. Antes de pagar, hacé tus preguntas en la publicación: la respuesta la ve todo el mundo.') +
+                    '<br><a href="plaza-market-catalogo.html?id=' + pid + '" style="color:#60a5fa;font-weight:700;">Ir a la publicación →</a></div>';
+            }
         }
 
         (async () => {
