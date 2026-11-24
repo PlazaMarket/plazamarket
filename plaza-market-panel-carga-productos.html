@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611231500">
+<meta name="pm-version" content="202611241000">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -460,8 +460,8 @@
                         <div id="dropzone" class="dropzone">
                             <div class="dz-mas">+</div>
                             <p class="dz-titulo">Agregar fotos o videos</p>
-                            <p class="dz-sub">Hacé clic acá, o arrastrá los archivos desde tu computadora.<br>Hasta 10 fotos y 5 videos (de hasta 60 segundos).</p>
-                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos · 0 de 5 videos</p>
+                            <p class="dz-sub">Hacé clic acá, o arrastrá los archivos desde tu computadora.<br>Hasta 10 fotos y 1 video (de hasta 60 segundos).</p>
+                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos · 0 de 1 video</p>
                         </div>
 
                         <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
@@ -981,7 +981,7 @@
 
         let uploadedPhotos = [];
         const MAX_FOTOS = 10;
-        const MAX_VIDEOS = 5;
+        const MAX_VIDEOS = 1;
         const MAX_VIDEO_MB = 50;
         const MAX_VIDEO_SEG = 60;
         function esVideoUrl(u){ return /\.(mp4|mov|webm|m4v|3gp)(\?|$)/i.test(String(u||'')); }
@@ -1002,7 +1002,7 @@
             const c = contarMedios();
             const libresF = MAX_FOTOS - c.fotos, libresV = MAX_VIDEOS - c.videos;
             if (imagenes.length > libresF) showToast(libresF > 0 ? `⚠️ Se agregaron ${libresF} fotos. El máximo es ${MAX_FOTOS}.` : `❌ Llegaste al máximo de ${MAX_FOTOS} fotos`, 'error');
-            if (videos.length > libresV) showToast(libresV > 0 ? `⚠️ Se agregaron ${libresV} videos. El máximo es ${MAX_VIDEOS}.` : `❌ Llegaste al máximo de ${MAX_VIDEOS} videos`, 'error');
+            if (videos.length > libresV) showToast(libresV > 0 ? `⚠️ Se agregó ${libresV} video. Por ahora se puede subir ${MAX_VIDEOS} video por publicación.` : `❌ Por ahora se puede subir ${MAX_VIDEOS} video por publicación`, 'error');
             const okVideos = [];
             for (const v of videos.slice(0, Math.max(0, libresV))) {
                 if (v.size > MAX_VIDEO_MB * 1024 * 1024) { showToast(`❌ "${v.name}" pesa más de ${MAX_VIDEO_MB} MB. Probá con un video más corto.`, 'error'); continue; }
@@ -1147,7 +1147,7 @@
             const total = uploadedPhotos.length + fotosExistentes.length;
             const contador = document.getElementById('contadorFotos');
             const _cm = contarMedios();
-            if (contador) contador.textContent = `${_cm.fotos} de ${MAX_FOTOS} fotos · ${_cm.videos} de ${MAX_VIDEOS} videos`;
+            if (contador) contador.textContent = `${_cm.fotos} de ${MAX_FOTOS} fotos · ${_cm.videos} de ${MAX_VIDEOS} video${MAX_VIDEOS === 1 ? '' : 's'}`;
             const _ayuda = document.getElementById('pmRechazoAyuda');
             if (_ayuda) _ayuda.classList.toggle('hidden', !uploadedPhotos.some(p => p.scanned && !p.approved));
 
