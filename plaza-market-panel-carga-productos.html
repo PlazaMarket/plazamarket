@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611191100">
+<meta name="pm-version" content="202611231500">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -306,19 +306,6 @@
                     <a href="plaza-market-super-admin.html" class="menu-item" id="menuAdmin" style="display:none;">Administrador</a>
                     <a href="#" class="menu-item menu-salir" onclick="handleLogout(event)">Salir</a>
                 </nav>
-            </div>
-
-            <div class="pm-revision" style="background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(59,130,246,.12));border:1.5px solid rgba(52,211,153,.55);border-radius:16px;padding:14px 16px;">
-                <p style="margin:0 0 6px;color:#6ee7b7;font-weight:800;font-size:1rem;"><span class="pulse-dot"></span> 🛡️ Revisión automática activa</p>
-                <p style="margin:0 0 8px;color:#e2e8f0;font-size:.9rem;line-height:1.45;">Antes de publicar, revisamos las fotos, el título y la descripción. <strong style="color:#fff;">Para que no te rechacen nada, no incluyas:</strong></p>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                    <span style="background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.45);color:#fecaca;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;">🚫 Teléfonos o WhatsApp</span>
-                    <span style="background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.45);color:#fecaca;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;">🚫 Códigos QR</span>
-                    <span style="background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.45);color:#fecaca;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;">🚫 Instagram, Facebook o @usuarios</span>
-                    <span style="background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.45);color:#fecaca;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;">🚫 Links o mails</span>
-                    <span style="background:rgba(239,68,68,.15);border:1px solid rgba(248,113,113,.45);color:#fecaca;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px;">🚫 Precios de $1 o de relleno</span>
-                </div>
-                <p style="margin:8px 0 0;color:#94a3b8;font-size:.8rem;">Todo se habla dentro de Plaza Market: así nos cuidamos todos.</p>
             </div>
 
             <div id="pmuCartel"></div>
@@ -467,18 +454,27 @@
                     </div>
 
                     <div>
-                        <label>📸 Fotos</label>
-                        <p style="margin:-2px 0 8px;color:#fcd34d;font-size:.82rem;font-weight:600;line-height:1.4;">⚠️ Usá fotos del producto o de tu trabajo. Si la foto tiene un teléfono, un QR, un @usuario o un link (por ejemplo, una captura de un estado o un folleto), se rechaza.</p>
-                        <input type="file" id="photoFileInput" accept="image/*" multiple class="hidden" onchange="handlePhotoFileSelected(event)">
+                        <label>📸 Fotos y videos</label>
+                        <input type="file" id="photoFileInput" accept="image/*,video/mp4,video/quicktime,video/webm,video/*" multiple class="hidden" onchange="handlePhotoFileSelected(event)">
 
                         <div id="dropzone" class="dropzone">
                             <div class="dz-mas">+</div>
-                            <p class="dz-titulo">Agregar fotos</p>
-                            <p class="dz-sub">Hacé clic acá, o arrastrá las imágenes desde tu computadora.<br>Podés subir varias juntas.</p>
-                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos</p>
+                            <p class="dz-titulo">Agregar fotos o videos</p>
+                            <p class="dz-sub">Hacé clic acá, o arrastrá los archivos desde tu computadora.<br>Hasta 10 fotos y 5 videos (de hasta 60 segundos).</p>
+                            <p class="dz-contador" id="contadorFotos">0 de 10 fotos · 0 de 5 videos</p>
                         </div>
 
                         <div id="photoSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3"></div>
+                        <div id="pmRechazoAyuda" class="hidden" style="margin-top:.75rem;background:rgba(239,68,68,.1);border:1px solid rgba(248,113,113,.45);border-radius:12px;padding:.75rem .9rem;color:#fecaca;font-size:.85rem;line-height:1.45;">
+                            <strong style="color:#fff;">¿Por qué se rechazó?</strong> En las fotos y en los videos no puede aparecer:
+                            <ul style="margin:.35rem 0 0 1.1rem;list-style:disc;">
+                                <li>Teléfonos o WhatsApp escritos</li>
+                                <li>Códigos QR</li>
+                                <li>Instagram, Facebook o @usuarios</li>
+                                <li>Links o mails</li>
+                            </ul>
+                            <span style="color:#cbd5e1;">Usá fotos o videos del producto o de tu trabajo (no capturas de estados ni folletos). Quitá la rechazada y subí otra.</span>
+                        </div>
                     </div>
 
                     <div id="bannerEdicion" class="hidden" style="background:rgba(0,82,212,0.12);border:1px solid rgba(59,130,246,0.4);border-radius:0.85rem;padding:0.8rem 1rem;font-size:0.82rem;color:#BFDBFE;">
@@ -985,36 +981,90 @@
 
         let uploadedPhotos = [];
         const MAX_FOTOS = 10;
+        const MAX_VIDEOS = 5;
+        const MAX_VIDEO_MB = 50;
+        const MAX_VIDEO_SEG = 60;
+        function esVideoUrl(u){ return /\.(mp4|mov|webm|m4v|3gp)(\?|$)/i.test(String(u||'')); }
+        function contarMedios(){
+            const exV = fotosExistentes.filter(esVideoUrl).length, exF = fotosExistentes.length - exV;
+            const nV = uploadedPhotos.filter(p => p.isVideo).length, nF = uploadedPhotos.length - nV;
+            return { fotos: exF + nF, videos: exV + nV };
+        }
+        function duracionVideo(file){
+            return new Promise(res => { const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.onloadedmetadata=()=>{ res(v.duration||0); URL.revokeObjectURL(v.src); }; v.onerror=()=>res(0); v.src=URL.createObjectURL(file); });
+        }
 
         async function agregarArchivos(files) {
-            const restantes = MAX_FOTOS - uploadedPhotos.length - fotosExistentes.length;
-            if (restantes <= 0) {
-                showToast(`❌ Llegaste al máximo de ${MAX_FOTOS} fotos`, 'error');
-                return;
+            const lista = Array.from(files);
+            const imagenes = lista.filter(f => f.type.startsWith('image/'));
+            const videos = lista.filter(f => f.type.startsWith('video/'));
+            if (imagenes.length + videos.length < lista.length) showToast('❌ Solo se aceptan fotos y videos', 'error');
+            const c = contarMedios();
+            const libresF = MAX_FOTOS - c.fotos, libresV = MAX_VIDEOS - c.videos;
+            if (imagenes.length > libresF) showToast(libresF > 0 ? `⚠️ Se agregaron ${libresF} fotos. El máximo es ${MAX_FOTOS}.` : `❌ Llegaste al máximo de ${MAX_FOTOS} fotos`, 'error');
+            if (videos.length > libresV) showToast(libresV > 0 ? `⚠️ Se agregaron ${libresV} videos. El máximo es ${MAX_VIDEOS}.` : `❌ Llegaste al máximo de ${MAX_VIDEOS} videos`, 'error');
+            const okVideos = [];
+            for (const v of videos.slice(0, Math.max(0, libresV))) {
+                if (v.size > MAX_VIDEO_MB * 1024 * 1024) { showToast(`❌ "${v.name}" pesa más de ${MAX_VIDEO_MB} MB. Probá con un video más corto.`, 'error'); continue; }
+                const d = await duracionVideo(v);
+                if (d > MAX_VIDEO_SEG + 1) { showToast(`❌ "${v.name}" dura más de ${MAX_VIDEO_SEG} segundos. Recortalo y volvé a subirlo.`, 'error'); continue; }
+                okVideos.push(v);
             }
-
-            const imagenes = Array.from(files).filter(f => f.type.startsWith('image/'));
-            if (imagenes.length < files.length) {
-                showToast('❌ Por ahora solo se aceptan fotos, no videos', 'error');
-            }
-
-            const aAgregar = imagenes.slice(0, restantes);
-            if (imagenes.length > restantes) {
-                showToast(`⚠️ Se agregaron ${restantes}. El máximo es ${MAX_FOTOS} fotos.`, 'info');
-            }
-
+            const aAgregar = imagenes.slice(0, Math.max(0, libresF)).concat(okVideos);
             const nuevas = aAgregar.map(file => ({
                 id: Date.now() + Math.random(),
                 file,
+                isVideo: file.type.startsWith('video/'),
                 imageUrl: URL.createObjectURL(file),
                 scanned: false, approved: false, reason: null
             }));
-
             uploadedPhotos.push(...nuevas);
             renderPhotoSlots();
-            if (nuevas.length) showToast(`🔎 Revisando ${nuevas.length} foto${nuevas.length === 1 ? '' : 's'}...`, 'info');
-            // La IA de moderación revisa cada foto, de a una (teléfonos, QR, redes, links)
-            for (const ph of nuevas) { await scanPhotoReal(ph, ph.file); }
+            if (nuevas.length) showToast(`🔎 Revisando ${nuevas.length} archivo${nuevas.length === 1 ? '' : 's'}...`, 'info');
+            // Revisión automática de cada foto o video, de a uno (teléfonos, QR, redes, links)
+            for (const ph of nuevas) { if (ph.isVideo) await scanVideoReal(ph, ph.file); else await scanPhotoReal(ph, ph.file); }
+        }
+
+        // Saca 3 cuadros del video (principio, medio y final) para revisarlos como fotos
+        function cuadrosDeVideo(file){
+            return new Promise((res) => {
+                const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto';
+                const out = []; let tiempos = [];
+                v.onloadedmetadata = () => { const d = v.duration || 1; tiempos = [Math.min(0.5, d*0.1), d*0.5, Math.max(0, d*0.9)]; v.currentTime = tiempos[0]; };
+                v.onseeked = () => {
+                    const cv = document.createElement('canvas'); const w = v.videoWidth || 720, h = v.videoHeight || 1280; const k = Math.min(1, 1280 / Math.max(w, h));
+                    cv.width = Math.round(w*k); cv.height = Math.round(h*k); cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+                    cv.toBlob(b => { if (b) out.push(b); if (out.length < tiempos.length) v.currentTime = tiempos[out.length]; else { URL.revokeObjectURL(v.src); res(out); } }, 'image/jpeg', 0.9);
+                };
+                v.onerror = () => res(out);
+                v.src = URL.createObjectURL(file);
+            });
+        }
+        async function scanVideoReal(item, file) {
+            try {
+                const cuadros = await cuadrosDeVideo(file);
+                if (!cuadros.length) throw new Error('sin cuadros');
+                const worker = await Tesseract.createWorker('spa');
+                let reason = null;
+                for (const c of cuadros) {
+                    if (await tieneQR(c)) { reason = 'Se detectó un código QR en el video.'; break; }
+                    const { data: { text } } = await worker.recognize(c);
+                    const t = text || '';
+                    if (hasDigitPhonePattern(t) || hasSpelledOutPhonePattern(t)) { reason = 'Se detectó un número de teléfono en el video.'; break; }
+                    if (hasSocialMediaPattern(t)) { reason = 'Se detectó una referencia a una red social en el video.'; break; }
+                    if (hasLinkPattern(t)) { reason = 'Se detectó un link a otra página en el video.'; break; }
+                }
+                await worker.terminate();
+                item.scanned = true; item.approved = !reason; item.reason = reason;
+                renderPhotoSlots();
+                showToast(reason ? `🚫 Video rechazado: ${reason}` : '✅ Video aprobado', reason ? 'error' : 'success');
+            } catch (err) {
+                item.scanned = true; item.approved = false;
+                item.reason = 'No se pudo revisar el video. Probá con otro formato (MP4) o más corto.';
+                renderPhotoSlots();
+                showToast('⚠️ No se pudo revisar el video', 'error');
+                console.error(err);
+            }
         }
 
         function handlePhotoFileSelected(event) {
@@ -1096,21 +1146,25 @@
 
             const total = uploadedPhotos.length + fotosExistentes.length;
             const contador = document.getElementById('contadorFotos');
-            if (contador) contador.textContent = `${total} de ${MAX_FOTOS} fotos`;
+            const _cm = contarMedios();
+            if (contador) contador.textContent = `${_cm.fotos} de ${MAX_FOTOS} fotos · ${_cm.videos} de ${MAX_VIDEOS} videos`;
+            const _ayuda = document.getElementById('pmRechazoAyuda');
+            if (_ayuda) _ayuda.classList.toggle('hidden', !uploadedPhotos.some(p => p.scanned && !p.approved));
 
             if (total === 0) { container.innerHTML = ''; pmOrden = []; return; }
             pmSyncOrden();
 
             container.innerHTML = pmOrden.map(function(k, pos){
-                const portada = pos === 0
+                const _esV = k.indexOf('e:') === 0 ? esVideoUrl(k.slice(2)) : !!((uploadedPhotos.find(function(x){ return pmKeyN(x.id) === k; }) || {}).isVideo);
+                const portada = _esV ? '' : pos === 0
                     ? '<div class="photo-portada">⭐ Portada</div>'
                     : '<button type="button" class="photo-portada-btn" onclick="pmHacerPortada(this)">⭐ Poner de portada</button>';
                 if (k.indexOf('e:') === 0) {
                     const url = k.slice(2);
                     const i = fotosExistentes.indexOf(url);
                     return `<div class="photo-slot" data-key="${pmAttr(k)}">
-                    <img src="${pmAttr(url)}" alt="Foto" class="photo-slot-real-img">
-                    <div class="photo-approved-badge">✓ Ya cargada</div>
+                    ${esVideoUrl(url) ? `<video src="${pmAttr(url)}" class="photo-slot-real-img" muted playsinline preload="metadata"></video>` : `<img src="${pmAttr(url)}" alt="Foto" class="photo-slot-real-img">`}
+                    <div class="photo-approved-badge">✓ Ya cargad${esVideoUrl(url) ? 'o' : 'a'}</div>
                     ${portada}<button onclick="quitarFotoExistente(${i})" class="photo-remove-btn">✕ Quitar</button>
                 </div>`;
                 }
@@ -1119,10 +1173,10 @@
                 if (!p) return '';
                 let statusBlock;
                 if (!p.scanned) statusBlock = '<div class="photo-scanning"><span class="spinner-mini"></span>Analizando...</div>';
-                else if (p.approved) statusBlock = '<div class="photo-approved-badge">✓ Aprobada</div>';
-                else statusBlock = `<div class="photo-rejected-badge">✗ Rechazada</div><p class="photo-reject-reason">${p.reason}</p>`;
+                else if (p.approved) statusBlock = `<div class="photo-approved-badge">✓ Aprobad${p.isVideo ? 'o' : 'a'}</div>`;
+                else statusBlock = `<div class="photo-rejected-badge">✗ Rechazad${p.isVideo ? 'o' : 'a'}</div><p class="photo-reject-reason">${p.reason}</p>`;
                 return `<div class="photo-slot ${p.scanned && !p.approved ? 'photo-slot-rejected' : ''}" data-key="${pmAttr(k)}">
-                    <img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">
+                    ${p.isVideo ? `<video src="${p.imageUrl}" class="photo-slot-real-img" muted playsinline preload="metadata"></video><div style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;">🎥 Video</div>` : `<img src="${p.imageUrl}" alt="Foto" class="photo-slot-real-img">`}
                     ${statusBlock}
                     ${portada}<button onclick="removePhoto(${p.id})" class="photo-remove-btn">✕ Quitar</button>
                 </div>`;
@@ -1258,9 +1312,10 @@ async function publishProduct() {
 
             const totalFotos = uploadedPhotos.length + fotosExistentes.length;
             if (totalFotos === 0) { showToast('❌ Agregá al menos una foto', 'error'); return; }
-            if (uploadedPhotos.some(p => !p.scanned)) { showToast('⏳ Esperá a que la IA analice tus fotos', 'info'); return; }
-            if (fotosExistentes.length === 0 && uploadedPhotos.filter(p => p.approved).length === 0) {
-                showToast('❌ Ninguna foto pasó el filtro. Subí al menos una foto limpia.', 'error'); return;
+            if (uploadedPhotos.some(p => !p.scanned)) { showToast('⏳ Esperá a que termine la revisión de tus fotos y videos', 'info'); return; }
+            const _fotosOk = fotosExistentes.filter(u => !esVideoUrl(u)).length + uploadedPhotos.filter(p => p.approved && !p.isVideo).length;
+            if (_fotosOk === 0) {
+                showToast('❌ Necesitás al menos una foto aprobada (la portada tiene que ser una foto).', 'error'); return;
             }
 
             const btn = document.getElementById('publishBtn');
@@ -1276,6 +1331,8 @@ async function publishProduct() {
                     return (ph && ph.approved && ph.subidaUrl) ? ph.subidaUrl : null;
                 }).filter(Boolean);
                 if (!fotos.length) fotos = fotosExistentes.concat(nuevasUrls);
+                // La portada siempre es una foto: primero las fotos, después los videos
+                fotos = fotos.filter(u => !esVideoUrl(u)).concat(fotos.filter(esVideoUrl));
 
                 const marca = (window.pmCapitalizar ? pmCapitalizar(document.getElementById('productMarca') ? document.getElementById('productMarca').value : '') : (document.getElementById('productMarca') ? document.getElementById('productMarca').value : '')).trim().slice(0,60);
     const condicion = (document.getElementById('productCondicion') ? document.getElementById('productCondicion').value : 'nuevo');
