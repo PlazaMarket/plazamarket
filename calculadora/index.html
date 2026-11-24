@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de precios para emprendedores — Gratis | Plaza Market</title>
-<meta name="description" content="¿A cuánto lo vendo? Calculadora de precios gratis para emprendedores argentinos: poné lo que te cuesta y lo que querés ganar, y te decimos el precio justo con comisiones y Mercado Pago incluidos.">
-<meta name="pm-version" content="202611151800">
+<meta name="description" content="¿A cuánto lo vendo? Calculadora de precios gratis para emprendedores argentinos: sumá lo que gastaste por unidad y te decimos a cuánto venderlo.">
+<meta name="pm-version" content="202611241200">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.json">
@@ -19,70 +19,61 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:linear-gradient(160deg,#0B1120 0%,#131B2E 45%,#1A1F3A 75%,#0B1120 100%);min-height:100vh;color:#E2E8F0}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 18% 18%,rgba(0,82,212,.22) 0%,transparent 45%),radial-gradient(circle at 85% 12%,rgba(88,28,135,.24) 0%,transparent 45%)}
-.wrap{position:relative;z-index:1;max-width:620px;margin:0 auto;padding:16px 16px 48px}
+.wrap{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:16px 16px 48px}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0 18px}
 .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:800;font-size:1.05rem}
 .brand img{width:36px;height:36px;border-radius:10px}
 .top-link{color:#93C5FD;font-size:.85rem;font-weight:600;text-decoration:none}
 h1{font-size:2rem;line-height:1.1;font-weight:900;color:#fff;letter-spacing:-.02em}
 h1 span{color:#FFD60A}
-.sub{margin-top:10px;color:#CBD5E1;font-size:1rem;line-height:1.5}
-.card{margin-top:20px;background:rgba(15,23,42,.72);border:1px solid rgba(96,165,250,.22);border-radius:18px;padding:18px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.05);padding:5px;border-radius:14px}
-.tab{border:0;background:transparent;color:#CBD5E1;font-weight:700;font-size:.92rem;padding:11px 8px;border-radius:10px;cursor:pointer}
-.tab.on{background:#0052D4;color:#fff}
-.field{margin-top:16px}
-label{display:block;font-size:.9rem;font-weight:700;color:#fff}
-.hint{display:block;font-size:.78rem;font-weight:500;color:#94A3B8;margin-top:2px}
-.money{position:relative;margin-top:7px}
-.money b{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94A3B8;font-weight:700}
-input[type=number]{width:100%;font-size:1.1rem;font-weight:700;color:#fff;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 14px 12px 30px;outline:none}
-input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}
-.money.suf b{left:auto;right:14px}.money.suf input{padding-left:14px;padding-right:34px}
-input[type=number]:focus{border-color:#3B82F6;background:rgba(0,82,212,.1)}
-.row2{display:flex;gap:8px;align-items:stretch;margin-top:7px}
-.row2 .money{flex:1;margin-top:0}
-.seg{display:flex;background:rgba(255,255,255,.05);border-radius:12px;padding:4px;gap:4px}
-.seg button{border:0;background:transparent;color:#CBD5E1;font-weight:800;padding:0 14px;border-radius:9px;cursor:pointer;font-size:1rem}
-.seg button.on{background:#334155;color:#fff}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.chip{border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#E2E8F0;font-weight:700;font-size:.88rem;padding:9px 13px;border-radius:999px;cursor:pointer}
-.chip.on{border-color:#3B82F6;background:rgba(0,82,212,.18);color:#fff}
-.otra{display:none;align-items:center;gap:6px;margin-top:8px}
-.otra.show{display:flex}
-.otra input{width:110px;padding-left:14px}
-.check{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.88rem;color:#E2E8F0;cursor:pointer;line-height:1.4}
-.check input{width:20px;height:20px;margin-top:1px;accent-color:#0052D4;flex-shrink:0}
-.check small{display:block;color:#94A3B8;font-size:.76rem}
-.res{margin-top:18px;border-radius:18px;padding:18px;background:linear-gradient(135deg,rgba(0,82,212,.25),rgba(88,28,135,.25));border:1.5px solid rgba(255,214,10,.5)}
-.res .lbl{font-size:.85rem;color:#CBD5E1;font-weight:700}
-.res .big{font-size:2.6rem;font-weight:900;color:#FFD60A;letter-spacing:-.02em;line-height:1.1;margin-top:4px}
-.res .note{font-size:.8rem;color:#CBD5E1;margin-top:4px}
-.lines{margin-top:14px;border-top:1px dashed rgba(255,255,255,.18);padding-top:10px}
-.line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:.92rem;color:#E2E8F0}
+.sub{margin-top:8px;color:#CBD5E1;font-size:1rem;line-height:1.45}
+.card{margin-top:18px;background:rgba(15,23,42,.72);border:1px solid rgba(96,165,250,.22);border-radius:18px;padding:18px}
+.step{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:900;color:#fff}
+.step i{font-style:normal;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#0052D4;font-size:.9rem;flex:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+.row label{font-size:.95rem;font-weight:700;color:#fff;line-height:1.25}
+.row label small{display:block;font-size:.76rem;font-weight:500;color:#94A3B8}
+.money{position:relative;width:46%;max-width:180px;flex:none}
+.money b{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94A3B8;font-weight:700}
+.money.u b{left:auto;right:12px;font-size:.8rem}
+input[type=number]{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:12px;color:#fff;font-size:1.15rem;font-weight:700;padding:12px 12px 12px 28px;outline:none;-moz-appearance:textfield}
+.money.u input{padding:12px 44px 12px 12px}
+input[type=number]:focus{border-color:#3B82F6;background:rgba(0,82,212,.12)}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.sub2{margin:8px 0 0 0;padding-left:12px;border-left:2px solid rgba(96,165,250,.35)}
+.sub2 .row{margin-top:8px}
+.costo{margin-top:16px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-weight:700;color:#CBD5E1}
+.costo strong{font-size:1.35rem;color:#fff;white-space:nowrap}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.chip{border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#E2E8F0;font-weight:800;font-size:1rem;padding:12px 4px;border-radius:12px;cursor:pointer}
+.chip.on{border-color:#3B82F6;background:rgba(0,82,212,.25);color:#fff}
+#fijoRow{display:none}
+.res{margin-top:18px;border-radius:18px;padding:20px 18px;text-align:center;background:linear-gradient(135deg,rgba(0,82,212,.28),rgba(88,28,135,.28));border:1.5px solid rgba(255,214,10,.55)}
+.res .lbl{font-size:1rem;color:#E2E8F0;font-weight:800}
+.res .big{font-size:2.8rem;font-weight:900;color:#FFD60A;letter-spacing:-.02em;line-height:1.1;margin-top:2px}
+.res .gana{margin-top:6px;font-size:1.05rem;font-weight:800;color:#6EE7B7}
+.res .chico{margin-top:10px;font-size:.78rem;color:#CBD5E1}
+details{margin-top:12px;text-align:left}
+summary{cursor:pointer;font-weight:700;font-size:.85rem;color:#93C5FD;text-align:center;list-style:none}
+summary::-webkit-details-marker{display:none}
+.line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:.9rem;color:#E2E8F0}
 .line span:last-child{font-weight:700;white-space:nowrap}
 .line.minus span:last-child{color:#FCA5A5}
-.line.tot{border-top:1px solid rgba(255,255,255,.14);margin-top:4px;padding-top:10px;font-weight:800}
-.line.gain{font-size:1.05rem;font-weight:900}
-.line.gain span:last-child{color:#34D399}
-.line.loss span:last-child{color:#F87171}
-.alert{display:none;margin-top:12px;padding:12px 14px;border-radius:12px;font-size:.88rem;line-height:1.45}
-.alert.show{display:block}
-.alert.bad{background:rgba(239,68,68,.14);border:1px solid rgba(248,113,113,.5);color:#FECACA}
-.alert.ok{background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.45);color:#D1FAE5}
-.empty{color:#94A3B8;font-size:.92rem;margin-top:6px}
-details{margin-top:14px;background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px}
-summary{cursor:pointer;font-weight:700;font-size:.9rem;color:#93C5FD}
-details p{margin-top:8px;font-size:.84rem;color:#CBD5E1;line-height:1.55}
-.cta{margin-top:22px;text-align:center}
-.cta h2{font-size:1.35rem;font-weight:900;color:#fff;line-height:1.2}
-.cta ul{list-style:none;margin:12px auto 0;display:inline-block;text-align:left;font-size:.92rem;color:#E2E8F0;line-height:1.8}
+.line.tot{border-top:1px solid rgba(255,255,255,.15);margin-top:4px;padding-top:8px;font-weight:800}
+.line.tot span:last-child{color:#6EE7B7}
+.ya{margin-top:14px}
+.ya .row{margin-top:10px}
+.yaRes{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:800;font-size:1rem;display:none}
+.yaRes.ok{display:block;background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.45);color:#D1FAE5}
+.yaRes.bad{display:block;background:rgba(239,68,68,.14);border:1px solid rgba(248,113,113,.5);color:#FECACA}
+.yaRes small{display:block;font-weight:600;font-size:.82rem;margin-top:4px;opacity:.9}
+.cta{text-align:center}
+.cta h2{font-size:1.3rem;font-weight:900;color:#fff;line-height:1.2}
+.cta p{margin-top:8px;font-size:.9rem;color:#CBD5E1}
 .btn{display:block;width:100%;text-align:center;text-decoration:none;font-weight:800;font-size:1rem;padding:15px;border-radius:14px;margin-top:12px}
 .btn.green{background:linear-gradient(135deg,#059669,#10B981);color:#fff;box-shadow:0 10px 26px rgba(16,185,129,.35)}
 .btn.blue{background:rgba(0,82,212,.2);border:1.5px solid rgba(96,165,250,.5);color:#fff}
 .btn.wa{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);color:#E2E8F0}
-.faq{margin-top:26px}
-.faq h2{font-size:1.1rem;font-weight:900;color:#fff}
 footer{margin-top:30px;text-align:center;font-size:.78rem;color:#64748B;line-height:1.6}
 footer a{color:#94A3B8}
 @media (min-width:520px){h1{font-size:2.4rem}}
@@ -97,93 +88,84 @@ footer a{color:#94A3B8}
   </header>
 
   <h1>¿A cuánto lo <span>vendo?</span></h1>
-  <p class="sub">Calculadora de precios <strong>gratis</strong> para emprendedores. Poné lo que te cuesta y lo que querés ganar: te decimos el precio justo, con las comisiones ya incluidas.</p>
+  <p class="sub">Sumá lo que gastaste y te decimos el precio.</p>
 
   <div class="card">
-    <div class="tabs">
-      <button class="tab on" id="tabA" type="button">Calcular el precio</button>
-      <button class="tab" id="tabB" type="button">Ya tengo el precio</button>
-    </div>
+    <div class="step"><i>1</i>¿Cuánto gastaste?</div>
 
-    <div class="field" id="fPrecio" style="display:none">
-      <label for="precio">¿A cuánto lo vendés?</label>
-      <div class="money"><b>$</b><input type="number" id="precio" inputmode="decimal" min="0" placeholder="0"></div>
-    </div>
-
-    <div class="field">
-      <label for="costo">¿Cuánto te cuesta el producto?<span class="hint">Lo que pagaste para comprarlo o los materiales para hacerlo.</span></label>
+    <div class="row">
+      <label for="costo">Producto<small>cada uno</small></label>
       <div class="money"><b>$</b><input type="number" id="costo" inputmode="decimal" min="0" placeholder="0"></div>
     </div>
 
-    <div class="field">
-      <label for="pack">Embalaje<span class="hint">Caja, bolsa, cinta, papel. Opcional.</span></label>
+    <div class="row">
+      <label for="viaje">Viaje para comprarlo<small>colectivo, nafta…</small></label>
+      <div class="money"><b>$</b><input type="number" id="viaje" inputmode="decimal" min="0" placeholder="0"></div>
+    </div>
+    <div class="sub2" id="uniBox">
+      <div class="row">
+        <label for="uni">¿Cuántos trajiste?</label>
+        <div class="money u"><b>u.</b><input type="number" id="uni" inputmode="numeric" min="1" value="1"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="pack">Embalaje<small>bolsa, caja, cinta</small></label>
       <div class="money"><b>$</b><input type="number" id="pack" inputmode="decimal" min="0" placeholder="0"></div>
     </div>
 
-    <div class="field">
-      <label for="otros">Otros gastos por unidad<span class="hint">Etiquetas, tarjetita, el envío si lo regalás. Opcional.</span></label>
-      <div class="money"><b>$</b><input type="number" id="otros" inputmode="decimal" min="0" placeholder="0"></div>
+    <div class="row">
+      <label for="entrega">Entrega<small>si la pagás vos</small></label>
+      <div class="money"><b>$</b><input type="number" id="entrega" inputmode="decimal" min="0" placeholder="0"></div>
     </div>
 
-    <div class="field" id="fGanancia">
-      <label for="gan">¿Cuánto querés ganar?<span class="hint">En porcentaje sobre lo que te cuesta, o una cantidad fija por unidad.</span></label>
-      <div class="row2">
-        <div class="money suf" id="ganBox"><b id="ganSym">%</b><input type="number" id="gan" inputmode="decimal" min="0" value="50"></div>
-        <div class="seg"><button type="button" id="ganPct" class="on">%</button><button type="button" id="ganFijo">$</button></div>
-      </div>
+    <div class="costo"><span>Cada uno te cuesta</span><strong id="costoUnit">$ 0</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><i>2</i>¿Cuánto querés ganar?</div>
+    <div class="chips">
+      <button type="button" class="chip" data-g="30">30%</button>
+      <button type="button" class="chip on" data-g="50">50%</button>
+      <button type="button" class="chip" data-g="100">100%</button>
+      <button type="button" class="chip" data-g="fijo">$</button>
+    </div>
+    <div class="row" id="fijoRow">
+      <label for="fijo">Quiero ganar<small>por cada uno</small></label>
+      <div class="money"><b>$</b><input type="number" id="fijo" inputmode="decimal" min="0" placeholder="0"></div>
     </div>
 
-    <div class="field">
-      <label>¿Dónde lo vendés?</label>
-      <div class="chips">
-        <button type="button" class="chip on" data-p="12">Plaza Market (12%)</button>
-        <button type="button" class="chip" data-p="0">Sin comisión</button>
-        <button type="button" class="chip" data-p="otra">Otra</button>
-      </div>
-      <div class="otra" id="otraBox"><input type="number" id="otraP" inputmode="decimal" min="0" max="80" placeholder="0"><span>% de comisión</span></div>
-    </div>
-
-    <label class="check"><input type="checkbox" id="mp" checked><span>Cobro con Mercado Pago<small>6,60% + IVA (7,99%) con el dinero al instante. Es igual con débito, crédito o dinero en cuenta.</small></span></label>
-    <label class="check" id="fRedondeo"><input type="checkbox" id="redo" checked><span>Redondear el precio<small>Lo sube a un número redondo, para que quede lindo.</small></span></label>
-
-    <div class="res" id="res">
-      <div class="lbl" id="resLbl">Precio sugerido</div>
+    <div class="res">
+      <div class="lbl">Vendelo a</div>
       <div class="big" id="resBig">$ —</div>
-      <div class="note" id="resNote">Completá lo que te cuesta el producto.</div>
-      <div class="lines" id="lines"></div>
-      <div class="alert" id="alerta"></div>
+      <div class="gana" id="resGana">Completá lo que gastaste</div>
+      <div class="chico">Ya incluye Mercado Pago y la comisión de Plaza Market.</div>
+      <details>
+        <summary>Ver la cuenta ▾</summary>
+        <div id="lines" style="margin-top:8px"></div>
+      </details>
     </div>
+  </div>
 
-    <details>
-      <summary>ℹ️ ¿Cómo se calcula?</summary>
-      <p>Sumamos todo lo que te cuesta cada unidad y lo que querés ganar. Después buscamos el precio que, una vez descontadas la comisión y el costo de Mercado Pago, te deja exactamente eso.</p>
-      <p><strong>El envío no entra:</strong> lo paga el comprador aparte. En Plaza Market la comisión se cobra solo sobre el precio, nunca sobre el envío. Si vos regalás el envío, sumalo en "Otros gastos".</p>
-      <p>Mercado Pago además retiene Ingresos Brutos (SIRTAC). Esa retención no está descontada acá porque depende de tu provincia y tu actividad, y la recuperás en tu declaración.</p>
-      <p>Los costos de Mercado Pago pueden cambiar. Valores de noviembre de 2026.</p>
-    </details>
+  <div class="card ya">
+    <div class="step"><i>?</i>¿Ya tenés precio?</div>
+    <div class="row">
+      <label for="precio">Lo vendo a</label>
+      <div class="money"><b>$</b><input type="number" id="precio" inputmode="decimal" min="0" placeholder="0"></div>
+    </div>
+    <div class="yaRes" id="yaRes"></div>
   </div>
 
   <div class="card cta">
-    <h2>¿Ya tenés tu precio?<br>Publicalo gratis en Plaza Market 🇦🇷</h2>
-    <ul>
-      <li>✅ Publicar es gratis</li>
-      <li>✅ Pagás 12% solo cuando vendés, nunca sobre el envío</li>
-      <li>✅ Cobrás por Mercado Pago, directo a tu cuenta</li>
-      <li>✅ Envíos a todo el país con seguimiento</li>
-    </ul>
+    <h2>Publicalo gratis en Plaza Market 🇦🇷</h2>
+    <p>Pagás 12% solo cuando vendés. Cobrás por Mercado Pago.</p>
     <a class="btn green" href="/plaza-market-acceso-emprendedores.html?next=plaza-market-panel-carga-productos.html">Publicar gratis</a>
     <a class="btn blue" href="/app">📲 Bajar la app (Play Store)</a>
-    <a class="btn wa" id="share" href="#">💬 Compartir la calculadora por WhatsApp</a>
-  </div>
-
-  <div class="faq">
-    <h2>Preguntas frecuentes</h2>
-    <details><summary>¿Cómo calculo el precio de venta de un producto?</summary><p>Sumá lo que te cuesta cada unidad (producto, embalaje y otros gastos) y lo que querés ganar. Después tené en cuenta lo que te descuentan al cobrar: la comisión de donde vendés y el costo de Mercado Pago. Esta calculadora hace la cuenta por vos.</p></details>
-    <details><summary>¿Qué porcentaje de ganancia le pongo?</summary><p>Depende del rubro. Lo importante es que la ganancia sea sobre lo que realmente te queda, no sobre el precio publicado. Probá distintos valores y fijate en "Ganancia limpia".</p></details>
-    <details><summary>¿Cuánto cobra Plaza Market?</summary><p>Publicar es gratis. Cuando vendés, Plaza Market cobra 12% sobre el precio del producto. Sobre el envío no se cobra nada.</p></details>
+    <a class="btn wa" id="share" href="#">💬 Compartir por WhatsApp</a>
   </div>
 
   <footer>
+    Mercado Pago: 7,99% (cobro al instante). Plaza Market: 12% sobre el precio, nunca sobre el envío. Valores de noviembre de 2026.<br><br>
     Plaza Market · Hecho por y para emprendedores argentinos<br>
     <a href="/plaza-market-catalogo.html">Ver la plaza</a> · <a href="/plaza-market-preguntas-frecuentes.html">Preguntas frecuentes</a> · <a href="/plaza-market-terminos-condiciones.html">Términos</a>
   </footer>
@@ -191,88 +173,53 @@ footer a{color:#94A3B8}
 
 <script>
 (function(){
-  var MP = 0.0799; // 6,60% + IVA, acreditación al instante
-  var modo = 'A', ganTipo = 'pct', plat = 12;
+  var MP = 0.0799, PM = 0.12, DESC = MP + PM; // lo que te descuentan al cobrar
+  var gan = 50;
   var $ = function(id){ return document.getElementById(id); };
   var num = function(id){ var v = parseFloat(($(id).value || '').replace(',', '.')); return isFinite(v) && v > 0 ? v : 0; };
   var fmt = function(n){ var s = n < 0 ? '−' : ''; return s + '$ ' + Math.round(Math.abs(n)).toLocaleString('es-AR'); };
   function redondear(p){ var paso = p < 10000 ? 100 : (p < 100000 ? 500 : 1000); return Math.ceil(p / paso) * paso; }
   function linea(txt, val, cls){ return '<div class="line ' + (cls || '') + '"><span>' + txt + '</span><span>' + val + '</span></div>'; }
-  function comisionPct(){ return plat === 'otra' ? Math.min(num('otraP'), 80) : plat; }
-
+  function costoUnidad(){ var u = Math.max(1, Math.round(num('uni')) || 1); return num('costo') + num('viaje') / u + num('pack') + num('entrega'); }
+  function cuenta(precio, costo){
+    var cMp = precio * MP, cPm = precio * PM, limpio = precio - cMp - cPm - costo;
+    return { cMp: cMp, cPm: cPm, limpio: limpio,
+      html: linea('Precio de venta', fmt(precio)) + linea('Mercado Pago (7,99%)', '−' + fmt(cMp), 'minus') +
+            linea('Plaza Market (12%)', '−' + fmt(cPm), 'minus') + linea('Lo que gastaste', '−' + fmt(costo), 'minus') +
+            linea('Te queda limpio', fmt(limpio), 'tot') };
+  }
   function calc(){
-    var costoTot = num('costo') + num('pack') + num('otros');
-    var p = comisionPct() / 100, m = $('mp').checked ? MP : 0;
-    var alerta = $('alerta'); alerta.className = 'alert'; alerta.innerHTML = '';
-    var precio, ganDeseada = null;
-    if (ganTipo === 'pct') ganDeseada = costoTot * num('gan') / 100; else ganDeseada = num('gan');
-
-    if (modo === 'A') {
-      $('resLbl').textContent = 'Precio sugerido';
-      if (!costoTot) { $('resBig').textContent = '$ —'; $('resNote').textContent = 'Completá lo que te cuesta el producto.'; $('lines').innerHTML = ''; return; }
-      if (p + m >= 0.95) { $('resBig').textContent = '$ —'; $('resNote').textContent = 'Revisá el porcentaje de comisión.'; $('lines').innerHTML = ''; return; }
-      precio = (costoTot + ganDeseada) / (1 - p - m);
-      if ($('redo').checked) precio = redondear(precio);
-      $('resNote').textContent = $('redo').checked ? 'Redondeado hacia arriba.' : 'Precio exacto.';
-    } else {
-      $('resLbl').textContent = 'Te queda de ganancia';
-      precio = num('precio');
-      if (!precio) { $('resBig').textContent = '$ —'; $('resNote').textContent = 'Poné a cuánto lo vendés.'; $('lines').innerHTML = ''; return; }
-    }
-
-    var cMp = precio * m, cPlat = precio * p, queda = precio - cMp - cPlat, ganancia = queda - costoTot;
-    var margen = costoTot ? (ganancia / costoTot * 100) : null;
-    var h = linea('Precio de venta', fmt(precio));
-    if (m) h += linea('Mercado Pago (7,99%)', '−' + fmt(cMp), 'minus');
-    if (p) h += linea('Comisión (' + (p * 100).toLocaleString('es-AR') + '%)', '−' + fmt(cPlat), 'minus');
-    h += linea('Te queda en la mano', fmt(queda), 'tot');
-    if (costoTot) h += linea('Tus costos', '−' + fmt(costoTot), 'minus');
-    h += linea('Ganancia limpia', fmt(ganancia), ganancia >= 0 ? 'gain' : 'gain loss');
-    if (margen !== null) h += linea('Ganás sobre lo que te cuesta', Math.round(margen).toLocaleString('es-AR') + '%');
-    $('lines').innerHTML = h;
-
-    if (modo === 'A') { $('resBig').textContent = fmt(precio); }
+    var costo = costoUnidad();
+    $('costoUnit').textContent = fmt(costo);
+    if (!costo) { $('resBig').textContent = '$ —'; $('resGana').textContent = 'Completá lo que gastaste'; $('lines').innerHTML = ''; }
     else {
-      $('resBig').textContent = fmt(ganancia);
-      $('resNote').textContent = 'Por cada unidad vendida.';
-      if (costoTot && ganancia < 0) {
-        alerta.className = 'alert bad show';
-        alerta.innerHTML = '⚠️ <strong>Estás perdiendo ' + fmt(-ganancia) + ' por venta.</strong> Para no perder plata, el precio mínimo es ' + fmt(redondear(costoTot / (1 - p - m))) + '.';
-      } else if (costoTot && ganDeseada && ganancia < ganDeseada) {
-        var ideal = redondear((costoTot + ganDeseada) / (1 - p - m));
-        alerta.className = 'alert ok show';
-        alerta.innerHTML = '💡 Para ganar lo que te propusiste (' + fmt(ganDeseada) + '), el precio tendría que ser ' + fmt(ideal) + '.';
-      }
+      var quiero = gan === 'fijo' ? num('fijo') : costo * gan / 100;
+      var precio = redondear((costo + quiero) / (1 - DESC));
+      var c = cuenta(precio, costo);
+      $('resBig').textContent = fmt(precio);
+      $('resGana').textContent = 'Te quedan ' + fmt(c.limpio) + ' limpios por cada uno';
+      $('lines').innerHTML = c.html;
     }
+    var pv = num('precio'), y = $('yaRes');
+    if (!pv) { y.className = 'yaRes'; y.innerHTML = ''; return; }
+    var r = cuenta(pv, costo);
+    if (r.limpio >= 0) { y.className = 'yaRes ok'; y.innerHTML = '✅ Te quedan ' + fmt(r.limpio) + ' limpios por cada uno' + (costo ? '' : '<small>Completá el paso 1 para restar lo que gastaste.</small>'); }
+    else { y.className = 'yaRes bad'; y.innerHTML = '⚠️ Perdés ' + fmt(-r.limpio) + ' por cada uno<small>Para no perder, vendelo a ' + fmt(redondear(costo / (1 - DESC))) + ' o más.</small>'; }
   }
-
-  function setModo(x){
-    modo = x;
-    $('tabA').classList.toggle('on', x === 'A'); $('tabB').classList.toggle('on', x === 'B');
-    $('fPrecio').style.display = x === 'B' ? 'block' : 'none';
-    $('fRedondeo').style.display = x === 'A' ? 'flex' : 'none';
-    $('fGanancia').querySelector('label').firstChild.textContent = x === 'A' ? '¿Cuánto querés ganar?' : '¿Cuánto te gustaría ganar? (opcional)';
-    calc();
-  }
-  $('tabA').onclick = function(){ setModo('A'); };
-  $('tabB').onclick = function(){ setModo('B'); };
-  $('ganPct').onclick = function(){ ganTipo = 'pct'; this.classList.add('on'); $('ganFijo').classList.remove('on'); $('ganSym').textContent = '%'; $('ganBox').classList.add('suf'); calc(); };
-  $('ganFijo').onclick = function(){ ganTipo = 'fijo'; this.classList.add('on'); $('ganPct').classList.remove('on'); $('ganSym').textContent = '$'; $('ganBox').classList.remove('suf'); calc(); };
   document.querySelectorAll('.chip').forEach(function(c){
     c.onclick = function(){
       document.querySelectorAll('.chip').forEach(function(o){ o.classList.remove('on'); });
       c.classList.add('on');
-      plat = c.dataset.p === 'otra' ? 'otra' : parseFloat(c.dataset.p);
-      $('otraBox').classList.toggle('show', plat === 'otra');
-      if (plat === 'otra') $('otraP').focus();
+      gan = c.dataset.g === 'fijo' ? 'fijo' : parseFloat(c.dataset.g);
+      $('fijoRow').style.display = gan === 'fijo' ? 'flex' : 'none';
+      if (gan === 'fijo') $('fijo').focus();
       calc();
     };
   });
-  ['precio','costo','pack','otros','gan','otraP'].forEach(function(id){ $(id).addEventListener('input', calc); });
-  ['mp','redo'].forEach(function(id){ $(id).addEventListener('change', calc); });
+  ['costo','viaje','uni','pack','entrega','fijo','precio'].forEach(function(id){ $(id).addEventListener('input', calc); });
   $('share').onclick = function(e){
     e.preventDefault();
-    var t = '¿No sabés a cuánto vender lo que hacés? Esta calculadora gratis te dice el precio justo 👉 https://plazamarket.com.ar/calculadora/';
+    var t = '¿No sabés a cuánto vender? Sumá lo que gastaste y esta calculadora gratis te dice el precio 👉 https://plazamarket.com.ar/calculadora/';
     if (navigator.share) { navigator.share({ title: 'Calculadora de precios', text: t }).catch(function(){}); }
     else { window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); }
   };
