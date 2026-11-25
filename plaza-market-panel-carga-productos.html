@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611251230">
+<meta name="pm-version" content="202611251900">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -943,6 +943,8 @@
             return maxRun >= 5;
         }
 
+        // Captura de pantalla de una red social (Instagram, Facebook, TikTok): muestra la cuenta aunque no tenga @
+        function esCapturaDeRed(text) { return /ver me gusta|promocionar publicaci|ver estad[ií]sticas|comentarios desactivados|revisar controles|\bseguidores\b|\bseguidos\b|historias destacadas|editar perfil|enviar mensaje|ver traducci[oó]n|ver los \d+ comentarios|agregar un comentario|a[nñ]ade un comentario/i.test(text); }
         function hasSocialMediaPattern(text) { return /instagram|facebook|whats\s?app|wsp\b|wpp\b|telegram|tik\s?tok|@[a-z0-9_.]{3,}/i.test(text); }
         function hasLinkPattern(text) {
             const t = String(text).toLowerCase().replace(/plazamarket\.com\.ar/g, '');
@@ -1052,6 +1054,7 @@
                     const t = text || '';
                     if (hasDigitPhonePattern(t) || hasSpelledOutPhonePattern(t)) { reason = 'Se detectó un número de teléfono en el video.'; break; }
                     if (hasSocialMediaPattern(t)) { reason = 'Se detectó una referencia a una red social en el video.'; break; }
+                    if (esCapturaDeRed(t)) { reason = 'El video muestra la pantalla de una red social.'; break; }
                     if (hasLinkPattern(t)) { reason = 'Se detectó un link a otra página en el video.'; break; }
                 }
                 await worker.terminate();
@@ -1096,6 +1099,7 @@
                 else if (hasDigitPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito en la imagen.';
                 else if (hasSpelledOutPhonePattern(extracted)) reason = 'Se detectó un número de teléfono escrito con palabras en la imagen.';
                 else if (hasSocialMediaPattern(extracted)) reason = 'Se detectó una posible referencia a una red social externa en la imagen.';
+                else if (esCapturaDeRed(extracted)) reason = 'Parece una captura de pantalla de una red social. Subí la foto original, sin la pantalla de la app.';
                 else if (hasLinkPattern(extracted)) reason = 'Se detectó un link a otra página en la imagen.';
 
                 photo.scanned = true;
