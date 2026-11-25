@@ -1,8 +1,9 @@
-// Genera una página liviana por publicación (p/<id>/index.html) con la vista previa
-// (foto, título y precio) para cuando se comparte el enlace en WhatsApp, Facebook o Instagram.
+// Genera una página liviana por publicación (p/<id>.html) y una imagen liviana (p/img/<id>.jpg)
+// para que al compartir el enlace en WhatsApp, Facebook o Instagram se vea la foto, el título y el precio.
 // Lo corre GitHub Actions cada 10 minutos.
 import fs from 'node:fs';
 import path from 'node:path';
+import sharp from 'sharp';
 
 const URL_SB = 'https://djpjgublkjtmprkcypma.supabase.co';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqcGpndWJsa2p0bXBya2N5cG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDYwNTQsImV4cCI6MjA5ODg4MjA1NH0.pp3dWXoa-5iUtciNYce6L6DSOWuw3vbd-Do_YlhxusM';
@@ -12,25 +13,51 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const pesos = n => '$ ' + Math.round(Number(n) || 0).toLocaleString('es-AR');
 const esVideo = u => /\.(mp4|mov|webm|m4v|3gp)(\?|$)/i.test(u || '');
 
-const r = await fetch(`${URL_SB}/rest/v1/productos?select=id,titulo,descripcion,precio,estado,tipo,fotos,activa&activa=neq.false&order=id.asc&limit=2000`, {
+const r = await fetch(`${URL_SB}/rest/v1/productos?select=id,titulo,precio,estado,tipo,fotos,activa&activa=neq.false&order=id.asc&limit=2000`, {
   headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
 });
 if (!r.ok) { console.error('Error al leer productos', r.status, await r.text()); process.exit(1); }
 const prods = await r.json();
 
-const dir = 'p';
-fs.rmSync(dir, { recursive: true, force: true });
-fs.mkdirSync(dir, { recursive: true });
+const DIR = 'p', IMG = path.join(DIR, 'img');
+fs.mkdirSync(IMG, { recursive: true });
+const vigentes = new Set();
+
+// Imagen cuadrada (máx. 800 px, fondo de la marca), liviana para WhatsApp. Se rehace solo si cambió la foto.
+async function imagen(id, src) {
+  const jpg = path.join(IMG, `${id}.jpg`), marca = path.join(IMG, `${id}.src`);
+  if (fs.existsSync(jpg) && fs.existsSync(marca) && fs.readFileSync(marca, 'utf8') === src) {
+    const m = await sharp(jpg).metadata(); return { w: m.width, h: m.height };
+  }
+  const res = await fetch(src);
+  if (!res.ok) throw new Error('foto ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  const chica = await sharp(buf).rotate().resize(800, 800, { fit: 'inside', withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
+  const lado = Math.max(chica.info.width, chica.info.height);
+  await sharp({ create: { width: lado, height: lado, channels: 3, background: '#0B1120' } })
+    .composite([{ input: chica.data, gravity: 'center' }])
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toFile(jpg);
+  fs.writeFileSync(marca, src);
+  return { w: lado, h: lado };
+}
 
 for (const p of prods) {
-  const foto = (p.fotos || []).find(u => u && !esVideo(u)) || `${SITIO}/icon-512.png`;
+  const id = String(p.id);
+  vigentes.add(id);
+  const src = (p.fotos || []).find(u => u && !esVideo(u));
+  let og = `${SITIO}/icon-512.png`, w = 512, h = 512, img = '/icon-512.png';
+  if (src) {
+    try { const d = await imagen(id, src); og = `${SITIO}/p/img/${id}.jpg`; img = `/p/img/${id}.jpg`; w = d.w; h = d.h; }
+    catch (e) { console.error('No se pudo armar la imagen de', id, e.message); }
+  }
   const consultar = p.estado === 'consultar';
   const precio = consultar ? 'Consultá el precio' : pesos(p.precio);
   const titulo = `${p.titulo} — ${precio}`;
   const extra = p.tipo === 'servicio' ? 'Reservás con una seña del 20%.' : 'Envíos a todo el país. Pagás por Mercado Pago.';
   const desc = `${precio} en Plaza Market. ${extra}`;
-  const destino = `/plaza-market-catalogo.html?id=${p.id}`;
-  const url = `${SITIO}/p/${p.id}/`;
+  const destino = `/plaza-market-catalogo.html?id=${id}`;
+  const url = `${SITIO}/p/${id}`;
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -38,11 +65,15 @@ for (const p of prods) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(titulo)} | Plaza Market</title>
 <meta name="description" content="${esc(desc)}">
-<meta property="og:type" content="product">
+<meta property="og:type" content="website">
 <meta property="og:site_name" content="Plaza Market">
 <meta property="og:title" content="${esc(titulo)}">
 <meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${esc(foto)}">
+<meta property="og:image" content="${og}">
+<meta property="og:image:secure_url" content="${og}">
+<meta property="og:image:type" content="${og.endsWith('.png') ? 'image/png' : 'image/jpeg'}">
+<meta property="og:image:width" content="${w}">
+<meta property="og:image:height" content="${h}">
 <meta property="og:url" content="${url}">
 <meta property="og:locale" content="es_AR">
 <meta name="twitter:card" content="summary_large_image">
@@ -53,11 +84,18 @@ for (const p of prods) {
 <script>location.replace(${JSON.stringify(destino)});</script>
 </head>
 <body>
-<div><img src="${esc(foto)}" alt=""><h1 style="font-size:1.2rem">${esc(p.titulo)}</h1><p style="font-size:1.3rem;font-weight:800;color:#FFD60A">${esc(precio)}</p><a href="${destino}">Ver en Plaza Market</a></div>
+<div><img src="${img}" alt=""><h1 style="font-size:1.2rem">${esc(p.titulo)}</h1><p style="font-size:1.3rem;font-weight:800;color:#FFD60A">${esc(precio)}</p><a href="${destino}">Ver en Plaza Market</a></div>
 </body>
 </html>
 `;
-  fs.mkdirSync(path.join(dir, String(p.id)), { recursive: true });
-  fs.writeFileSync(path.join(dir, String(p.id), 'index.html'), html);
+  fs.writeFileSync(path.join(DIR, `${id}.html`), html);
+}
+
+// Saca las fichas de publicaciones que ya no están visibles
+for (const f of fs.readdirSync(DIR)) {
+  const m = f.match(/^(\d+)\.html$/); if (m && !vigentes.has(m[1])) fs.rmSync(path.join(DIR, f));
+}
+for (const f of fs.readdirSync(IMG)) {
+  const m = f.match(/^(\d+)\.(jpg|src)$/); if (m && !vigentes.has(m[1])) fs.rmSync(path.join(IMG, f));
 }
 console.log('Fichas generadas:', prods.length);
