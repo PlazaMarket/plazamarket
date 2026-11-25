@@ -271,7 +271,7 @@
         .menu-salir { color: #FCA5A5; margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; cursor: pointer; }
     </style>
 <style>.photo-move{display:flex;gap:4px;justify-content:center;margin-top:3px;}.photo-move-btn{background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.45);color:#dbeafe;border-radius:6px;width:32px;height:26px;font-size:14px;line-height:1;cursor:pointer;padding:0;}.photo-move-btn[disabled]{opacity:0.3;cursor:default;}.photo-portada{position:absolute;top:4px;left:4px;background:#f59e0b;color:#1e293b;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;z-index:3;}</style>
-<meta name="pm-version" content="202611241000">
+<meta name="pm-version" content="202611251200">
 </head>
 <body>
     <div id="authLoading"><span class="spinner-mini"></span> Verificando tu sesión...</div>
@@ -1514,7 +1514,7 @@ async function publishProduct() {
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Mostrar' : '🙈 Ocultar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>
+                        <button class="btn-editar" onclick="togglePausa(${p.id}, ${p.activa === false})" style="margin-right:6px;">${p.activa === false ? '\u25b6\ufe0f Mostrar' : '🙈 Ocultar'}</button><button class="btn-editar" onclick="editarProducto(${p.id})">✏️ Editar</button>${p.activa !== false ? `<button class="btn-editar" onclick="pmCompartir(misProductos.find(x => x.id === ${p.id}), true)" style="margin-left:6px;">🔗 Compartir</button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -2074,5 +2074,20 @@ function pmVarReset(){ pmVar={activo:false,atributos:[],stocks:{},precios:{},_co
 </script>
 <script src="/pm-ubicacion.js?v=2"></script>
 <script src="/pm-update.js" defer></script>
+<script>
+/* Compartir publicación: enlace con vista previa (foto + precio) */
+function pmToastMini(t){var d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#10B981;color:#fff;font-weight:700;padding:12px 18px;border-radius:12px;z-index:200000;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:.95rem;max-width:90vw;text-align:center';document.body.appendChild(d);setTimeout(function(){d.remove();},2600);}
+function pmCopiarEnlace(url){
+  function viejo(){var ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();pmToastMini('🔗 Enlace copiado. Pegalo donde quieras');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){pmToastMini('🔗 Enlace copiado. Pegalo donde quieras');},viejo);}else viejo();
+}
+function pmCompartir(p, propio){
+  if(!p||p.id==null) return;
+  var url='https://plazamarket.com.ar/p/'+p.id+'/';
+  var txt=(propio?'Mirá lo que publiqué en Plaza Market: ':'Mirá esto en Plaza Market: ')+p.titulo;
+  if(navigator.share){navigator.share({title:p.titulo,text:txt,url:url}).catch(function(e){ if(e&&e.name!=='AbortError') pmCopiarEnlace(url); });}
+  else pmCopiarEnlace(url);
+}
+</script>
 </body>
 </html>
